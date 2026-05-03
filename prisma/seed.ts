@@ -199,6 +199,23 @@ async function main() {
 
   console.log(`Gorsel eslestirme satiri: ${mappingRows.length}`);
 
+  // Lokal görsel dizinini tarayıp pictureId -> actual filename map kur. Bu
+  // sayede DB'ye doğru uzantıyla yazılır (eski versiyon hardcoded `.png`
+  // kullanıyordu, jpeg/webp dosyalar için 404'e yol açıyordu).
+  const productsImagesDir = path.join(projectRoot, "public", "images", "products");
+  const pictureIdToFilename = new Map<number, string>();
+  if (fs.existsSync(productsImagesDir)) {
+    for (const name of fs.readdirSync(productsImagesDir)) {
+      const m = name.match(/^(\d+)\.(png|jpe?g|webp|gif)$/i);
+      if (!m) continue;
+      const idNum = parseInt(m[1], 10);
+      if (!Number.isNaN(idNum)) pictureIdToFilename.set(idNum, name);
+    }
+    console.log(`Lokal gorsel dosyasi: ${pictureIdToFilename.size}`);
+  } else {
+    console.log("public/images/products dizini yok — filename'ler .png varsayilani ile yazilacak.");
+  }
+
   // Build nopId -> product id map
   const allProducts = await prisma.product.findMany({ select: { id: true, nopId: true } });
   const nopToId = new Map<number, string>();
@@ -222,7 +239,9 @@ async function main() {
       continue;
     }
 
-    const filename = String(pictureId).padStart(7, "0") + ".png";
+    const filename =
+      pictureIdToFilename.get(pictureId) ??
+      String(pictureId).padStart(7, "0") + ".png";
 
     try {
       await prisma.productImage.upsert({
