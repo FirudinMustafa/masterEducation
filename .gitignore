@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +40,28 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# Product images (extracted from thumbs.zip — production'da Vercel Blob'a yüklenir)
+/public/images/products
+
+# Private uploads (auth-gated belgeler — repo'ya commit etme)
+/private/
+
+# Eski public uploads (Faz 16'da private/'a taşındı; tekrar oluşmasın diye)
+/public/uploads/
+
+# IDE / editor state
+/.vs/
+/.vscode/
+/.idea/
+
+# Tooling caches & artifacts (repo'ya commit etmeyiz)
+/.audit/
+/.claude/
+/test-results/
+/playwright-report/
+/coverage/
+
+# Local env scratch (.env.example haricinde — yukarıda zaten yakalanıyor)

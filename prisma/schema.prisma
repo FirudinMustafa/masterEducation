@@ -1,0 +1,669 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── USERS & AUTH ─────────────────────────────────────
+
+enum UserRole {
+  CUSTOMER
+  DEALER
+  ADMIN
+}
+
+enum DealerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  role          UserRole  @default(CUSTOMER)
+  emailVerified DateTime?
+
+  // KVKK / Acik riza kayitlari (kayit asamasinda onaylanir).
+  // termsAcceptedAt: Uyelik Sozlesmesi + KVKK aydinlatma metni okuma onayi.
+  // marketingConsent: Ticari elektronik ileti (mail/sms) onayi — opsiyonel,
+  //   default false. Kullanici sonradan acabilir/kapatabilir.
+  // marketingConsentAt: marketingConsent en son ne zaman degisti.
+  termsAcceptedAt    DateTime?
+  marketingConsent   Boolean   @default(false)
+  marketingConsentAt DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  dealer      Dealer?
+  orders      Order[]
+  cartItems   CartItem[]
+  addresses   Address[]
+  reviews     ProductReview[]
+  orderEvents OrderEvent[]
+
+  @@map("users")
+}
+
+model Address {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label       String?
+  fullName    String
+  phone       String
+  city        String
+  district    String
+  postalCode  String?
+  addressLine String
+  isDefault   Boolean @default(false)
+
+  orders Order[]
+
+  @@map("addresses")
+}
+
+// ─── DEALER ───────────────────────────────────────────
+
+model Dealer {
+  id              String              @id @default(cuid())
+  userId          String              @unique
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName     String
+  taxOffice       String
+  taxNumber       String
+  tradeRegNo      String?
+  contactPerson   String?
+  status          DealerStatus        @default(PENDING)
+  paymentTerms    DealerPaymentTerms  @default(OPEN_ACCOUNT)
+  creditLimit     Decimal             @default(0) @db.Decimal(12, 2)
+  currentBalance  Decimal             @default(0) @db.Decimal(12, 2)
+  approvedAt      DateTime?
+  approvedBy      String?
+  rejectionReason String?
+  notes           String?
+  // KolayBi mapping — ilk fatura kesiminde KolayBi'de associate + adres
+  // oluşturulur, ID buraya cache'lenir. Sonraki kesimler bu ID'leri kullanır.
+  kolaybiContactId  Int?
+  kolaybiAddressId  Int?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  discountRules DealerDiscount[]
+  ledger        DealerLedger[]
+  documents     DealerDocument[]
+
+  @@map("dealers")
+}
+
+enum DealerPaymentTerms {
+  OPEN_ACCOUNT // Cari (kredi limiti) — siparis verir, sonradan oder
+  PREPAID      // Pesin (kredi karti / havale) — her siparis ödendiginde gider
+}
+
+enum DealerDocumentKind {
+  TAX_CERTIFICATE
+  TRADE_REG_GAZETTE
+  SIGNATURE_CIRCULAR
+  OTHER
+}
+
+enum DealerDocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model DealerDocument {
+  id         String               @id @default(cuid())
+  dealerId   String
+  dealer     Dealer               @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  kind       DealerDocumentKind
+  filename   String
+  origName   String
+  sizeBytes  Int
+  uploadedBy String?
+  status     DealerDocumentStatus @default(PENDING)
+  reviewNote String?
+  reviewedAt DateTime?
+  reviewedBy String?
+  createdAt  DateTime             @default(now())
+
+  @@index([dealerId])
+  @@index([status])
+  @@map("dealer_documents")
+}
+
+// ─── PRODUCTS ─────────────────────────────────────────
+
+model Publisher {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  products Product[]
+
+  @@map("publishers")
+}
+
+model Category {
+  id            String           @id @default(cuid())
+  name          String
+  slug          String           @unique
+  type          String // "ana" or "detay"
+  products      Product[]
+  discountRules DealerDiscount[]
+
+  @@map("categories")
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  nopId         Int      @unique
+  name          String
+  nameEn        String?
+  slug          String   @unique
+  sku           String
+  price         Decimal  @db.Decimal(10, 2)
+  oldPrice      Decimal? @db.Decimal(10, 2)
+  vatRate       Decimal  @default(0) @db.Decimal(4, 2)
+  stockQuantity Int      @default(0)
+
+  publisherId String?
+  publisher   Publisher? @relation(fields: [publisherId], references: [id])
+  categoryId  String?
+  category    Category?  @relation(fields: [categoryId], references: [id])
+
+  anaTur        String?
+  detayTur      String?
+  language      String?
+  productType   String?
+  discountGroup String?
+  authorCode    String?
+
+  isPublished Boolean @default(true)
+  hasImage    Boolean @default(false)
+
+  // KolayBi mapping — ilk fatura kesiminde KolayBi'de product oluşturulur,
+  // ID buraya cache'lenir. Sonraki kesimler bu ID'yi kullanır.
+  kolaybiProductId Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images        ProductImage[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  discountRules DealerDiscount[]
+  reviews       ProductReview[]
+
+  @@index([publisherId])
+  @@index([categoryId])
+  @@index([anaTur])
+  @@index([discountGroup])
+  @@index([slug])
+  @@index([isPublished])
+  @@index([isPublished, createdAt(sort: Desc)])
+  @@index([isPublished, price])
+  @@map("products")
+}
+
+model ProductImage {
+  id           String  @id @default(cuid())
+  productId    String
+  product      Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  pictureId    Int
+  filename     String
+  displayOrder Int     @default(0)
+  barcode      String?
+
+  @@unique([productId, pictureId])
+  @@index([productId])
+  @@map("product_images")
+}
+
+// ─── CART ─────────────────────────────────────────────
+
+model CartItem {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int     @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId])
+  @@map("cart_items")
+}
+
+// ─── ORDERS ───────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  OPEN_ACCOUNT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum CargoCarrier {
+  ARAS
+  YURTICI
+  MNG
+  PTT
+  SURAT
+  KOLAY_GELSIN
+  HEPSIJET
+  TRENDYOL
+  OTHER
+}
+
+enum OrderEventType {
+  CREATED
+  APPROVED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  NOTE
+  CONTRACTS_ACCEPTED
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  orderNumber   String        @unique
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  guestEmail    String?
+  addressId     String
+  address       Address       @relation(fields: [addressId], references: [id])
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod @default(CREDIT_CARD)
+  paymentStatus PaymentStatus @default(PENDING)
+
+  subtotal     Decimal @db.Decimal(12, 2)
+  discountTotal Decimal @default(0) @db.Decimal(12, 2)
+  couponCode   String?
+  couponDiscount Decimal @default(0) @db.Decimal(12, 2)
+  vatTotal     Decimal @default(0) @db.Decimal(12, 2)
+  shippingCost Decimal @default(0) @db.Decimal(10, 2)
+  total        Decimal @db.Decimal(12, 2)
+
+  note      String?
+  adminNote String?
+
+  shippingName    String
+  shippingCity    String
+  shippingAddress String
+  shippingPhone   String
+
+  trackingNumber      String?
+  trackingCarrier     CargoCarrier?
+  trackingCarrierName String? // OTHER secildiginde serbest metin
+  shippedAt           DateTime?
+  deliveredAt         DateTime?
+  estimatedDeliveryAt DateTime?
+
+  // Mesafeli satis sozlesmesi + on bilgilendirme formu onay kaydi (yasal kanit).
+  // Siparis verirken zorunlu — checkout'ta checkbox ile onaylanir; ip + zaman
+  // ayrı saklanir (KVKK + Tuketici Kanunu kanit standardi).
+  contractsAcceptedAt DateTime?
+  contractsAcceptedIp String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items           OrderItem[]
+  paymentSession  PaymentSession?
+  couponRedemption CouponRedemption?
+  events          OrderEvent[]
+  invoice         Invoice?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderEvent {
+  id        String         @id @default(cuid())
+  orderId   String
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      OrderEventType
+  note      String?
+  actorId   String?
+  actor     User?          @relation(fields: [actorId], references: [id])
+  createdAt DateTime       @default(now())
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  discountPct Decimal @default(0) @db.Decimal(5, 2)
+  lineTotal   Decimal @db.Decimal(12, 2)
+  vatRate     Decimal @default(0) @db.Decimal(4, 2)
+  vatAmount   Decimal @default(0) @db.Decimal(12, 2)
+
+  productName String
+  productSku  String
+
+  @@map("order_items")
+}
+
+// ─── PRODUCT REVIEWS ────────────────────────────────
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProductReview {
+  id          String       @id @default(cuid())
+  productId   String
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating      Int
+  title       String?
+  comment     String
+  status      ReviewStatus @default(PENDING)
+  moderatedAt DateTime?
+  moderatedBy String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([productId, userId])
+  @@index([productId])
+  @@index([status])
+  @@map("product_reviews")
+}
+
+// ─── COUPONS ─────────────────────────────────────────
+
+enum CouponKind {
+  PERCENT
+  FIXED
+  FREE_SHIPPING
+}
+
+model Coupon {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  kind        CouponKind
+  value       Decimal    @default(0) @db.Decimal(10, 2)
+  minSubtotal Decimal    @default(0) @db.Decimal(12, 2)
+  maxUses     Int?
+  usedCount   Int        @default(0)
+  validFrom   DateTime?
+  validUntil  DateTime?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  redemptions CouponRedemption[]
+
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id        String   @id @default(cuid())
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  userId    String
+  amount    Decimal  @db.Decimal(12, 2)
+  createdAt DateTime @default(now())
+
+  @@index([couponId])
+  @@index([userId])
+  @@map("coupon_redemptions")
+}
+
+// ─── MOCK PAYMENT SESSION ───────────────────────────
+
+enum PaymentSessionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+// ─── KOLAYBI E-FATURA ─────────────────────────────────
+//
+// Bir sipariş için bir invoice. Sipariş DELIVERED'a geçince after() içinde
+// fatura kesim job'u tetiklenir; başarısız olursa cron retry'lar.
+
+enum InvoiceStatus {
+  PENDING        // henüz gönderilmedi (DRYRUN veya retry beklemede)
+  SENT           // KolayBi'ye başarıyla gönderildi
+  FAILED         // gönderim hata aldı (retry kuyrukta)
+  CANCELLED      // sipariş iptal sonrası fatura kesilmedi/iptal
+}
+
+model Invoice {
+  id              String        @id @default(cuid())
+  orderId         String        @unique
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status          InvoiceStatus @default(PENDING)
+  // KolayBi tarafındaki belge ID'si (response'dan gelir).
+  externalId      String?
+  // Mağaza/sipariş tarafında saklanan PDF URL (KolayBi'den dönerse).
+  pdfUrl          String?
+  // Son hata mesajı (FAILED status ile birlikte).
+  errorMessage    String?
+  // Toplam tutar (snapshot — sipariş güncellenirse fatura değişmesin).
+  totalAmount     Decimal       @db.Decimal(12, 2)
+  currency        String        @default("TRY")
+  // Retry/observability
+  attemptCount    Int           @default(0)
+  lastAttemptAt   DateTime?
+  syncedAt        DateTime?     // başarılı gönderim zamanı
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([status])
+  @@index([syncedAt])
+  @@map("invoices")
+}
+
+model PaymentSession {
+  id           String               @id @default(cuid())
+  orderId      String               @unique
+  order        Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  token        String               @unique
+  amount       Decimal              @db.Decimal(12, 2)
+  status       PaymentSessionStatus @default(PENDING)
+  cardLastFour String?
+  cardBrand    String?
+  processedAt  DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime             @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+  @@map("payment_sessions")
+}
+
+// ─── DEALER DISCOUNT MATRIX ──────────────────────────
+
+enum DiscountScope {
+  PRODUCT
+  CATEGORY
+  PUBLISHER
+  DISCOUNT_GROUP
+  GLOBAL
+}
+
+model DealerDiscount {
+  id          String        @id @default(cuid())
+  dealerId    String
+  dealer      Dealer        @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  scope       DiscountScope
+  discountPct Decimal       @db.Decimal(5, 2)
+
+  productId     String?
+  product       Product?  @relation(fields: [productId], references: [id])
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  publisherId   String?
+  discountGroup String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealerId, scope, productId, categoryId, publisherId, discountGroup])
+  @@index([dealerId])
+  @@map("dealer_discounts")
+}
+
+// ─── EMAIL LOG ───────────────────────────────────────
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  status    String
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@map("email_logs")
+}
+
+// ─── PASSWORD RESET ──────────────────────────────────
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+// ─── DEALER LEDGER ──────────────────────────────────
+
+enum LedgerKind {
+  ORDER_DEBIT
+  ORDER_CANCEL_CREDIT
+  PAYMENT_CREDIT
+  MANUAL_ADJUSTMENT
+}
+
+model DealerLedger {
+  id           String     @id @default(cuid())
+  dealerId     String
+  dealer       Dealer     @relation(fields: [dealerId], references: [id], onDelete: Cascade)
+  kind         LedgerKind
+  amount       Decimal    @db.Decimal(12, 2)
+  balanceAfter Decimal    @db.Decimal(12, 2)
+  orderId      String?
+  reference    String?
+  note         String?
+  createdBy    String?
+  createdAt    DateTime   @default(now())
+
+  @@index([dealerId])
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("dealer_ledger")
+}
+
+// ─── ERROR LOG ───────────────────────────────────────
+
+model ErrorLog {
+  id        String   @id @default(cuid())
+  source    String
+  message   String
+  stack     String?
+  url       String?
+  userId    String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([source])
+  @@map("error_logs")
+}
+
+// ─── PAGE VIEWS ─────────────────────────────────────
+
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  referer   String?
+  userId    String?
+  sessionId String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([path])
+  @@index([createdAt])
+  @@map("page_views")
+}
+
+// ─── AUDIT LOG ───────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

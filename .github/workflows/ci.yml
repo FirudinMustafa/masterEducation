@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: lint + typecheck + unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Match tests/setup.ts — enough to satisfy src/lib/env.ts validation.
+      DATABASE_URL: "postgresql://postgres@localhost:5432/master_education"
+      NEXTAUTH_SECRET: "ci-secret-at-least-thirty-two-chars-for-test"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      - name: Unit tests (vitest)
+        run: npm test
+
+  integration:
+    name: integration (db + scenarios)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: master_education
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/master_education"
+      NEXTAUTH_SECRET: "ci-secret-at-least-thirty-two-chars-for-test"
+      NEXTAUTH_URL: "http://localhost:3000"
+      NODE_ENV: development
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Prisma migrate deploy
+        run: npx prisma migrate deploy
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Seed
+        run: npm run seed
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
+
+      - name: Start app
+        run: npm start &
+        env:
+          PORT: 3000
+
+      - name: Wait for server
+        run: |
+          for i in {1..40}; do
+            if curl -sSf http://localhost:3000/ > /dev/null; then
+              echo "server up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "server did not start in time"
+          exit 1
+
+      - name: HTTP scenarios
+        run: npm run scenarios
