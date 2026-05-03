@@ -2,19 +2,19 @@
   "crons": [
     {
       "path": "/api/cron/cleanup-payment-sessions",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/api/cron/cleanup-reset-tokens",
       "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/cron/retry-invoices",
-      "schedule": "*/30 * * * *"
-    },
-    {
       "path": "/api/cron/cleanup-audit-logs",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/retry-invoices",
+      "schedule": "0 5 * * *"
     }
   ]
 }
