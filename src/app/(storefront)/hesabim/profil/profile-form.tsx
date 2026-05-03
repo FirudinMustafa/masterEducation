@@ -14,8 +14,11 @@ export function ProfileForm({ initial, emailVerified }: Props) {
   const [name, setName] = useState(initial.name);
   const [email, setEmail] = useState(initial.email);
   const [phone, setPhone] = useState(initial.phone);
+  const [currentPassword, setCurrentPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const emailChanged = email !== initial.email;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,7 +27,12 @@ export function ProfileForm({ initial, emailVerified }: Props) {
     const res = await fetch("/api/account/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, phone }),
+      body: JSON.stringify({
+        name,
+        email,
+        phone,
+        ...(emailChanged ? { currentPassword } : {}),
+      }),
     });
     const data = (await res.json().catch(() => ({}))) as {
       ok?: boolean;
@@ -40,6 +48,7 @@ export function ProfileForm({ initial, emailVerified }: Props) {
         ? "Profil guncellendi. Yeni email icin dogrulama gondeirilecek."
         : "Profil guncellendi."
     );
+    setCurrentPassword("");
     startTransition(() => router.refresh());
   }
 
@@ -103,10 +112,29 @@ export function ProfileForm({ initial, emailVerified }: Props) {
         />
       </label>
 
+      {emailChanged && (
+        <label className="block">
+          <span className="block text-sm font-medium text-brand-black mb-1">
+            Mevcut sifre
+            <span className="ml-1 text-xs text-gray-500">
+              (email degistiriyorsunuz, guvenlik icin gerekli)
+            </span>
+          </span>
+          <input
+            type="password"
+            required
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            autoComplete="current-password"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm"
+          />
+        </label>
+      )}
+
       <div className="flex items-center gap-3 pt-2">
         <button
           type="submit"
-          disabled={pending || !changed}
+          disabled={pending || !changed || (emailChanged && !currentPassword)}
           className="px-5 py-2.5 bg-brand-gold text-brand-black font-semibold rounded-lg hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
         >
           {pending ? "Kaydediliyor..." : "Kaydet"}
