@@ -19,6 +19,7 @@ const schema = z.object({
   SMTP_PORT: z
     .string()
     .optional()
+    .transform((v) => v?.trim() || undefined)
     .refine((v) => !v || /^\d+$/.test(v), "SMTP_PORT numara olmali."),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
