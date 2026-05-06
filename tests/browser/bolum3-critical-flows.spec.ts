@@ -15,7 +15,12 @@
 import { test, expect } from "@playwright/test";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@mastereducation.com.tr";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "p6FBx5Wj_YUNGMnY6_zKRDDx";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD) {
+  throw new Error(
+    "ADMIN_PASSWORD env zorunlu. CI/Vercel secret olarak ayarla, asla repo'ya hardcoded yazma."
+  );
+}
 
 test.describe.configure({ mode: "serial" });
 
