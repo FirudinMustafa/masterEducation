@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { reviewCreateSchema, flattenZodError } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
+import { queueEmail, templateNewReviewAdminNotice } from "@/lib/email";
+import { env } from "@/lib/env";
+import { BRAND } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest) {
 
   const product = await prisma.product.findUnique({
     where: { id: parsed.data.productId },
-    select: { id: true, isPublished: true },
+    select: { id: true, isPublished: true, name: true },
   });
   if (!product || !product.isPublished) {
     return NextResponse.json({ error: "Urun bulunamadi." }, { status: 404 });
@@ -76,6 +79,27 @@ export async function POST(req: NextRequest) {
     entityType: "product",
     entityId: parsed.data.productId,
     metadata: { rating: parsed.data.rating, reviewId: review.id },
+  });
+
+  // E15 — Yeni yorum admin'e moderation bildirimi.
+  const sessionUserName = session.user.name ?? "Anonim";
+  const reviewTitle = parsed.data.title ?? null;
+  const reviewExcerpt = parsed.data.comment.slice(0, 200);
+  const productName = product.name;
+  const reviewRating = parsed.data.rating;
+  after(() => {
+    const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
+    if (!adminTo) return;
+    const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+    const tpl = templateNewReviewAdminNotice({
+      productName,
+      userName: sessionUserName,
+      rating: reviewRating,
+      title: reviewTitle,
+      excerpt: reviewExcerpt,
+      panelUrl: `${base}/admin/yorumlar`,
+    });
+    queueEmail({ ...tpl, to: adminTo });
   });
 
   return NextResponse.json({

@@ -5,6 +5,9 @@ import { registerSchema, flattenZodError } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
 import { logAudit } from "@/lib/audit";
+import { queueEmail, templateNewUserSignupAdminNotice } from "@/lib/email";
+import { env } from "@/lib/env";
+import { BRAND } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -138,6 +141,26 @@ export async function POST(request: NextRequest) {
       after(async () => {
         await issueEmailVerificationToken(user.id, user.name, user.email);
       });
+
+      // E16 — Admin'e yeni kullanici bildirimi (opt-in).
+      if (env.ADMIN_NOTIFY_NEW_SIGNUP) {
+        const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
+        if (adminTo) {
+          const ipShort = ip.slice(0, 64);
+          const userName = user.name;
+          const userEmail = user.email;
+          after(() => {
+            const tpl = templateNewUserSignupAdminNotice({
+              name: userName,
+              email: userEmail,
+              source: "customer",
+              when: new Date(),
+              ip: ipShort,
+            });
+            queueEmail({ ...tpl, to: adminTo });
+          });
+        }
+      }
 
       logAudit({
         actorId: user.id,

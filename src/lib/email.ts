@@ -1382,6 +1382,146 @@ export function templateDealerLedgerEntry(args: {
   };
 }
 
+// ─── P2: Moderation & dolayli bildirimler ────────────────────────
+
+/**
+ * E14 — Yorum onaylandi/reddedildi → yazana.
+ * DELETE icin mail gondermeyiz (kullaniciyi tedirgin eder).
+ */
+export function templateReviewModerated(args: {
+  name: string;
+  productName: string;
+  status: "APPROVED" | "REJECTED";
+  note: string | null;
+  productUrl: string;
+}): EmailPayload {
+  const isApproved = args.status === "APPROVED";
+  return {
+    to: "",
+    subject: isApproved
+      ? "Yorumunuz yayinlandi"
+      : "Yorumunuz hakkinda bilgilendirme",
+    html: wrap({
+      title: isApproved ? "Yorumunuz yayinlandi" : "Yorumunuz yayinlanmadi",
+      preheader: `${args.productName} icin yorumunuz ${isApproved ? "yayinlandi" : "yayinlanmadi"}`,
+      subtitle: `Merhaba ${args.name}, yorum incelemesi tamamlandi.`,
+      heroAccent: isApproved ? "success" : "rose",
+      body: `
+        <p style="margin:0 0 14px 0;">
+          <strong style="color:${C.black};">${escapeHtml(args.productName)}</strong>
+          urunu icin yazdiginiz yorum
+          <strong style="color:${isApproved ? C.success : C.rose};">${isApproved ? "yayinlandi" : "yayinlanmadi"}</strong>.
+        </p>
+        ${
+          args.note
+            ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
+                <tr><td style="padding:14px 18px;background:${isApproved ? C.successBg : C.roseBg};border-left:3px solid ${isApproved ? C.success : C.rose};border-radius:8px;">
+                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${isApproved ? C.success : C.rose};">Aciklama</p>
+                  <p style="margin:6px 0 0 0;font-size:14px;color:${C.text};line-height:21px;">${escapeHtml(args.note)}</p>
+                </td></tr>
+              </table>`
+            : ""
+        }
+        ${btn(args.productUrl, "Urun Sayfasina Git", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * E15 — Yeni yorum → ADMIN'E moderation bildirimi.
+ * excerpt: yorum metninin ilk 200 char'i (escape edilmis).
+ */
+export function templateNewReviewAdminNotice(args: {
+  productName: string;
+  userName: string;
+  rating: number;
+  title: string | null;
+  excerpt: string;
+  panelUrl: string;
+}): EmailPayload {
+  const stars = "★".repeat(Math.max(0, Math.min(5, args.rating))) +
+    "☆".repeat(Math.max(0, 5 - Math.max(0, Math.min(5, args.rating))));
+  return {
+    to: "",
+    subject: `Yeni yorum — ${args.productName}`,
+    html: wrap({
+      title: "Yeni urun yorumu",
+      preheader: `${args.userName} ${args.productName} urunune ${args.rating}/5 puan verdi`,
+      subtitle: "Panelden inceleyebilir, gerekirse moderasyon yapabilirsiniz.",
+      heroAccent: "gold",
+      body: `
+        <p style="margin:0 0 16px 0;">
+          <strong style="color:${C.black};">${escapeHtml(args.userName)}</strong>
+          tarafindan
+          <strong>${escapeHtml(args.productName)}</strong>
+          urunune yeni bir yorum eklendi.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("Urun", args.productName)}
+              ${detailRow("Yazan", args.userName)}
+              ${detailRow("Puan", `${stars}  (${args.rating}/5)`)}
+              ${args.title ? detailRow("Baslik", args.title) : ""}
+            </table>
+            ${
+              args.excerpt
+                ? `<p style="margin:14px 0 0 0;padding-top:14px;border-top:1px solid ${C.border};font-size:13px;color:${C.text};line-height:20px;font-style:italic;">${escapeHtml(args.excerpt)}</p>`
+                : ""
+            }
+          </td></tr>
+        </table>
+        ${btn(args.panelUrl, "Yorumlari Yonet", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * E16 — Yeni kullanici kayit → ADMIN'E (opt-in via ADMIN_NOTIFY_NEW_SIGNUP).
+ * source: "customer" (auth/register) veya "dealer" (dealer/apply).
+ */
+export function templateNewUserSignupAdminNotice(args: {
+  name: string;
+  email: string;
+  source: "customer" | "dealer";
+  when: Date;
+  ip: string | null;
+}): EmailPayload {
+  const isDealer = args.source === "dealer";
+  const whenFmt = formatWhen(args.when);
+  return {
+    to: "",
+    subject: isDealer
+      ? `Yeni bayi kaydi — ${args.email}`
+      : `Yeni kullanici kaydi — ${args.email}`,
+    html: wrap({
+      title: isDealer ? "Yeni bayi kaydi" : "Yeni kullanici kaydi",
+      preheader: `${args.name} (${args.email}) — ${whenFmt}`,
+      subtitle: isDealer
+        ? "Bayilik basvurusu yeni kullanici icin baslatildi."
+        : "Yeni musteri hesabi olusturuldu.",
+      heroAccent: "sky",
+      body: `
+        <p style="margin:0 0 16px 0;">
+          <strong style="color:${C.black};">${escapeHtml(args.name)}</strong>
+          adina yeni bir
+          <strong>${isDealer ? "bayi" : "musteri"}</strong>
+          kaydi olusturuldu.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("Ad", args.name)}
+              ${detailRow("Email", args.email)}
+              ${detailRow("Tarih", whenFmt)}
+              ${args.ip ? detailRow("IP", args.ip, true) : ""}
+            </table>
+          </td></tr>
+        </table>`,
+    }),
+  };
+}
+
 export function templateEmailVerification(
   name: string,
   verifyUrl: string
