@@ -25,6 +25,7 @@
 | Faz 14 | Görsel toplu yükleme (ZIP — dosya adı = SKU) | ⏳ |
 | Faz 15 | SKU → ISBN UI rename (label-only) | ✅ 2026-04-26 |
 | Faz 16 | Güvenlik denetimi & sertleştirme | ✅ 2026-04-26 |
+| Bölüm 1 | Storefront + Public/Account/Dealer API + Lib production audit | ✅ 2026-05-06 |
 
 ---
 
@@ -573,6 +574,56 @@ Hacker bakışıyla full saldırı yüzeyi tarandı. Bulgular OWASP framework'ü
 
 ---
 
+## Bölüm 2 devir notu (2026-05-06)
+
+Bölüm 1 P1'leri kapatıldı; aşağıdakiler **Bölüm 2** kapsamında:
+
+### Kapsam dışı kalan kod alanları
+- **`src/app/admin/**`** ve **`src/app/api/admin/**`** — 60+ endpoint, 30+ sayfa. Mass-assignment, IDOR, audit, rol-sızıntısı, bulk endpoint güvenlik vektörleri.
+- **`src/app/bayi/**`** panel UI sayfaları — dealer API'lar denetlendi; UI sayfaları henüz değil.
+
+### Bekleyen Bölüm 1 P1'leri
+- **P1-PAGE-2** (UX kararı bekliyor): `emailVerified === null` user için login engeli. Şu an doğrulanmamış email ile siparişe izin var. Karar: zorla mı, opsiyonel uyarı mı?
+- **P1-DEPLOY-2**: Roadmap 4.4 — Upstash Redis rate-limit (in-memory'den geçiş). Faz 4'e bağlı.
+
+### Bekleyen Bölüm 1 P2/P3'leri (kod düzeyinde, Bölüm 1'in P1'lerinden sonra)
+- P2-LIB-1 `safe-callback.ts` decode-once + control-char rejection
+- P2-LIB-2 `addressUpdateSchema` partial validation gap
+- P2-LIB-3 `uploads.ts` magic-byte streaming
+- P2-API-1 dealer/documents PATCH/DELETE'de `requireApprovedDealer` kullan
+- P2-API-2 dealer/bulk-order/submit unhandled DB error → 500 stack leak
+- P2-PAGE-1..4 loading skeletons (kategoriler, yayinevleri, kargo-takip/[no], siparis-takip)
+- P3-1..10 — `docs/PRODUCTION_AUDIT_P1.md`#P3 listesi
+
+### Security tur 3 (Faz 17 sonrası vektörler)
+- JWT staleness/admin downgrade race (`api-auth.ts:requireRole` JWT-based; admin demote durumunda eski JWT kullanılıyor)
+- File upload polyglot (PDF içine JS embed) advanced check
+- SSRF — Vercel Blob fetch'inde redirect follow / external URL guard
+- WebSocket / SSE varsa origin check (yok şu an)
+- Audit log circular ref guard (`audit.ts:131` recursive sanitize)
+
+### Entegrasyon (Faz 4)
+- 4.1 SMTP/Resend canlı doğrulama (artık misconfig tespiti var — Bölüm 1)
+- 4.2 Iyzico/Param sandbox + signature verify
+- 4.3b Shipentegra adapter
+- 4.4 Upstash Redis rate-limit
+- 4.6 Sentry/Logtail
+- 4.7 Vercel deploy + cron + custom domain
+
+### Operasyonel deploy runbook (canliya cikis ON KOSULU)
+1. `NEXTAUTH_SECRET` üret (32+ char) → prod env
+2. `NEXTAUTH_URL` prod domain (Bölüm 1 fix'i ile zorunlu)
+3. **`BRAND_TAX_OFFICE`, `BRAND_TAX_NUMBER`, `BRAND_MERSIS_NUMBER`** doldur (yasal yükümlülük; Bölüm 1 P1-DEPLOY-1)
+4. Admin sifresini degistir (`scripts/change-admin-password.ts`)
+5. `ADMIN_EMAIL` gerçek kutu
+6. `CRON_SECRET` 16+ char
+7. `RESEND_API_KEY` + domain verify (sandbox fallback artık prod'da yok)
+8. `KOLAYBI_API_KEY` + `KOLAYBI_CHANNEL` (e-fatura entegrasyonu varsa)
+9. `ENABLE_MOCK_PAYMENTS` boş bırak (prod'da kapalı)
+10. `scripts/check-prod-env.ts` çalıştır + temiz görmeden deploy yapma
+
+---
+
 ## Degisiklik gunlugu
 
 - **2026-04-24:** Roadmap olusturuldu (full audit sonrasi).
@@ -590,3 +641,4 @@ Hacker bakışıyla full saldırı yüzeyi tarandı. Bulgular OWASP framework'ü
 - **2026-04-26 (gece/5):** Faz 15 tamamlandi — SKU → ISBN UI rename (19 dosya UI label, Excel template başlıkları, bulk-import + bulk-order parse hem "sku" hem "isbn" kabul). Schema'ya dokunulmadı, geriye dönük uyumlu. 85/85 vitest + 8/8 yeni e2e + 12/12 eski "sku" backwards-compat e2e.
 - **2026-04-26 (gece/6):** Faz 16 — güvenlik sertleştirme. (1) Open redirect (callbackUrl) — `safeCallbackUrl` helper, /giris + /kayit + login-gate'te uygulandı, 10 unit test. (2) Dealer belgeleri public/uploads → private/uploads (8 mevcut dosya migrate edildi, .gitignore güncellendi); auth-gated `/api/dealer/documents/[id]/download` endpoint (admin veya sahip-bayi only, path traversal pattern kontrolü). (3) Register email enumeration — var-olan email için bile generic 201 + audit log; rate limit 10→5/saat. (4) Forgot password timing — yok-email için `timingSafeNoop` (50-150ms artificial work). (5) JSON-LD XSS koruması — `</script>` injection için `<>&` unicode escape. 95/95 vitest + 6/6 e2e.
 - **2026-04-26 (gece/7):** Faz 17 — güvenlik denetimi tur 2 (derin saldırı vektörleri). (1) Email change account takeover — currentPassword zorunlu, bcrypt verify, 403 + audit. (2) Reset/verify token DB hash — SHA-256 (`token-hash.ts`), DB breach koruma; verify TTL 24h→1h. (3) Audit log auto-redact — `sanitizeAuditMetadata()` recursive helper, password/token/secret/card pattern'leri `[REDACTED]`. (4) Tracking enumeration — per-IP 30/saat rate limit + `maskShippingName()`. (5) Email template HTML injection — 8 template'te `escapeHtml()`. (6) NEXTAUTH_SECRET min 16→32. 113/113 vitest + 9/9 e2e.
+- **2026-05-06:** **Bölüm 1 production audit** — storefront 31 route + public/account/dealer 33 endpoint + 36 lib modülü statik+dinamik+regresyon turu. P0 yok. 10 P1 / 11 P2 / 10 P3 bulgu (`docs/PRODUCTION_AUDIT_P1.md`, `docs/API_INVENTORY_P1.md`). Uygulanan P1 fix'leri: (1) **auth.ts timing attack** — missing-user dalında dummy bcrypt; (2) **auth.ts per-IP rate-limit** — `login:ip:<ip>` 30/15min eklendi; (3) **email.ts prod silent dryrun** — production'da SMTP eksikse `console.error` + Resend sandbox fallback yalnız non-prod'a kısıtlandı; (4) **env.ts NEXTAUTH_URL** — production'da zorunlu; (5) **register audit action** — `AUTH_REGISTER_ATTEMPT_EXISTING` yeni action; (6) **kategoriler/yayinevleri canonical** — relative → absolute URL; (7) **email-verification atomic** — invalidate+create artık tek `prisma.$transaction`; (8) **constants.ts BRAND.tax\*** — env override (`BRAND_TAX_OFFICE`/`BRAND_TAX_NUMBER`/`BRAND_MERSIS_NUMBER`). 159/159 vitest stabil + tsc temiz. P2/P3 + admin paneli + security tur 3 + entegrasyonlar **Bölüm 2**.

@@ -11,6 +11,8 @@ const schema = z.object({
   // birthday attacks'a karsi yeterli entropy. `npx tsx scripts/generate-secret.ts`
   // ile uretilen 64-char hex bunu fazlasiyla karsilar.
   NEXTAUTH_SECRET: z.string().min(32, "NEXTAUTH_SECRET en az 32 karakter olmali (npx tsx scripts/generate-secret.ts)"),
+  // Prod'da unutulursa email URL'leri localhost'a / placeholder default'a dusup
+  // tum dogrulama/sifre-reset linklerini kirar. Production icin zorunlu.
   NEXTAUTH_URL: z.string().url().optional(),
   // SMTP — hepsi optional; tanimsizsa dryrun moduna geciyor (lib/email.ts)
   SMTP_HOST: z.string().optional(),
@@ -63,6 +65,13 @@ function parseEnv() {
     // Fail loudly so misconfiguration is obvious on boot.
     throw new Error(
       `[env] Gecersiz ortam degiskenleri:\n  ${details}`
+    );
+  }
+  // Production'da NEXTAUTH_URL zorunlu — tanimsizsa email/oauth callback
+  // URL'leri localhost veya placeholder'a dusup dogrulama akisini kirar.
+  if (result.data.NODE_ENV === "production" && !result.data.NEXTAUTH_URL) {
+    throw new Error(
+      "[env] NEXTAUTH_URL production'da zorunludur. Prod domain (https://...) ile ayarlayin."
     );
   }
   return result.data;

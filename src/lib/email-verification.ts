@@ -17,18 +17,21 @@ export async function issueEmailVerificationToken(
   name: string,
   email: string,
 ): Promise<{ token: string; url: string }> {
-  await prisma.emailVerificationToken.updateMany({
-    where: { userId, usedAt: null, expiresAt: { gt: new Date() } },
-    data: { usedAt: new Date() },
-  });
-
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + TTL_MS);
+  // Atomik: eski tokenlari invalidate + yeni token create tek transaction'da.
+  // Iki paralel cagri olursa race window'da iki gecerli token olusmaz.
   // DB'de SHA-256 hash; email URL'inde plain. DB breach durumunda saldırgan
   // hash'leri tersine çeviremez.
-  await prisma.emailVerificationToken.create({
-    data: { userId, token: hashToken(token), expiresAt },
-  });
+  await prisma.$transaction([
+    prisma.emailVerificationToken.updateMany({
+      where: { userId, usedAt: null, expiresAt: { gt: new Date() } },
+      data: { usedAt: new Date() },
+    }),
+    prisma.emailVerificationToken.create({
+      data: { userId, token: hashToken(token), expiresAt },
+    }),
+  ]);
 
   const base = env.NEXTAUTH_URL ?? "http://localhost:3000";
   const url = `${base}/email-dogrula?token=${token}`;

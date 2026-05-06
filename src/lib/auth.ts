@@ -4,6 +4,12 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 
+// Constant-time decoy hash for timing equalization on missing-user path.
+// Computed once at module load; bcrypt.compare against it costs the same as
+// against any real user's hash, so attacker can't enumerate emails by latency.
+const DECOY_HASH =
+  "$2a$10$abcdefghijklmnopqrstuuJ6Qj3xZP7t2x5K6q9o2n1m0l9k8j7i6h5g4";
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     CredentialsProvider({
@@ -12,12 +18,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Sifre", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
 
         const emailKey = String(credentials.email).toLowerCase();
-        const rl = rateLimit(`login:${emailKey}`, 10, 15 * 60 * 1000);
-        if (!rl.allowed) {
+
+        // Per-email limit: hedefli brute-force bir tek kullaniciya yapilmasin.
+        const emailRl = rateLimit(`login:email:${emailKey}`, 10, 15 * 60 * 1000);
+        if (!emailRl.allowed) {
+          throw new Error("Cok fazla giris denemesi. Biraz bekleyip tekrar deneyin.");
+        }
+
+        // Per-IP limit: password-spray (1 IP × N email × 10 deneme) bloklansin.
+        // NextAuth v5 `req` Web Request — Headers API ile oku, defansif.
+        const reqHeaders = (req as Request | undefined)?.headers;
+        const xff = reqHeaders?.get("x-forwarded-for") ?? null;
+        const realIp = reqHeaders?.get("x-real-ip") ?? null;
+        const ip = (xff?.split(",")[0]?.trim() || realIp || "unknown") as string;
+        const ipRl = rateLimit(`login:ip:${ip}`, 30, 15 * 60 * 1000);
+        if (!ipRl.allowed) {
           throw new Error("Cok fazla giris denemesi. Biraz bekleyip tekrar deneyin.");
         }
 
@@ -28,7 +47,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           },
         });
 
-        if (!user) return null;
+        // Timing-equalization: kullanici yoksa bile bcrypt.compare cagir
+        // (yaklasik 70-100 ms CPU). Attacker latency farkindan email enumeration
+        // yapamasin. Sonuc her halukarda fail.
+        if (!user) {
+          await bcrypt.compare(credentials.password as string, DECOY_HASH);
+          return null;
+        }
 
         const passwordMatch = await bcrypt.compare(
           credentials.password as string,

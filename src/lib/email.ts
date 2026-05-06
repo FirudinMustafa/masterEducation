@@ -14,6 +14,7 @@ type EmailPayload = {
 };
 
 let transporterCache: Transporter | null = null;
+let prodMisconfigWarned = false;
 
 function getTransporter(): Transporter | null {
   if (transporterCache) return transporterCache;
@@ -21,7 +22,19 @@ function getTransporter(): Transporter | null {
   const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-  if (!host || !port || !user || !pass) return null;
+  if (!host || !port || !user || !pass) {
+    // Production'da SMTP/Resend env eksik = sessiz veri kaybi.
+    // En azindan bir kez stderr'a sicak uyari yazsin (Sentry/Logtail bunu
+    // olarak yakalar; admin "kayit emaili gelmiyor" sikayetinde root cause hizli bulunur).
+    if (process.env.NODE_ENV === "production" && !prodMisconfigWarned) {
+      console.error(
+        "[email:misconfig] SMTP env eksik (SMTP_HOST/PORT/USER/PASS). " +
+        "Tum email gonderimleri DRYRUN moduna dustu — kullanici dogrulama/sifre reset/siparis emailleri ULASMIYOR."
+      );
+      prodMisconfigWarned = true;
+    }
+    return null;
+  }
 
   transporterCache = nodemailer.createTransport({
     host,
@@ -59,12 +72,13 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
     // Resend sandbox kısıtlaması: domain doğrulanmamış hesaplarda yalnızca
     // hesap sahibinin email'ine gönderim açık. Diğer adreslerde "550 You can
     // only send testing emails to your own email address" döner.
-    // Bu durumda silently DRYRUN'a düş — kullanıcı akışı bozulmasın, sadece
-    // log'a düşsün ki admin durumu görsün.
+    // Bu durumda **dev/staging'de** silently DRYRUN'a düş — kullanıcı akışı
+    // bozulmasın. **Production'da** sandbox fallback yok: domain dogrulanmamis
+    // bir Resend account ile prod'a cikilmamali; gercek failure olarak isle.
     const isResendSandbox =
       msg.includes("You can only send testing emails") ||
       (msg.includes("550") && msg.includes("verify a domain"));
-    if (isResendSandbox) {
+    if (isResendSandbox && process.env.NODE_ENV !== "production") {
       console.warn(
         `[email:resend-sandbox] ${payload.to} — "${payload.subject}" engellendi (domain dogrulanmasi gerek)`
       );
@@ -73,7 +87,13 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
         "DRYRUN_SANDBOX",
         "Resend sandbox kisitlamasi — domain dogrulayin"
       );
-      return true; // sessizce başarılı say — UX kırılmasın
+      return true;
+    }
+    if (isResendSandbox) {
+      console.error(
+        `[email:resend-sandbox-PROD] ${payload.to} — "${payload.subject}" — domain DOGRULANMAMIS, prod'da sandbox fallback yok!`
+      );
+      // Devam et — asagida FAILED olarak loglanir
     }
 
     console.error("[email:error]", payload.to, msg);

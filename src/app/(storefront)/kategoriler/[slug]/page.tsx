@@ -31,10 +31,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     select: { name: true },
   });
   if (!category) return { title: "Kategori bulunamadi" };
+  const baseUrl = process.env.NEXTAUTH_URL ?? "https://mastereducation.com.tr";
   return {
     title: `${category.name} Kitaplari`,
     description: `Master Education'da ${category.name} kategorisindeki tum kitaplar ve egitim materyalleri.`,
-    alternates: { canonical: `/kategoriler/${slug}` },
+    alternates: { canonical: `${baseUrl}/kategoriler/${slug}` },
   };
 }
 

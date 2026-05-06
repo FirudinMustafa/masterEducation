@@ -31,10 +31,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     select: { name: true },
   });
   if (!publisher) return { title: "Yayinevi bulunamadi" };
+  const baseUrl = process.env.NEXTAUTH_URL ?? "https://mastereducation.com.tr";
   return {
     title: `${publisher.name} Kitaplari`,
     description: `${publisher.name} yayinevinin tum kitaplari Master Education'da.`,
-    alternates: { canonical: `/yayinevleri/${slug}` },
+    alternates: { canonical: `${baseUrl}/yayinevleri/${slug}` },
   };
 }
 

@@ -1,14 +1,17 @@
+// Satici sicil bilgileri — 6502 sayili Tuketicinin Korunmasi Hakkinda Kanun ve
+// Mesafeli Sozlesmeler Yonetmeligi geregi sozlesme ve faturada bulunmasi
+// gereken alanlar. Production icin `BRAND_TAX_OFFICE`, `BRAND_TAX_NUMBER`,
+// `BRAND_MERSIS_NUMBER` env'leri ile override et. Bos kalirsa ilgili satirlar
+// sozlesme/fatura sablonlarinda atlanir (crash yok), ama yasal gereklilik karsilanmaz.
 export const BRAND = {
   name: "Master Education",
   phone: "0 539 411 65 95",
   whatsapp: "https://wa.me/905394116595",
   email: "info@mastereducation.com.tr",
   address: "Turkiye",
-  // Satici sicil bilgileri — gercek e-Arsiv / e-Fatura entegrasyonu yapilana
-  // kadar placeholder. Canliya gecmeden once dogru degerlerle doldurulmali.
-  taxOffice: "",
-  taxNumber: "",
-  mersisNumber: "",
+  taxOffice: process.env.BRAND_TAX_OFFICE ?? "",
+  taxNumber: process.env.BRAND_TAX_NUMBER ?? "",
+  mersisNumber: process.env.BRAND_MERSIS_NUMBER ?? "",
 } as const;
 
 export const COLORS = {

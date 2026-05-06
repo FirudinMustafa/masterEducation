@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         // ayirt edemez.) Audit'e bilgi düş — admin gerçek aktiviteyi görür.
         logAudit({
           actorId: existing.id,
-          action: "USER_PROFILE_UPDATE",
+          action: "AUTH_REGISTER_ATTEMPT_EXISTING",
           entityType: "user",
           entityId: existing.id,
           metadata: {
