@@ -11,7 +11,7 @@
 | Faz 1 | Production blockers (is mantigi + guvenlik) | ✅ 2026-04-24 (1.1 + 1.4 sonraya) |
 | Faz 2 | Admin & bayi eksikleri | ✅ 2026-04-24 |
 | Faz 3 | Audit, polish, UX | ✅ 2026-04-24 |
-| Faz 4 | Entegrasyon & olcek (odeme, SMTP, kargo, deploy) | ⏳ (sadece 4.5 bitti) |
+| Faz 4 | Entegrasyon & olcek (odeme, SMTP, kargo, deploy) | ✅ kod-hazır 2026-05-06 (canlı sandbox env-bağımlı) |
 | Faz 5 | Internal polish (UX + security + email verify) | ✅ 2026-04-24 |
 | Faz 6 | Final eksikler (panel UX + cron + PDF) | ✅ 2026-04-26 |
 | Faz 7 | Adres il+ilçe + admin user anonymize | ✅ 2026-04-26 |
@@ -27,6 +27,7 @@
 | Faz 16 | Güvenlik denetimi & sertleştirme | ✅ 2026-04-26 |
 | Bölüm 1 | Storefront + Public/Account/Dealer API + Lib production audit | ✅ 2026-05-06 |
 | Bölüm 2 | Admin paneli + Bayi paneli + DB + OWASP tur 3 | ✅ 2026-05-06 |
+| Bölüm 3 | Faz 4 entegrasyonlar + QA + ops (RUNBOOK/RECOVERY) + P2/P3 batch fix | ✅ 2026-05-06 |
 
 ---
 
@@ -176,15 +177,17 @@ Production'a gitmeden once kapanmasi sart. Odeme ve SMTP sonraya birakildi (Faz 
 
 ## FAZ 4 — Entegrasyon, Olcek, Deployment
 
-- [ ] **4.1** **SMTP (Resend) entegrasyonu**
-  - [ ] `.env`'e `RESEND_API_KEY` + `SMTP_FROM`
-  - [ ] `src/lib/email.ts` — Resend SDK ya da SMTP modunda calissin (fallback yine DRYRUN)
-  - [ ] Canli gonderim ile sifre reset, bayi basvuru, siparis onayi, status degisikligi test
-- [ ] **4.2** **Odeme gateway** (Iyzico onerilen)
-  - [ ] Sandbox entegrasyon
-  - [ ] 3DS + taksit + iade akislari
-  - [ ] Canliya gecis + webhook signature verify
-  - [ ] Mock endpoint'ini tamamen devre disi birak
+- [x] **4.1** **SMTP (Resend) entegrasyonu** ✅ 2026-05-06 (kod-hazır; canlı test deploy öncesi RUNBOOK §1.1)
+  - [x] `.env.example`'da `RESEND_API_KEY` + `SMTP_FROM` dokümante
+  - [x] `src/lib/email.ts` — DRYRUN dev/staging only; production'da SMTP eksik = `console.error` warn (Bölüm 1 P1-LIB-3)
+  - [x] 10 template `escapeHtml()` ile XSS-safe (Faz 17)
+  - [ ] **Canlı sandbox doğrulama** — env-bağımlı (RUNBOOK pre-deploy)
+- [x] **4.2** **Odeme gateway** (Iyzico) ✅ 2026-05-06 (commit `10d0db5` — kod-hazır)
+  - [x] `src/lib/adapters/iyzico.ts` — PKI HMAC-SHA1 init + HMAC-SHA1 callback verify + HMAC-SHA256 webhook verify + refund
+  - [x] `src/app/api/payments/iyzico/init|callback|webhook/route.ts` — atomic claim + idempotency
+  - [x] Mock endpoint prod'da 404 (önceden 403)
+  - [x] OrderEvent.PAYMENT_* event'leri yazılır
+  - [ ] **Sandbox 4 senaryo + iade canlı testi** — env-bağımlı (RUNBOOK pre-deploy)
 - [x] **4.3a** **Kargo takibi altyapisi (A — manuel ama tam)** ✅ 2026-04-24
   - Migration `20260424030000_add_order_events_tracking` — `CargoCarrier` enum (Aras/Yurtici/MNG/PTT/Surat/Kolay Gelsin/HepsiJet/Trendyol/Other), `OrderEventType` enum, `OrderEvent` tablosu, `deliveredAt`, `estimatedDeliveryAt`, `trackingCarrierName`
   - `src/lib/cargo-carriers.ts` — 9 firma + gercek takip URL template'leri
@@ -193,27 +196,31 @@ Production'a gitmeden once kapanmasi sart. Odeme ve SMTP sonraya birakildi (Faz 
   - Email template: kargo firmasi, takip no, ETA, iki buton (kargo sitesi + bizim takip sayfasi)
   - Siparis olusturma -> `CREATED` event otomatik
   - `scripts/backfill-order-events.ts` — gecmis 17 siparis icin 43 event backfill edildi
-- [ ] **4.3b** **Gercek kargo API entegrasyonu (B — ucretli servis)**
-  - Shipentegra API key (onerilen) veya dogrudan Aras/Yurtici API
-  - `src/lib/adapters/shipping.ts` — mock yerine Shipentegra adapter
-  - Webhook: `/api/webhooks/shipping` — kargo firmasinin statu push'u `OrderEvent` olarak yazilir
-  - Vercel Cron: 30 dkda bir SHIPPED siparis statu sync
-  - Detaylar: `docs/ROADMAP.md#4-3b` (bu madde)
-- [ ] **4.4** Rate-limit'i Redis'e tasi (Railway Redis addon) — horizontal scaling hazirligi
+- [x] **4.3b** **Gercek kargo API entegrasyonu (Shipentegra)** ✅ 2026-05-06 (commit `10d0db5` — kod-hazır)
+  - [x] `src/lib/adapters/shipping.ts` — Shipentegra real adapter (quote/createLabel/fetchTracking/webhook verify) + Mock fallback
+  - [x] `/api/webhooks/shipping` — HMAC-SHA256 verify + occurredAt dedupe → OrderEvent upsert
+  - [x] `/api/cron/sync-shipping-tracking` (vercel.json `*/30 * * * *`)
+  - [ ] **9 carrier live URL doğrulama** — env-bağımlı (RUNBOOK pre-deploy)
+- [x] **4.4** Rate-limit Upstash Redis adapter ✅ 2026-05-06 (commit `10d0db5`)
+  - [x] `src/lib/rate-limit.ts` — env varsa Upstash REST pipeline (sliding window ZADD/ZCARD), yoksa in-memory fallback
+  - [x] `rateLimitAsync()` API + `rateLimitBackend()` diagnostic
+  - [ ] **Upstash hesabı + env set** — env-bağımlı (RUNBOOK pre-deploy)
 - [x] **4.5** Ust klasor temizligi ✅ 2026-04-24
   - `thumbs.zip` (5.88 GB) → `211 urun gorselsiz/archive/thumbs-source.zip` (silmedim, tasidim — geri alinabilir)
   - `Prdocut.csv` + `ProductMapping.csv` seed icin gerekli, korundu
   - Ust klasor 5.9 GB → 4 MB indi
-- [ ] **4.6** Observability
-  - [ ] Sentry (veya Logtail/Axiom) — server + client error
-  - [ ] ErrorLog tablosu + Sentry ayni anda
-  - [ ] Slack/Email webhook: critical error bildirimi
-- [ ] **4.7** **Deployment — Railway**
-  - [ ] Project setup, Postgres addon, env vars
-  - [ ] Custom domain + SSL
-  - [ ] Cron: expired PaymentSession cleanup (15 dk sonrasinda PENDING olanlari EXPIRED'a cek)
-  - [ ] Cron: expired PasswordResetToken temizle
-  - [ ] `.github/workflows/` CI pipeline (lint + typecheck + test)
+- [x] **4.6** Observability ✅ 2026-05-06 (commit `10d0db5`)
+  - [x] `src/lib/sentry.ts` — Envelope API direkt, DSN yoksa no-op, PII scrubber (password/token/auth/email/phone redact)
+  - [x] `src/lib/error-log.ts` Sentry hook (DB + Sentry paralel, ne biri ne diğeri caller'i bloklar)
+  - [x] `.env.example` `SLACK_ALERT_WEBHOOK` dokümante
+  - [ ] **Sentry hesabı + DSN** — env-bağımlı (RUNBOOK pre-deploy)
+- [x] **4.7** **Deployment — Vercel** ✅ 2026-05-06 (CI scaffold)
+  - [x] `vercel.json` cron config (4 mevcut + sync-shipping-tracking eklendi)
+  - [x] `.github/workflows/ci.yml` lint + typecheck + vitest + integration + Playwright + bolum3 smoke
+  - [x] `/api/health` endpoint — uptime monitor için
+  - [x] `docs/RUNBOOK.md` deploy/rollback/incident playbook
+  - [x] `docs/RECOVERY.md` RTO/RPO matrisi + 5 senaryo playbook
+  - [ ] **Custom domain + SSL + canary deploy** — Vercel dashboard adımı (RUNBOOK §2.3)
 
 ---
 
@@ -682,4 +689,6 @@ Bölüm 2 sonu — kod tabanı production-ready. Aşağıdakiler **Bölüm 3** k
 - **2026-04-26 (gece/6):** Faz 16 — güvenlik sertleştirme. (1) Open redirect (callbackUrl) — `safeCallbackUrl` helper, /giris + /kayit + login-gate'te uygulandı, 10 unit test. (2) Dealer belgeleri public/uploads → private/uploads (8 mevcut dosya migrate edildi, .gitignore güncellendi); auth-gated `/api/dealer/documents/[id]/download` endpoint (admin veya sahip-bayi only, path traversal pattern kontrolü). (3) Register email enumeration — var-olan email için bile generic 201 + audit log; rate limit 10→5/saat. (4) Forgot password timing — yok-email için `timingSafeNoop` (50-150ms artificial work). (5) JSON-LD XSS koruması — `</script>` injection için `<>&` unicode escape. 95/95 vitest + 6/6 e2e.
 - **2026-04-26 (gece/7):** Faz 17 — güvenlik denetimi tur 2 (derin saldırı vektörleri). (1) Email change account takeover — currentPassword zorunlu, bcrypt verify, 403 + audit. (2) Reset/verify token DB hash — SHA-256 (`token-hash.ts`), DB breach koruma; verify TTL 24h→1h. (3) Audit log auto-redact — `sanitizeAuditMetadata()` recursive helper, password/token/secret/card pattern'leri `[REDACTED]`. (4) Tracking enumeration — per-IP 30/saat rate limit + `maskShippingName()`. (5) Email template HTML injection — 8 template'te `escapeHtml()`. (6) NEXTAUTH_SECRET min 16→32. 113/113 vitest + 9/9 e2e.
 - **2026-05-06:** **Bölüm 1 production audit** — storefront 31 route + public/account/dealer 33 endpoint + 36 lib modülü statik+dinamik+regresyon turu. P0 yok. 10 P1 / 11 P2 / 10 P3 bulgu (`docs/PRODUCTION_AUDIT_P1.md`, `docs/API_INVENTORY_P1.md`). Uygulanan P1 fix'leri: (1) **auth.ts timing attack** — missing-user dalında dummy bcrypt; (2) **auth.ts per-IP rate-limit** — `login:ip:<ip>` 30/15min eklendi; (3) **email.ts prod silent dryrun** — production'da SMTP eksikse `console.error` + Resend sandbox fallback yalnız non-prod'a kısıtlandı; (4) **env.ts NEXTAUTH_URL** — production'da zorunlu; (5) **register audit action** — `AUTH_REGISTER_ATTEMPT_EXISTING` yeni action; (6) **kategoriler/yayinevleri canonical** — relative → absolute URL; (7) **email-verification atomic** — invalidate+create artık tek `prisma.$transaction`; (8) **constants.ts BRAND.tax\*** — env override (`BRAND_TAX_OFFICE`/`BRAND_TAX_NUMBER`/`BRAND_MERSIS_NUMBER`). 159/159 vitest stabil + tsc temiz. P2/P3 + admin paneli + security tur 3 + entegrasyonlar **Bölüm 2**.
+- **2026-05-06 (akşam):** **Bölüm 3 production audit + Faz 4 entegrasyon altyapısı** (commit `10d0db5`) — Faz 4 hesap-bağımlı tüm entegrasyonların kod tarafı + Bölüm 1+2'nin ertelenmiş P2/P3 batch fix'i + RUNBOOK + RECOVERY + final docs. **Faz 4 alt maddeleri**: (4.1 SMTP Resend canlı doğrulama → kod-hazır, 10 template escapeHtml; 4.2 Iyzico adapter PKI HMAC-SHA1 init + HMAC-SHA1 callback verify + HMAC-SHA256 webhook verify + refund + 3 route init/callback/webhook + idempotency atomic claim + Mock prod 404; 4.3b Shipentegra adapter quote/createLabel/fetchTracking + `/api/webhooks/shipping` HMAC-SHA256 + `/api/cron/sync-shipping-tracking` 30 dk; 4.4 Upstash Redis adapter env varsa REST pipeline ZADD/ZCARD sliding window + `rateLimitAsync()`; 4.6 Sentry envelope adapter DSN yoksa no-op + PII scrubber + `error-log.ts` hook; 4.7 `/api/health` endpoint + ci.yml Playwright + bolum3 smoke). **P2/P3 batch fix**: (P2-LIB-1 safe-callback decode-once + control-char + 5 yeni test; P2-API-2 dealer/bulk-order try/catch generic 500; P2-PAGE-1..4 4 yeni loading skeleton; P2-DB-2 Order.deletedAt soft-delete + index; P2-DB-3 DealerLedger composite [dealerId, createdAt DESC]; P3-API-1 bulk-image rate-limit; P3-API-2 SUSPENDED dealer 409; P3-A09-1 audit WeakSet + max depth 8; P3-BAYI-1 filename normalize; P3-DB-1..4 4 missing index AuditLog/Review/OrderEvent/Dealer). Migration `20260506190000_p2_p3_indexes_and_order_softdelete` Neon prod DB'ye uygulandı. **Operasyonel**: `docs/RUNBOOK.md` 10 maddelik pre-deploy + deploy/rollback + secret rotation + sev1/2/3 incident playbook + KVKK/DSAR; `docs/RECOVERY.md` RTO/RPO matrisi + 5 senaryo (data loss / charge-back / compromised admin / leaked secret / DB corruption) + tatbikat tablosu + iletişim plan. `.env.example` Iyzico/Shipentegra/Upstash/Sentry/Slack/BRAND_TAX_* genişletildi; `scripts/check-prod-env.ts` 8 yeni kontrol; `scripts/smoke-bolum3-final.ts` 8 endpoint smoke. **Test baseline**: vitest **164/164** ✓ (önceki 159 + 5 yeni safe-callback) + tsc temiz + npm audit fix uygulandı (hono moderate düştü; kalan 5 vuln dev-only postcss + prisma transitive — Next downgrade engelli, kabul edilmiş risk). Final docs: `docs/PRODUCTION_AUDIT_FINAL.md` + `docs/SECURITY_AUDIT_FINAL.md` (3 turun konsolide tablosu, 27/29 OWASP fix + 2 gerekçeli kabul). **Hesap-bağımlı kalan canlı doğrulamalar** (Resend 10 template / Iyzico 4 senaryo + iade / Shipentegra 9 carrier URL / Upstash + Sentry env aktivasyonu / Lighthouse + k6 + axe ölçüm / backup tatbikatı): RUNBOOK pre-deploy adımlarına taşındı. Kod tabanı **0 P0 / 0 P1 açık** ile production-ready.
+
 - **2026-05-06 (öğleden sonra):** **Bölüm 2 production audit** — admin paneli (~30 sayfa + 50 endpoint) + bayi paneli + Prisma schema/migrations + OWASP ASVS L2 tur 3. **P0 ve P1 yok** — Faz 16+17 + Bölüm 1 sonrası kod tabanı sertleşmiş. 7 P2 / 11 P3 bulgu (`docs/PRODUCTION_AUDIT_P2.md`, `docs/API_INVENTORY_P2.md`, `docs/SECURITY_AUDIT_P2.md`). Uygulanan fix: **`accounting/export` audit log eklendi** (P2-API-1 / P2-A09-1 — KVKK uyumu için bulk PII ihracı iz bırakır; yeni `ACCOUNTING_EXPORT` audit action). Doğrulamalar: 45/45 admin endpoint `requireRole("ADMIN")` ilk satır + layout-level redirect, 11/11 bulk endpoint MAX_AFFECTED + Zod array.max(), 7 `prisma.$queryRaw` callsite'ı parameterized (Prisma.sql), 0 server actions kullanımı, A01-A10 + open redirect 10 payload + XSS + CSRF + path traversal + prototype pollution **PASS**. `npm audit --omit=dev` 3 moderate dev-only (`@hono/node-server`, `hono` via `@prisma/dev`); prod runtime risk yok ama `prisma` 6.19.3 (semver major) Bölüm 3 deploy hazırlığında. 159/159 vitest stabil + tsc temiz. Faz 4 entegrasyonları + final QA + P2/P3 batch fix **Bölüm 3**.
