@@ -26,6 +26,7 @@
 | Faz 15 | SKU → ISBN UI rename (label-only) | ✅ 2026-04-26 |
 | Faz 16 | Güvenlik denetimi & sertleştirme | ✅ 2026-04-26 |
 | Bölüm 1 | Storefront + Public/Account/Dealer API + Lib production audit | ✅ 2026-05-06 |
+| Bölüm 2 | Admin paneli + Bayi paneli + DB + OWASP tur 3 | ✅ 2026-05-06 |
 
 ---
 
@@ -574,9 +575,48 @@ Hacker bakışıyla full saldırı yüzeyi tarandı. Bulgular OWASP framework'ü
 
 ---
 
-## Bölüm 2 devir notu (2026-05-06)
+## Bölüm 3 devir notu (2026-05-06)
 
-Bölüm 1 P1'leri kapatıldı; aşağıdakiler **Bölüm 2** kapsamında:
+Bölüm 2 sonu — kod tabanı production-ready. Aşağıdakiler **Bölüm 3** kapsamında:
+
+### Faz 4 entegrasyonları (canlıya çıkış öncesi)
+- **4.1 SMTP/Resend** canlı doğrulama (Bölüm 1: misconfig tespiti aktif)
+- **4.2 Iyzico/Param** sandbox + 3DS + iade + signature verify
+- **4.3b Shipentegra** adapter + webhook + cron sync
+- **4.4 Upstash Redis** rate-limit (in-memory'den geçiş — Bölüm 1 P1-DEPLOY-2)
+- **4.6 Sentry/Logtail** observability (`error-log.ts` + slack webhook)
+- **4.7 Vercel deploy** — proje setup + cron + custom domain + SSL + CI
+
+### Final QA (5 günlük sprint)
+- **E2E Playwright golden path** × 3 persona (misafir/üye/bayi)
+- **Loading/error/404** patikası tüm route'larda görsel doğrulama
+- **Responsive** (375/768/1280) — sticky overlap, focus trap, scroll lock
+- **A11y** — heading sırası, aria-label, focus ring, klavye nav, NVDA+VoiceOver smoke
+- **Performance** — Lighthouse 90+ tüm sayfalarda; Next 16 turbopack bundle analysis
+- **Coupon 21. denemede 429** + forgot-password 20 timing ölçüm + callback bypass 10 payload (kanıt)
+
+### Bölüm 1 + Bölüm 2 P2/P3 batch fix
+- P2-DB-1: `searchDoc` schema sync (`Unsupported("tsvector")`)
+- P2-DB-2: Order soft-delete (`deletedAt`) + admin endpoint update
+- P2-DB-3: `DealerLedger(dealerId, createdAt DESC)` composite index
+- P2-BAYI-1: `/bayi/siparisler` pagination
+- P3-DB-1..4: `AuditLog(action)`, `Review(productId,status)`, `OrderEvent(actorId)`, `Dealer(status)` index'leri
+- P3-API-1..4: `bulk-image-upload` rate-limit, SUSPENDED dealer PATCH 409, bulk last-admin guard, audit metadata trim
+- P3-A05-1: nonce-based CSP (Next.js destek bekleniyor)
+- P3-A09-1: `audit.ts` recursive sanitize WeakSet + max depth 8
+- P3-BAYI-1: `dealer/documents` upload `origName` filename normalize
+
+### Bölüm 1'in 2 bekleyen P1'i
+- **P1-PAGE-2**: `emailVerified === null` user için login engeli (UX kararı bekliyor)
+- **P1-DEPLOY-2**: Redis rate-limit (Faz 4.4 ile)
+
+### Yapısal kararlar (UX'ten beklenen — Bölüm 3 başında)
+- emailVerified zorunluluğu CUSTOMER login için
+- Order soft-delete + 10 yıl arşiv saklama (Türkiye yasası)
+- Bayi statement pagination limit
+- NextAuth v5 stable'a yükseltme zamanlaması
+
+### Bölüm 2 dışı kalan eski Bölüm 2 devir notu kalıntıları (Bölüm 1 sonu yazılmıştı):
 
 ### Kapsam dışı kalan kod alanları
 - **`src/app/admin/**`** ve **`src/app/api/admin/**`** — 60+ endpoint, 30+ sayfa. Mass-assignment, IDOR, audit, rol-sızıntısı, bulk endpoint güvenlik vektörleri.
@@ -642,3 +682,4 @@ Bölüm 1 P1'leri kapatıldı; aşağıdakiler **Bölüm 2** kapsamında:
 - **2026-04-26 (gece/6):** Faz 16 — güvenlik sertleştirme. (1) Open redirect (callbackUrl) — `safeCallbackUrl` helper, /giris + /kayit + login-gate'te uygulandı, 10 unit test. (2) Dealer belgeleri public/uploads → private/uploads (8 mevcut dosya migrate edildi, .gitignore güncellendi); auth-gated `/api/dealer/documents/[id]/download` endpoint (admin veya sahip-bayi only, path traversal pattern kontrolü). (3) Register email enumeration — var-olan email için bile generic 201 + audit log; rate limit 10→5/saat. (4) Forgot password timing — yok-email için `timingSafeNoop` (50-150ms artificial work). (5) JSON-LD XSS koruması — `</script>` injection için `<>&` unicode escape. 95/95 vitest + 6/6 e2e.
 - **2026-04-26 (gece/7):** Faz 17 — güvenlik denetimi tur 2 (derin saldırı vektörleri). (1) Email change account takeover — currentPassword zorunlu, bcrypt verify, 403 + audit. (2) Reset/verify token DB hash — SHA-256 (`token-hash.ts`), DB breach koruma; verify TTL 24h→1h. (3) Audit log auto-redact — `sanitizeAuditMetadata()` recursive helper, password/token/secret/card pattern'leri `[REDACTED]`. (4) Tracking enumeration — per-IP 30/saat rate limit + `maskShippingName()`. (5) Email template HTML injection — 8 template'te `escapeHtml()`. (6) NEXTAUTH_SECRET min 16→32. 113/113 vitest + 9/9 e2e.
 - **2026-05-06:** **Bölüm 1 production audit** — storefront 31 route + public/account/dealer 33 endpoint + 36 lib modülü statik+dinamik+regresyon turu. P0 yok. 10 P1 / 11 P2 / 10 P3 bulgu (`docs/PRODUCTION_AUDIT_P1.md`, `docs/API_INVENTORY_P1.md`). Uygulanan P1 fix'leri: (1) **auth.ts timing attack** — missing-user dalında dummy bcrypt; (2) **auth.ts per-IP rate-limit** — `login:ip:<ip>` 30/15min eklendi; (3) **email.ts prod silent dryrun** — production'da SMTP eksikse `console.error` + Resend sandbox fallback yalnız non-prod'a kısıtlandı; (4) **env.ts NEXTAUTH_URL** — production'da zorunlu; (5) **register audit action** — `AUTH_REGISTER_ATTEMPT_EXISTING` yeni action; (6) **kategoriler/yayinevleri canonical** — relative → absolute URL; (7) **email-verification atomic** — invalidate+create artık tek `prisma.$transaction`; (8) **constants.ts BRAND.tax\*** — env override (`BRAND_TAX_OFFICE`/`BRAND_TAX_NUMBER`/`BRAND_MERSIS_NUMBER`). 159/159 vitest stabil + tsc temiz. P2/P3 + admin paneli + security tur 3 + entegrasyonlar **Bölüm 2**.
+- **2026-05-06 (öğleden sonra):** **Bölüm 2 production audit** — admin paneli (~30 sayfa + 50 endpoint) + bayi paneli + Prisma schema/migrations + OWASP ASVS L2 tur 3. **P0 ve P1 yok** — Faz 16+17 + Bölüm 1 sonrası kod tabanı sertleşmiş. 7 P2 / 11 P3 bulgu (`docs/PRODUCTION_AUDIT_P2.md`, `docs/API_INVENTORY_P2.md`, `docs/SECURITY_AUDIT_P2.md`). Uygulanan fix: **`accounting/export` audit log eklendi** (P2-API-1 / P2-A09-1 — KVKK uyumu için bulk PII ihracı iz bırakır; yeni `ACCOUNTING_EXPORT` audit action). Doğrulamalar: 45/45 admin endpoint `requireRole("ADMIN")` ilk satır + layout-level redirect, 11/11 bulk endpoint MAX_AFFECTED + Zod array.max(), 7 `prisma.$queryRaw` callsite'ı parameterized (Prisma.sql), 0 server actions kullanımı, A01-A10 + open redirect 10 payload + XSS + CSRF + path traversal + prototype pollution **PASS**. `npm audit --omit=dev` 3 moderate dev-only (`@hono/node-server`, `hono` via `@prisma/dev`); prod runtime risk yok ama `prisma` 6.19.3 (semver major) Bölüm 3 deploy hazırlığında. 159/159 vitest stabil + tsc temiz. Faz 4 entegrasyonları + final QA + P2/P3 batch fix **Bölüm 3**.

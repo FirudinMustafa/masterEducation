@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
+import { logAudit } from "@/lib/audit";
 import { ordersToCsv, orderItemsToCsv } from "@/lib/adapters/accounting";
 import {
   createBrandedWorkbook,
@@ -37,6 +38,21 @@ export async function GET(req: NextRequest) {
     include: {
       items: true,
       user: { include: { dealer: true } },
+    },
+  });
+
+  // Bulk PII ihrac iz biraksin — KVKK + ic sorusturma icin admin ne ihrac etti?
+  logAudit({
+    actorId: gate.session.user.id,
+    action: "ACCOUNTING_EXPORT",
+    entityType: "order",
+    entityId: "bulk",
+    metadata: {
+      type,
+      format,
+      from: from ?? null,
+      to: to ?? null,
+      orderCount: orders.length,
     },
   });
 
