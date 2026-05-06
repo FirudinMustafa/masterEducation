@@ -162,14 +162,14 @@
 
 | ID | Önce | Aksiyon | Commit |
 |---|---|---|---|
-| P1-LIB-1 | timing leak | dummy bcrypt | _aşağıda_ |
-| P1-LIB-2 | per-IP yok | ek limit | _aşağıda_ |
-| P1-LIB-3 | silent dryrun | prod warn | _aşağıda_ |
-| P1-LIB-4 | NEXTAUTH_URL opt | prod required | _aşağıda_ |
-| P1-API-1 | yanlış audit action | new action | _aşağıda_ |
-| P1-PAGE-1 | rel canonical | abs URL | _aşağıda_ |
-| P1-LIB-5 | non-atomic verify | $transaction | _aşağıda_ |
-| P1-DEPLOY-1 | BRAND.tax* boş | env override | _aşağıda_ |
+| P1-LIB-1 | timing leak | dummy bcrypt | c716e2f |
+| P1-LIB-2 | per-IP yok | ek limit | c716e2f |
+| P1-LIB-3 | silent dryrun | prod warn | c716e2f |
+| P1-LIB-4 | NEXTAUTH_URL opt | prod required | c716e2f |
+| P1-API-1 | yanlış audit action | new action | c716e2f |
+| P1-PAGE-1 | rel canonical | abs URL | c716e2f |
+| P1-LIB-5 | non-atomic verify | $transaction | c716e2f |
+| P1-DEPLOY-1 | BRAND.tax* boş | env override | c716e2f |
 | P1-PAGE-2 | unverified login | (Bölüm 2 — UX kararı bekliyor) | — |
 | P1-DEPLOY-2 | rate-limit RAM | Roadmap 4.4 (Bölüm 2) | — |
 
