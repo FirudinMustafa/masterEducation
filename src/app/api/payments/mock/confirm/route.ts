@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { paymentConfirmSchema, flattenZodError } from "@/lib/validations";
-import { mockPaymentsEnabled } from "@/lib/env";
+import { mockPaymentsEnabled, env } from "@/lib/env";
+import {
+  queueEmail,
+  templatePaymentSucceeded,
+  templatePaymentFailed,
+} from "@/lib/email";
+import { BRAND } from "@/lib/constants";
 
 /**
  * Mock 3D Secure confirmation.
@@ -41,7 +47,18 @@ export async function POST(req: NextRequest) {
 
   const ps = await prisma.paymentSession.findUnique({
     where: { token },
-    include: { order: { select: { id: true, orderNumber: true, status: true } } },
+    include: {
+      order: {
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          total: true,
+          shippingName: true,
+          user: { select: { email: true, name: true } },
+        },
+      },
+    },
   });
   if (!ps) {
     return NextResponse.json(
@@ -109,6 +126,37 @@ export async function POST(req: NextRequest) {
       throw err;
     }
 
+    // E3 — odeme basarili: musteriye + admin'e mail.
+    after(() => {
+      const customerEmail = ps.order.user?.email;
+      const customerName = ps.order.shippingName || ps.order.user?.name || "";
+      const total = Number(ps.order.total);
+      if (customerEmail) {
+        const tpl = templatePaymentSucceeded({
+          orderNumber: ps.order.orderNumber,
+          customerName,
+          total,
+          cardLast4: ps.cardLastFour,
+          cardBrand: ps.cardBrand,
+        });
+        queueEmail({ ...tpl, to: customerEmail });
+      }
+      const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
+      if (adminTo) {
+        const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+        const adminTpl = templatePaymentSucceeded({
+          orderNumber: ps.order.orderNumber,
+          customerName,
+          total,
+          cardLast4: ps.cardLastFour,
+          cardBrand: ps.cardBrand,
+          forAdmin: true,
+          panelUrl: `${base}/admin/siparisler/${ps.order.id}`,
+        });
+        queueEmail({ ...adminTpl, to: adminTo });
+      }
+    });
+
     return NextResponse.json({
       status: "success",
       orderNumber: ps.order.orderNumber,
@@ -154,6 +202,22 @@ export async function POST(req: NextRequest) {
     }
     throw err;
   }
+
+  // E4 — odeme basarisiz: musteriye uyari + retry CTA.
+  after(() => {
+    const customerEmail = ps.order.user?.email;
+    const customerName = ps.order.shippingName || ps.order.user?.name || "";
+    if (customerEmail) {
+      const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+      const tpl = templatePaymentFailed({
+        orderNumber: ps.order.orderNumber,
+        customerName,
+        reason: null,
+        retryUrl: `${base}/iletisim`,
+      });
+      queueEmail({ ...tpl, to: customerEmail });
+    }
+  });
 
   return NextResponse.json({
     status: "failure",

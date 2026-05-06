@@ -2,10 +2,16 @@ import { NextRequest, NextResponse, after } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { dealerApplySchema, flattenZodError } from "@/lib/validations";
-import { queueEmail, templateDealerApplicationReceived } from "@/lib/email";
+import {
+  queueEmail,
+  templateDealerApplicationReceived,
+  templateDealerApplicationAdminNotice,
+} from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
+import { env } from "@/lib/env";
+import { BRAND } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -129,6 +135,23 @@ export async function POST(request: NextRequest) {
       await issueEmailVerificationToken(user.id, name, email);
       const notice = templateDealerApplicationReceived(name);
       queueEmail({ ...notice, to: email });
+
+      // E2 — Admin'e yeni bayi basvurusu bildirimi. Admin panele bakana
+      // kadar saatlerce bekleyebilir; aciklayicidir.
+      const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
+      if (adminTo) {
+        const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+        const adminTpl = templateDealerApplicationAdminNotice({
+          companyName,
+          contactPerson,
+          email,
+          phone,
+          taxOffice,
+          taxNumber,
+          panelUrl: `${base}/admin/bayiler/${user.id}`,
+        });
+        queueEmail({ ...adminTpl, to: adminTo });
+      }
     });
 
     return NextResponse.json(

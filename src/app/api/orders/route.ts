@@ -7,12 +7,14 @@ import { auth } from "@/lib/auth";
 import { generateOrderNumber } from "@/lib/utils";
 import { orderCreateSchema, flattenZodError } from "@/lib/validations";
 import { calculateDealerPrice, getDealerDiscountRules } from "@/lib/pricing";
-import { queueEmail, templateOrderCreated } from "@/lib/email";
+import { queueEmail, templateOrderCreated, templateOrderCreatedAdminNotice } from "@/lib/email";
 import { writeLedgerEntry } from "@/lib/ledger";
 import { detectBrand, lastFour, luhnValid, normalizeCard, validExpiry } from "@/lib/card";
 import { evaluateCoupon } from "@/lib/coupons";
 import { logAudit } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
+import { env } from "@/lib/env";
+import { BRAND } from "@/lib/constants";
 
 const PAYMENT_SESSION_TTL_MS = 15 * 60 * 1000;
 
@@ -458,6 +460,27 @@ export async function POST(req: NextRequest) {
         contractsAcceptedAt
       );
       queueEmail({ ...orderEmail, to: shipping.email });
+
+      // E1 — Admin'e yeni siparis bildirimi. isB2B/isHighValue bayraklari
+      // ayri mail uretmez; tek sablonun icinde rozet/banner ile vurgulanir
+      // (E7+E21 birleştirildi, gurultuyu azaltır).
+      const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
+      if (adminTo) {
+        const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+        const adminTpl = templateOrderCreatedAdminNotice({
+          orderNumber: order.orderNumber,
+          customerName: shipping.fullName,
+          customerEmail: shipping.email,
+          isB2B: !!dealerId,
+          isHighValue: total >= env.HIGH_VALUE_ORDER_THRESHOLD,
+          total,
+          itemCount: items.length,
+          paymentMethod,
+          panelUrl: `${base}/admin/siparisler/${order.id}`,
+          dealerCompany: null,
+        });
+        queueEmail({ ...adminTpl, to: adminTo });
+      }
     });
 
     return NextResponse.json({

@@ -24,6 +24,21 @@ const schema = z.object({
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
   ADMIN_EMAIL: z.string().email().optional(),
+  // Admin'e "yuksek tutar siparis" alarmi tetikleyen esik. Asilinca yeni
+  // siparis bildirim mailinde kirmizi banner cikar (E21 — fraud kontrolu icin).
+  // Default 10000 TL. 0 verirsen tum siparisleri yuksek-tutar sayar (kapatma
+  // amacli kullanma).
+  HIGH_VALUE_ORDER_THRESHOLD: z
+    .string()
+    .optional()
+    .default("10000")
+    .transform((v) => Number(v)),
+  // Yeni kullanici kayitlari icin admin'e bilgilendirme maili (E16 — opt-in).
+  // Default off — kayit cok olan sitelerde gurultu olmasin.
+  ADMIN_NOTIFY_NEW_SIGNUP: z
+    .string()
+    .optional()
+    .transform((v) => v === "true" || v === "1"),
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),

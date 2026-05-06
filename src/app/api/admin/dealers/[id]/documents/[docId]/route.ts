@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { deleteUpload } from "@/lib/uploads";
 import { logAudit } from "@/lib/audit";
 import { flattenZodError } from "@/lib/validations";
+import { queueEmail, templateDealerDocumentReviewed } from "@/lib/email";
 
 const reviewSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED", "PENDING"]),
@@ -78,6 +79,32 @@ export async function PATCH(
       note: reviewNote ?? null,
     },
   });
+
+  // E5 — Bayiye belge incelendi maili. PENDING'e geri donuste mail
+  // gondermiyoruz (admin "yeniden inceleme" yapmis, son karar degil).
+  if (status === "APPROVED" || status === "REJECTED") {
+    after(async () => {
+      const dealer = await prisma.dealer
+        .findUnique({
+          where: { id },
+          select: {
+            companyName: true,
+            user: { select: { email: true } },
+          },
+        })
+        .catch(() => null);
+      if (!dealer?.user?.email) return;
+      const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+      const tpl = templateDealerDocumentReviewed({
+        companyName: dealer.companyName,
+        documentKind: doc.kind,
+        status,
+        note: reviewNote?.trim() || null,
+        panelUrl: `${base}/bayi/belgeler`,
+      });
+      queueEmail({ ...tpl, to: dealer.user.email });
+    });
+  }
 
   return NextResponse.json({
     id: updated.id,

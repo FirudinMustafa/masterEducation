@@ -6,9 +6,11 @@ import { auth } from "@/lib/auth";
 import { generateOrderNumber } from "@/lib/utils";
 import { calculateDealerPrice, getDealerDiscountRules } from "@/lib/pricing";
 import { writeLedgerEntry } from "@/lib/ledger";
-import { queueEmail, templateOrderCreated } from "@/lib/email";
+import { queueEmail, templateOrderCreated, templateOrderCreatedAdminNotice } from "@/lib/email";
 import { flattenZodError, orderCreateSchema } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { env } from "@/lib/env";
+import { BRAND } from "@/lib/constants";
 
 // Shipping schema'sı `orderCreateSchema` ile birebir aynı — TR phone normalize +
 // il/ilçe whitelist refine. Bu sayede normal checkout ile bulk-order arasında
@@ -283,7 +285,7 @@ async function handlePost(req: NextRequest) {
     metadata: { itemCount: items.length, total },
   });
 
-  after(() => {
+  after(async () => {
     const tpl = templateOrderCreated(
       shipping.fullName,
       order.orderNumber,
@@ -295,6 +297,28 @@ async function handlePost(req: NextRequest) {
       total
     );
     queueEmail({ ...tpl, to: shipping.email });
+
+    // E1 (B2B varyant) — admin'e bayi siparis bildirimi.
+    const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
+    if (adminTo) {
+      const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+      const dealer = await prisma.dealer
+        .findUnique({ where: { id: dealerId }, select: { companyName: true } })
+        .catch(() => null);
+      const adminTpl = templateOrderCreatedAdminNotice({
+        orderNumber: order.orderNumber,
+        customerName: shipping.fullName,
+        customerEmail: shipping.email,
+        isB2B: true,
+        isHighValue: total >= env.HIGH_VALUE_ORDER_THRESHOLD,
+        total,
+        itemCount: items.length,
+        paymentMethod: "OPEN_ACCOUNT",
+        panelUrl: `${base}/admin/siparisler/${order.id}`,
+        dealerCompany: dealer?.companyName ?? null,
+      });
+      queueEmail({ ...adminTpl, to: adminTo });
+    }
   });
 
   return NextResponse.json({

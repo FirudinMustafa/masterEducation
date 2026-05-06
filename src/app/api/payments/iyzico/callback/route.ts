@@ -1,7 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { iyzicoAdapter } from "@/lib/adapters/iyzico";
 import { logAudit } from "@/lib/audit";
+import {
+  queueEmail,
+  templatePaymentSucceeded,
+  templatePaymentFailed,
+} from "@/lib/email";
+import { env } from "@/lib/env";
+import { BRAND } from "@/lib/constants";
 
 /**
  * Iyzico 3DS callback — kullanıcı 3DS popup'ında doğrulamayı bitirdiğinde
@@ -44,7 +51,7 @@ export async function POST(req: NextRequest) {
 
   const paymentSession = await prisma.paymentSession.findUnique({
     where: { id: conversationId },
-    include: { order: true },
+    include: { order: { include: { user: { select: { email: true, name: true } } } } },
   });
   if (!paymentSession) {
     return NextResponse.redirect(new URL("/odeme/iptal?reason=session", req.url));
@@ -77,6 +84,39 @@ export async function POST(req: NextRequest) {
         note: `Iyzico 3DS başarılı (paymentId=${paymentId})`,
       },
     });
+
+    // E3 — odeme basarili maili (musteri + admin).
+    after(() => {
+      const customerEmail = paymentSession.order.user?.email;
+      const customerName =
+        paymentSession.order.shippingName || paymentSession.order.user?.name || "";
+      const total = Number(paymentSession.order.total);
+      if (customerEmail) {
+        const tpl = templatePaymentSucceeded({
+          orderNumber: paymentSession.order.orderNumber,
+          customerName,
+          total,
+          cardLast4: paymentSession.cardLastFour,
+          cardBrand: paymentSession.cardBrand,
+        });
+        queueEmail({ ...tpl, to: customerEmail });
+      }
+      const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
+      if (adminTo) {
+        const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+        const adminTpl = templatePaymentSucceeded({
+          orderNumber: paymentSession.order.orderNumber,
+          customerName,
+          total,
+          cardLast4: paymentSession.cardLastFour,
+          cardBrand: paymentSession.cardBrand,
+          forAdmin: true,
+          panelUrl: `${base}/admin/siparisler/${paymentSession.order.id}`,
+        });
+        queueEmail({ ...adminTpl, to: adminTo });
+      }
+    });
+
     return NextResponse.redirect(
       new URL(`/odeme/basarili?orderId=${paymentSession.orderId}`, req.url)
     );
@@ -94,5 +134,23 @@ export async function POST(req: NextRequest) {
     entityId: paymentSession.orderId,
     metadata: { provider: "iyzico", paymentId, status, stage: "callback" },
   });
+
+  // E4 — odeme basarisiz maili (musteri).
+  after(() => {
+    const customerEmail = paymentSession.order.user?.email;
+    const customerName =
+      paymentSession.order.shippingName || paymentSession.order.user?.name || "";
+    if (customerEmail) {
+      const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+      const tpl = templatePaymentFailed({
+        orderNumber: paymentSession.order.orderNumber,
+        customerName,
+        reason: status === "callback_thr" ? "3DS dogrulamasi tamamlanamadi." : null,
+        retryUrl: `${base}/iletisim`,
+      });
+      queueEmail({ ...tpl, to: customerEmail });
+    }
+  });
+
   return NextResponse.redirect(new URL("/odeme/iptal", req.url));
 }
