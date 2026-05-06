@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { reportToSentry } from "@/lib/sentry";
 
 export type ErrorSource = "server" | "client" | "api";
 
@@ -16,6 +17,10 @@ export interface ErrorLogInput {
 /**
  * Fire-and-forget error logger. We never want logging failure to cascade
  * into a second error — warn to console and swallow.
+ *
+ * Faz 4.6: SENTRY_DSN tanımlıysa Sentry envelope'ına da gönderir (DSN
+ * yoksa no-op). DB ve Sentry yazımları paralel; ne biri ne diğeri caller'i
+ * bloklar.
  */
 export function logError(input: ErrorLogInput): void {
   prisma.errorLog
@@ -33,4 +38,13 @@ export function logError(input: ErrorLogInput): void {
     .catch((err) => {
       console.error("[error-log] write failed", err);
     });
+
+  reportToSentry({
+    source: input.source,
+    message: input.message,
+    stack: input.stack ?? null,
+    url: input.url ?? null,
+    userId: input.userId ?? null,
+    userAgent: input.userAgent ?? null,
+  });
 }

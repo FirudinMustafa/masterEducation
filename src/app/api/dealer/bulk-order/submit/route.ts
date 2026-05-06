@@ -33,6 +33,20 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  try {
+    return await handlePost(req);
+  } catch (err) {
+    // P2-API-2: bilinmeyen DB hataları stack/sql metni response body'sine sızabilir.
+    // Generic 500 + server log; gerçek hata Sentry/console'a düşer.
+    console.error("[bulk-order/submit] unhandled", err);
+    return NextResponse.json(
+      { error: "Siparis olusturulamadi.", code: "INTERNAL_ERROR" },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePost(req: NextRequest) {
   const session = await auth();
   if (!session?.user || session.user.role !== "DEALER" || !session.user.dealerId) {
     return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });

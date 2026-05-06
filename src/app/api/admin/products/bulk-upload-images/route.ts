@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
 import { productImageBlobKey } from "@/lib/images";
+import { rateLimit } from "@/lib/rate-limit";
 
 const ALLOWED_MIME = new Map<string, string>([
   ["image/jpeg", "jpg"],
@@ -77,6 +78,16 @@ interface ProcessedFile {
 export async function POST(req: NextRequest) {
   const gate = await requireRole("ADMIN");
   if (!gate.ok) return gate.response;
+
+  // P3-API-1: Per-admin rate-limit (admin bile yanlışlıkla 500-dosya zip
+  // upload'unu döngüye sokarsa Blob + DB üzerinde DoS riski). 10/dk.
+  const rl = rateLimit(`bulk-image-upload:${gate.session.user.id}`, 10, 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Cok hizli toplu yukleme — kisa bir sure bekleyin." },
+      { status: 429 }
+    );
+  }
 
   const dryRun = req.nextUrl.searchParams.get("dryRun") === "1";
 

@@ -109,3 +109,16 @@ jobs:
 
       - name: HTTP scenarios
         run: npm run scenarios
+
+      - name: Health endpoint smoke (Bölüm 3)
+        run: |
+          curl -sSf http://localhost:3000/api/health | jq -e '.components.db == "ok"'
+
+      - name: Bölüm 3 final smoke (8 endpoints)
+        run: SMOKE_BASE=http://localhost:3000 npx tsx scripts/smoke-bolum3-final.ts
+
+      - name: Playwright (browser e2e)
+        run: |
+          npx playwright install --with-deps chromium
+          PW_BASE_URL=http://localhost:3000 npx playwright test --project=chromium
+        continue-on-error: true # browser flake'ler ana akışı bloklamasın

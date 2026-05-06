@@ -127,22 +127,44 @@ const REDACTED = "[REDACTED]";
  * Recursive sanitize: object/array içindeki sensitive key'leri redact et.
  * Defansif — geliştirici metadata'ya `password: "..."` koysa bile DB'ye
  * gitmeden maskeyle değişir.
+ *
+ * P3-A09-1 (Bölüm 2): Cycle + depth guard. WeakSet ile zaten ziyaret edilen
+ * objeleri "[CYCLIC]" ile değiştir; 8 seviyeden derin yapıları "[TOO_DEEP]"
+ * ile keser. Saldırgan kontrollü prototype-pollution payload veya kazara
+ * circular reference (Prisma'nın connect.obj.model.relation gibi) JSON.stringify'da
+ * sonsuz döngü yaratmasın.
  */
-export function sanitizeAuditMetadata(value: unknown): unknown {
+const MAX_DEPTH = 8;
+const CYCLIC = "[CYCLIC]";
+const TOO_DEEP = "[TOO_DEEP]";
+
+function sanitize(
+  value: unknown,
+  seen: WeakSet<object>,
+  depth: number
+): unknown {
   if (value === null || value === undefined) return value;
-  if (Array.isArray(value)) return value.map((v) => sanitizeAuditMetadata(v));
-  if (typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (isSensitiveKey(k)) {
-        out[k] = REDACTED;
-      } else {
-        out[k] = sanitizeAuditMetadata(v);
-      }
-    }
-    return out;
+  if (typeof value !== "object") return value;
+  if (depth > MAX_DEPTH) return TOO_DEEP;
+  if (seen.has(value as object)) return CYCLIC;
+  seen.add(value as object);
+
+  if (Array.isArray(value)) {
+    return value.map((v) => sanitize(v, seen, depth + 1));
   }
-  return value;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (isSensitiveKey(k)) {
+      out[k] = REDACTED;
+    } else {
+      out[k] = sanitize(v, seen, depth + 1);
+    }
+  }
+  return out;
+}
+
+export function sanitizeAuditMetadata(value: unknown): unknown {
+  return sanitize(value, new WeakSet(), 0);
 }
 
 /**

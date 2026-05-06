@@ -39,8 +39,8 @@ model User {
   marketingConsent   Boolean   @default(false)
   marketingConsentAt DateTime?
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   dealer      Dealer?
   orders      Order[]
@@ -73,39 +73,41 @@ model Address {
 // ─── DEALER ───────────────────────────────────────────
 
 model Dealer {
-  id              String              @id @default(cuid())
-  userId          String              @unique
-  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyName     String
-  taxOffice       String
-  taxNumber       String
-  tradeRegNo      String?
-  contactPerson   String?
-  status          DealerStatus        @default(PENDING)
-  paymentTerms    DealerPaymentTerms  @default(OPEN_ACCOUNT)
-  creditLimit     Decimal             @default(0) @db.Decimal(12, 2)
-  currentBalance  Decimal             @default(0) @db.Decimal(12, 2)
-  approvedAt      DateTime?
-  approvedBy      String?
-  rejectionReason String?
-  notes           String?
+  id               String             @id @default(cuid())
+  userId           String             @unique
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName      String
+  taxOffice        String
+  taxNumber        String
+  tradeRegNo       String?
+  contactPerson    String?
+  status           DealerStatus       @default(PENDING)
+  paymentTerms     DealerPaymentTerms @default(OPEN_ACCOUNT)
+  creditLimit      Decimal            @default(0) @db.Decimal(12, 2)
+  currentBalance   Decimal            @default(0) @db.Decimal(12, 2)
+  approvedAt       DateTime?
+  approvedBy       String?
+  rejectionReason  String?
+  notes            String?
   // KolayBi mapping — ilk fatura kesiminde KolayBi'de associate + adres
   // oluşturulur, ID buraya cache'lenir. Sonraki kesimler bu ID'leri kullanır.
-  kolaybiContactId  Int?
-  kolaybiAddressId  Int?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  kolaybiContactId Int?
+  kolaybiAddressId Int?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   discountRules DealerDiscount[]
   ledger        DealerLedger[]
   documents     DealerDocument[]
 
+  // P3-DB-4: admin dashboard `WHERE status=APPROVED` + listing filtreleri.
+  @@index([status])
   @@map("dealers")
 }
 
 enum DealerPaymentTerms {
   OPEN_ACCOUNT // Cari (kredi limiti) — siparis verir, sonradan oder
-  PREPAID      // Pesin (kredi karti / havale) — her siparis ödendiginde gider
+  PREPAID // Pesin (kredi karti / havale) — her siparis ödendiginde gider
 }
 
 enum DealerDocumentKind {
@@ -303,13 +305,13 @@ model Order {
   paymentMethod PaymentMethod @default(CREDIT_CARD)
   paymentStatus PaymentStatus @default(PENDING)
 
-  subtotal     Decimal @db.Decimal(12, 2)
-  discountTotal Decimal @default(0) @db.Decimal(12, 2)
-  couponCode   String?
+  subtotal       Decimal @db.Decimal(12, 2)
+  discountTotal  Decimal @default(0) @db.Decimal(12, 2)
+  couponCode     String?
   couponDiscount Decimal @default(0) @db.Decimal(12, 2)
-  vatTotal     Decimal @default(0) @db.Decimal(12, 2)
-  shippingCost Decimal @default(0) @db.Decimal(10, 2)
-  total        Decimal @db.Decimal(12, 2)
+  vatTotal       Decimal @default(0) @db.Decimal(12, 2)
+  shippingCost   Decimal @default(0) @db.Decimal(10, 2)
+  total          Decimal @db.Decimal(12, 2)
 
   note      String?
   adminNote String?
@@ -332,18 +334,26 @@ model Order {
   contractsAcceptedAt DateTime?
   contractsAcceptedIp String?
 
+  // P2-DB-2 (Bölüm 2): Soft-delete. Türkiye Vergi Usul Kanunu m.253 +
+  // Tüketici Kanunu m.61 — satış kayıtları 10 yıl saklanmalı. Hard-delete
+  // hem yasal denetim izini hem de ledger/invoice referans bütünlüğünü kırar.
+  // Admin endpoint'leri delete yerine `update({ deletedAt: now() })` kullanır;
+  // listing query'leri `where: { deletedAt: null }` filtreler.
+  deletedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  items           OrderItem[]
-  paymentSession  PaymentSession?
+  items            OrderItem[]
+  paymentSession   PaymentSession?
   couponRedemption CouponRedemption?
-  events          OrderEvent[]
-  invoice         Invoice?
+  events           OrderEvent[]
+  invoice          Invoice?
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([deletedAt])
   @@map("orders")
 }
 
@@ -358,6 +368,8 @@ model OrderEvent {
   createdAt DateTime       @default(now())
 
   @@index([orderId, createdAt])
+  // P3-DB-3: admin timeline filtresi (`who did what`) için actorId index'i.
+  @@index([actorId])
   @@map("order_events")
 }
 
@@ -407,6 +419,9 @@ model ProductReview {
   @@unique([productId, userId])
   @@index([productId])
   @@index([status])
+  // P3-DB-2: admin moderation `WHERE productId=? AND status=PENDING` per-product
+  // composite index — listing planlamasında 2 ayrı index intersect yerine 1 scan.
+  @@index([productId, status])
   @@map("product_reviews")
 }
 
@@ -467,33 +482,33 @@ enum PaymentSessionStatus {
 // fatura kesim job'u tetiklenir; başarısız olursa cron retry'lar.
 
 enum InvoiceStatus {
-  PENDING        // henüz gönderilmedi (DRYRUN veya retry beklemede)
-  SENT           // KolayBi'ye başarıyla gönderildi
-  FAILED         // gönderim hata aldı (retry kuyrukta)
-  CANCELLED      // sipariş iptal sonrası fatura kesilmedi/iptal
+  PENDING // henüz gönderilmedi (DRYRUN veya retry beklemede)
+  SENT // KolayBi'ye başarıyla gönderildi
+  FAILED // gönderim hata aldı (retry kuyrukta)
+  CANCELLED // sipariş iptal sonrası fatura kesilmedi/iptal
 }
 
 model Invoice {
-  id              String        @id @default(cuid())
-  orderId         String        @unique
-  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status          InvoiceStatus @default(PENDING)
+  id            String        @id @default(cuid())
+  orderId       String        @unique
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status        InvoiceStatus @default(PENDING)
   // KolayBi tarafındaki belge ID'si (response'dan gelir).
-  externalId      String?
+  externalId    String?
   // Mağaza/sipariş tarafında saklanan PDF URL (KolayBi'den dönerse).
-  pdfUrl          String?
+  pdfUrl        String?
   // Son hata mesajı (FAILED status ile birlikte).
-  errorMessage    String?
+  errorMessage  String?
   // Toplam tutar (snapshot — sipariş güncellenirse fatura değişmesin).
-  totalAmount     Decimal       @db.Decimal(12, 2)
-  currency        String        @default("TRY")
+  totalAmount   Decimal       @db.Decimal(12, 2)
+  currency      String        @default("TRY")
   // Retry/observability
-  attemptCount    Int           @default(0)
-  lastAttemptAt   DateTime?
-  syncedAt        DateTime?     // başarılı gönderim zamanı
+  attemptCount  Int           @default(0)
+  lastAttemptAt DateTime?
+  syncedAt      DateTime? // başarılı gönderim zamanı
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([syncedAt])
@@ -566,12 +581,12 @@ model EmailLog {
 // ─── PASSWORD RESET ──────────────────────────────────
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  token     String   @unique
+  token     String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@map("password_reset_tokens")
@@ -614,6 +629,9 @@ model DealerLedger {
   @@index([dealerId])
   @@index([orderId])
   @@index([createdAt])
+  // P2-DB-3: bayi statement query `WHERE dealerId=? ORDER BY createdAt DESC`
+  // composite — 10K+ ledger entry'de planning + IO kazancı.
+  @@index([dealerId, createdAt(sort: Desc)])
   @@map("dealer_ledger")
 }
 
@@ -665,5 +683,7 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorId])
   @@index([createdAt])
+  // P3-DB-1: admin audit listesi "filter by action" sorgusu.
+  @@index([action])
   @@map("audit_logs")
 }

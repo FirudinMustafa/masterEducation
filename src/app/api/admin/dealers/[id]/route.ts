@@ -42,6 +42,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Bayi bulunamadi." }, { status: 404 });
   }
 
+  // P3-API-2: SUSPENDED dealer field'larını edit etme — admin işletme olarak
+  // askıya alınmış bayinin kredi limit/paymentTerms değiştirilmesini açıkça
+  // engelliyor. Reaktive etmek için status PATCH'i (ayrı endpoint) kullanılır.
+  if (dealer.status === "SUSPENDED") {
+    return NextResponse.json(
+      {
+        error: "Askıya alınmış bayi düzenlenemez. Önce bayiyi yeniden aktive edin.",
+        code: "DEALER_SUSPENDED",
+      },
+      { status: 409 }
+    );
+  }
+
   // PREPAID'a gecisle birlikte kredi limiti sifirlanir (admin tutarsiz gondermisse de
   // burada koruma var; UI da paymentTerms degisince inputu sifirliyor).
   const nextPaymentTerms = parsed.data.paymentTerms ?? dealer.paymentTerms;

@@ -109,6 +109,62 @@ if ((kolaybiKey && !kolaybiCh) || (!kolaybiKey && kolaybiCh)) {
   );
 }
 
+// ─── Brand legal info (Bölüm 1 P1-DEPLOY-1) ───────
+require("BRAND_TAX_OFFICE", "Yasal — Mesafeli Sözleşmeler m.4 vergi dairesi zorunlu.");
+require("BRAND_TAX_NUMBER", "Yasal — vergi numarası zorunlu.");
+require("BRAND_MERSIS_NUMBER", "Yasal — MERSİS numarası zorunlu.");
+
+// ─── Iyzico (Faz 4.2) ─────────────────────────────
+const iyziKey = process.env.IYZICO_API_KEY;
+const iyziSecret = process.env.IYZICO_SECRET_KEY;
+if (!iyziKey || !iyziSecret) {
+  err(
+    "IYZICO_*",
+    "API_KEY ve SECRET_KEY zorunlu — Iyzico olmadan ödeme akışı çalışmaz."
+  );
+}
+if (iyziKey && process.env.IYZICO_BASE_URL?.includes("sandbox")) {
+  warn(
+    "IYZICO_BASE_URL",
+    "Sandbox URL — production için https://api.iyzipay.com olmalı."
+  );
+}
+
+// ─── Shipentegra (Faz 4.3b) ───────────────────────
+if (!process.env.SHIPENTEGRA_API_KEY) {
+  warn(
+    "SHIPENTEGRA_API_KEY",
+    "Bos — Mock kargo adapter aktif. Canlıda gerçek API key zorunlu."
+  );
+}
+if (
+  process.env.SHIPENTEGRA_API_KEY &&
+  !process.env.SHIPENTEGRA_WEBHOOK_SECRET
+) {
+  err(
+    "SHIPENTEGRA_WEBHOOK_SECRET",
+    "API_KEY set ama webhook secret yok — webhook signature verify çalışmaz."
+  );
+}
+
+// ─── Upstash Redis (Faz 4.4) ──────────────────────
+const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
+const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+if (!upstashUrl || !upstashToken) {
+  warn(
+    "UPSTASH_*",
+    "Bos — in-memory rate-limit (serverless'da horizontal scale'de bypass'lanır)."
+  );
+}
+
+// ─── Sentry (Faz 4.6) ─────────────────────────────
+if (!process.env.SENTRY_DSN) {
+  warn(
+    "SENTRY_DSN",
+    "Bos — Sentry'e error gönderilmiyor (sadece DB error_logs)."
+  );
+}
+
 // ─── ADMIN default sifre uyarisi ──────────────────
 if (
   process.env.ADMIN_EMAIL?.toLowerCase() === "admin@mastereducation.com.tr"

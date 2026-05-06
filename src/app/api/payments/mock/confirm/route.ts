@@ -24,10 +24,10 @@ const RACE_ERROR = "PAYMENT_SESSION_RACE";
 
 export async function POST(req: NextRequest) {
   if (!mockPaymentsEnabled()) {
-    return NextResponse.json(
-      { error: "Mock odeme uretimde kapali." },
-      { status: 403 }
-    );
+    // Production'da bu endpoint'in varlığı bile bilgi sızıntısı — 404 ile
+    // route'un mevcut olmadığı izlenimi ver. ENABLE_MOCK_PAYMENTS=true ile
+    // staging'de açılabilir; gerçek prod akışı `/api/payments/iyzico/init`.
+    return new NextResponse(null, { status: 404 });
   }
   const json = await req.json().catch(() => ({}));
   const parsed = paymentConfirmSchema.safeParse(json);
