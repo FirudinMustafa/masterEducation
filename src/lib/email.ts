@@ -1035,6 +1035,353 @@ export function templateDealerDocumentUploadedAdminNotice(args: {
   };
 }
 
+// ─── P1: Guvenlik & UX kritik bildirimler ────────────────────────
+
+function formatWhen(d: Date): string {
+  return d.toLocaleString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * E8 — Sifre degisti → kullaniciya guvenlik bildirimi.
+ * "Bu siz degildiyseniz" CTA + IP/UA ile ATO algilamasi.
+ */
+export function templatePasswordChanged(args: {
+  name: string;
+  when: Date;
+  ip: string | null;
+  userAgent: string | null;
+}): EmailPayload {
+  const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+  const whenFmt = formatWhen(args.when);
+  return {
+    to: "",
+    subject: "Sifreniz degistirildi",
+    html: wrap({
+      title: "Sifreniz degistirildi",
+      preheader: `Hesabinizin sifresi ${whenFmt} tarihinde degistirildi.`,
+      subtitle: `Merhaba ${args.name}, hesabinizla ilgili guvenlik bildirimi.`,
+      heroAccent: "sky",
+      body: `
+        <p style="margin:0 0 16px 0;">
+          Hesabinizin sifresi
+          <strong style="color:${C.black};">${escapeHtml(whenFmt)}</strong>
+          tarihinde basariyla degistirildi.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("Tarih", whenFmt)}
+              ${args.ip ? detailRow("IP", args.ip, true) : ""}
+              ${args.userAgent ? detailRow("Cihaz", args.userAgent.slice(0, 120)) : ""}
+            </table>
+          </td></tr>
+        </table>
+        ${infoCard(`<strong style="color:${C.rose};">Bu siz degildiyseniz</strong>
+          hemen sifrenizi sifirlayin ve oturumlarinizi kapatin.`)}
+        ${btn(`${base}/sifremi-unuttum`, "Sifremi Sifirla", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * E9 — Email degisti.
+ * `forOldEmail: true` → eski adrese guvenlik uyarisi (revoke CTA — destek).
+ * `forOldEmail: false` → yeni adrese hosgeldin (verification ayrica gelir).
+ */
+export function templateEmailChanged(args: {
+  name: string;
+  oldEmail: string;
+  newEmail: string;
+  when: Date;
+  ip: string | null;
+  forOldEmail: boolean;
+}): EmailPayload {
+  const whenFmt = formatWhen(args.when);
+  const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+  if (args.forOldEmail) {
+    return {
+      to: "",
+      subject: "Email adresiniz degistirildi",
+      html: wrap({
+        title: "Email adresiniz degistirildi",
+        preheader: `Hesabiniza bagli email adresi ${args.newEmail} olarak degistirildi.`,
+        subtitle: `Merhaba ${args.name}, hesabinizla ilgili guvenlik bildirimi.`,
+        heroAccent: "sky",
+        body: `
+          <p style="margin:0 0 14px 0;">
+            Hesabinizin email adresi
+            <strong style="color:${C.black};">${escapeHtml(whenFmt)}</strong>
+            tarihinde degistirildi.
+          </p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+            <tr><td style="padding:18px 22px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                ${detailRow("Eski Email", args.oldEmail)}
+                ${detailRow("Yeni Email", args.newEmail)}
+                ${detailRow("Tarih", whenFmt)}
+                ${args.ip ? detailRow("IP", args.ip, true) : ""}
+              </table>
+            </td></tr>
+          </table>
+          ${infoCard(`<strong style="color:${C.rose};">Bu degisikligi siz yapmadiysaniz</strong>
+            hemen
+            <a href="mailto:${BRAND.email}" style="color:${C.goldDark};text-decoration:none;font-weight:600;">${BRAND.email}</a>
+            uzerinden bize ulasarak hesabinizi geri alabilirsiniz.`)}`,
+      }),
+    };
+  }
+  return {
+    to: "",
+    subject: "Yeni email adresiniz onayda",
+    html: wrap({
+      title: "Yeni email adresiniz",
+      preheader: `Master Education hesabinizda email adresinizi guncellediniz.`,
+      subtitle: `Merhaba ${args.name}, yeni adresinize hos geldiniz.`,
+      heroAccent: "gold",
+      body: `
+        <p style="margin:0 0 14px 0;">
+          Master Education hesabinizda email adresinizi
+          <strong style="color:${C.black};">${escapeHtml(args.newEmail)}</strong>
+          olarak guncellediniz. Hesabin guvenligi icin yeni adresinizi
+          onaylamanizi istiyoruz — onay maili kisa surede gelecek.
+        </p>
+        ${btn(`${base}/hesabim`, "Hesabima Git", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * E10 — Hesap silindi/anonimlestirildi.
+ * KVKK acisindan kullaniciya yasal kanit; silinmeden ONCE gonder
+ * (silindikten sonra adres yok).
+ */
+export function templateAccountDeleted(args: {
+  name: string;
+  mode: "hard" | "anonymize";
+  when: Date;
+}): EmailPayload {
+  const whenFmt = formatWhen(args.when);
+  const isHard = args.mode === "hard";
+  return {
+    to: "",
+    subject: isHard ? "Hesabiniz silindi" : "Hesabiniz anonimlestirildi",
+    html: wrap({
+      title: isHard ? "Hesabiniz silindi" : "Hesabiniz anonimlestirildi",
+      preheader: `Master Education hesabiniz ${whenFmt} tarihinde ${isHard ? "silindi" : "anonimlestirildi"}.`,
+      subtitle: `Merhaba ${args.name}, talebiniz uygulandi.`,
+      heroAccent: isHard ? "rose" : "sky",
+      body: `
+        <p style="margin:0 0 14px 0;">
+          Master Education hesabiniz
+          <strong style="color:${C.black};">${escapeHtml(whenFmt)}</strong>
+          tarihinde
+          <strong style="color:${isHard ? C.rose : C.sky};">${isHard ? "tamamen silindi" : "anonimlestirildi"}</strong>.
+        </p>
+        ${
+          isHard
+            ? `<p style="margin:0 0 14px 0;color:${C.muted};font-size:14px;">
+                Tum kisisel verileriniz (ad, adres, telefon, parola) sistemden
+                kalici olarak silindi. Bu islem geri alinamaz.
+              </p>`
+            : `<p style="margin:0 0 14px 0;color:${C.muted};font-size:14px;">
+                KVKK kapsaminda kisisel verileriniz (ad, email, adres, telefon)
+                sistemden anonimlestirildi. Muhasebe ve yasal kayitlar gerekce
+                ile siparis kayitlariniz tutulmaya devam edecek; ancak hicbiri
+                size geri baglanamaz.
+              </p>`
+        }
+        ${infoCard(`Sorulariniz icin
+          <a href="mailto:${BRAND.email}" style="color:${C.goldDark};text-decoration:none;font-weight:600;">${BRAND.email}</a>
+          uzerinden bize ulasabilirsiniz.<br>
+          Master Education ailesindeki zamaniniz icin tesekkur ederiz.`)}`,
+    }),
+  };
+}
+
+/**
+ * E11 — Siparis iptal edildi.
+ * templateOrderStatusChanged jenerik kullanmak yerine ozel mesaj +
+ * iade bilgisi (kart icin 3-7 is gunu, cari icin ledger kredi).
+ */
+export function templateOrderCancelled(args: {
+  customerName: string;
+  orderNumber: string;
+  total: number;
+  paymentMethod: string;
+  reason: string | null;
+}): EmailPayload {
+  const totalFmt = formatPrice(args.total);
+  const refundInfo =
+    args.paymentMethod === "OPEN_ACCOUNT"
+      ? "Acik hesap bakiyenize iade kredisi otomatik islendi. Bayi panelinden ekstreyi gorebilirsiniz."
+      : args.paymentMethod === "CREDIT_CARD"
+        ? "Kredi karti odemenizin iadesi 3-7 is gunu icinde kart hesabinizda gorunecektir."
+        : "Iade islemi icin destek ekibi sizinle iletisime gececektir.";
+  const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+  return {
+    to: "",
+    subject: `Siparisiniz iptal edildi — ${args.orderNumber}`,
+    html: wrap({
+      title: "Siparisiniz iptal edildi",
+      preheader: `${args.orderNumber} numarali siparisiniz iptal edildi.`,
+      subtitle: `Merhaba ${args.customerName}, siparis durumu degisti.`,
+      heroAccent: "rose",
+      body: `
+        <p style="margin:0 0 14px 0;">
+          <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.orderNumber)}</strong>
+          numarali siparisiniz
+          <strong style="color:${C.rose};">iptal edildi</strong>.
+        </p>
+        ${
+          args.reason
+            ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
+                <tr><td style="padding:14px 18px;background:${C.roseBg};border-left:3px solid ${C.rose};border-radius:8px;">
+                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.rose};">Iptal Gerekcesi</p>
+                  <p style="margin:6px 0 0 0;font-size:14px;color:${C.text};line-height:21px;">${escapeHtml(args.reason)}</p>
+                </td></tr>
+              </table>`
+            : ""
+        }
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("Siparis No", args.orderNumber, true)}
+              <tr><td style="padding-top:8px;color:${C.muted};font-size:13px;">Tutar</td><td style="padding-top:8px;text-align:right;font-size:16px;color:${C.black};font-weight:700;">${escapeHtml(totalFmt)}</td></tr>
+            </table>
+          </td></tr>
+        </table>
+        ${infoCard(`<strong style="color:${C.black};">Iade bilgisi</strong><br>
+          <span style="color:${C.muted};">${escapeHtml(refundInfo)}</span>`)}
+        ${btn(`${base}/hesabim/siparislerim`, "Siparislerimi Goruntule", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * E12 — Bayi kredi limiti degisti.
+ * Artis: success accent, azalma: gold accent.
+ */
+export function templateDealerCreditLimitChanged(args: {
+  companyName: string;
+  oldLimit: number;
+  newLimit: number;
+  reason: string | null;
+}): EmailPayload {
+  const oldFmt = formatPrice(args.oldLimit);
+  const newFmt = formatPrice(args.newLimit);
+  const increased = args.newLimit > args.oldLimit;
+  const diff = Math.abs(args.newLimit - args.oldLimit);
+  const diffFmt = formatPrice(diff);
+  const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+  return {
+    to: "",
+    subject: increased
+      ? "Kredi limitiniz artirildi"
+      : "Kredi limitiniz guncellendi",
+    html: wrap({
+      title: increased ? "Kredi limitiniz artirildi" : "Kredi limitiniz guncellendi",
+      preheader: `${args.companyName} icin yeni limit: ${newFmt}`,
+      subtitle: `${args.companyName} icin cari limit ayarlandi.`,
+      heroAccent: increased ? "success" : "gold",
+      body: `
+        <p style="margin:0 0 16px 0;">
+          <strong style="color:${C.black};">${escapeHtml(args.companyName)}</strong>
+          icin acik hesap kredi limitiniz
+          <strong style="color:${increased ? C.success : C.goldDark};">${increased ? "artirildi" : "guncellendi"}</strong>.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("Eski Limit", oldFmt)}
+              ${detailRow("Yeni Limit", newFmt)}
+              <tr><td style="padding-top:12px;border-top:1px solid ${C.border};color:${C.muted};font-size:13px;">${increased ? "Artis" : "Azalma"}</td><td style="padding-top:12px;border-top:1px solid ${C.border};text-align:right;font-size:16px;color:${increased ? C.success : C.goldDark};font-weight:700;">${escapeHtml(diffFmt)}</td></tr>
+            </table>
+          </td></tr>
+        </table>
+        ${
+          args.reason
+            ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
+                <tr><td style="padding:14px 18px;background:${C.bg};border-left:3px solid ${increased ? C.success : C.gold};border-radius:8px;">
+                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.muted};">Aciklama</p>
+                  <p style="margin:6px 0 0 0;font-size:14px;color:${C.text};line-height:21px;">${escapeHtml(args.reason)}</p>
+                </td></tr>
+              </table>`
+            : ""
+        }
+        ${btn(`${base}/bayi/ekstre`, "Ekstreyi Goruntule", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * E13 — Cari hesap hareketi.
+ * kind: PAYMENT (tahsilat), ADJUSTMENT (manuel duzeltme).
+ */
+export function templateDealerLedgerEntry(args: {
+  companyName: string;
+  kind: "PAYMENT" | "ADJUSTMENT";
+  amount: number;
+  note: string | null;
+  newBalance: number;
+}): EmailPayload {
+  const amountFmt = formatPrice(Math.abs(args.amount));
+  const balanceFmt = formatPrice(args.newBalance);
+  const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+  const isPayment = args.kind === "PAYMENT";
+  // PAYMENT amount: negatif (kredi); ADJUSTMENT amount: + veya -
+  const direction =
+    args.amount < 0
+      ? "Hesabinizdan dustu (alacak)"
+      : "Hesabiniza eklendi (borc)";
+  const subject = isPayment
+    ? `Tahsilatiniz kaydedildi — ${amountFmt}`
+    : `Cari hareket — ${amountFmt}`;
+  return {
+    to: "",
+    subject,
+    html: wrap({
+      title: isPayment ? "Tahsilat kaydedildi" : "Cari hareket islendi",
+      preheader: `${args.companyName} cari hesabinizda yeni hareket var — yeni bakiye ${balanceFmt}`,
+      subtitle: `${args.companyName} icin manuel cari hareketi.`,
+      heroAccent: isPayment ? "success" : "gold",
+      body: `
+        <p style="margin:0 0 16px 0;">
+          <strong style="color:${C.black};">${escapeHtml(args.companyName)}</strong>
+          cari hesabinizda yeni
+          <strong>${isPayment ? "tahsilat" : "manuel duzeltme"}</strong>
+          islendi.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("Hareket", isPayment ? "Tahsilat" : "Manuel Duzeltme")}
+              ${detailRow("Yon", direction)}
+              ${detailRow("Tutar", amountFmt)}
+              <tr><td style="padding-top:12px;border-top:1px solid ${C.border};color:${C.muted};font-size:13px;">Yeni Bakiye</td><td style="padding-top:12px;border-top:1px solid ${C.border};text-align:right;font-size:18px;color:${C.black};font-weight:700;">${escapeHtml(balanceFmt)}</td></tr>
+            </table>
+          </td></tr>
+        </table>
+        ${
+          args.note
+            ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
+                <tr><td style="padding:14px 18px;background:${C.bg};border-left:3px solid ${isPayment ? C.success : C.gold};border-radius:8px;">
+                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.muted};">Aciklama</p>
+                  <p style="margin:6px 0 0 0;font-size:14px;color:${C.text};line-height:21px;">${escapeHtml(args.note)}</p>
+                </td></tr>
+              </table>`
+            : ""
+        }
+        ${btn(`${base}/bayi/ekstre`, "Ekstreyi Goruntule", "dark")}`,
+    }),
+  };
+}
+
 export function templateEmailVerification(
   name: string,
   verifyUrl: string

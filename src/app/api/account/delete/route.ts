@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { flattenZodError } from "@/lib/validations";
 import { anonymizeUser } from "@/lib/user-anonymize";
+import { sendEmail, templateAccountDeleted } from "@/lib/email";
 
 const schema = z.object({
   password: z.string().min(1),
@@ -78,6 +79,10 @@ export async function POST(req: Request) {
   }
 
   const hasOrders = user._count.orders > 0;
+  // E10 — Mail icin email/name silinmeden once yakalanir.
+  const capturedEmail = user.email;
+  const capturedName = user.name ?? "";
+  const when = new Date();
 
   if (hasOrders) {
     const { originalEmail } = await anonymizeUser(user.id);
@@ -87,6 +92,14 @@ export async function POST(req: Request) {
       entityType: "user",
       entityId: user.id,
       metadata: { strategy: "anonymize", hadOrders: true, originalEmail },
+    });
+    after(() => {
+      const tpl = templateAccountDeleted({
+        name: capturedName,
+        mode: "anonymize",
+        when,
+      });
+      void sendEmail({ ...tpl, to: capturedEmail });
     });
     return NextResponse.json({ ok: true, strategy: "anonymize" });
   }
@@ -101,6 +114,15 @@ export async function POST(req: Request) {
     entityType: "user",
     entityId: user.id,
     metadata: { strategy: "hard", hadOrders: false, originalEmail },
+  });
+
+  after(() => {
+    const tpl = templateAccountDeleted({
+      name: capturedName,
+      mode: "hard",
+      when,
+    });
+    void sendEmail({ ...tpl, to: capturedEmail });
   });
 
   return NextResponse.json({ ok: true, strategy: "hard" });

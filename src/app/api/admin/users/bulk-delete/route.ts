@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
@@ -6,6 +6,7 @@ import { flattenZodError } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { anonymizeUser } from "@/lib/user-anonymize";
 import { cleanupDealerByUserId } from "@/lib/dealer-cleanup";
+import { queueEmail, templateAccountDeleted } from "@/lib/email";
 
 const MAX_IDS = 200;
 
@@ -50,6 +51,7 @@ export async function POST(req: NextRequest) {
     select: {
       id: true,
       email: true,
+      name: true,
       role: true,
       dealer: { select: { status: true } },
       _count: { select: { orders: true } },
@@ -61,6 +63,10 @@ export async function POST(req: NextRequest) {
   let dealersCleanedUp = 0;
   let cancelledOrdersTotal = 0;
   const skipped: Array<{ id: string; reason: string }> = [];
+  // E10 — Silme/anonimlestirme sonrasi mail gonderilecek kullanicilar.
+  // Adresler simdi yakalanir; islem sonrasi after() icinde queue'lenir.
+  const mailTargets: Array<{ email: string; name: string; mode: "hard" | "anonymize" }> = [];
+  const when = new Date();
 
   for (const u of users) {
     if (u.role === "ADMIN") {
@@ -93,6 +99,7 @@ export async function POST(req: NextRequest) {
       if (wantsAnonymize) {
         await anonymizeUser(u.id);
         anonymized++;
+        mailTargets.push({ email: u.email, name: u.name ?? "", mode: "anonymize" });
       } else if (wantsHard) {
         if (hasOrders && mode === "hard_only") {
           skipped.push({
@@ -103,6 +110,7 @@ export async function POST(req: NextRequest) {
         }
         await prisma.user.delete({ where: { id: u.id } });
         hardDeleted++;
+        mailTargets.push({ email: u.email, name: u.name ?? "", mode: "hard" });
       }
     } catch (e) {
       skipped.push({
@@ -129,6 +137,22 @@ export async function POST(req: NextRequest) {
       skippedSamples: skipped.slice(0, 20),
     },
   });
+
+  // E10 — Tum silinen/anonimlestirilen kullanicilar icin tek after()
+  // bloku; serverless'da ayri ayri queue spam'lemekten kacinilir.
+  if (mailTargets.length > 0) {
+    after(() => {
+      for (const t of mailTargets) {
+        if (!t.email) continue;
+        const tpl = templateAccountDeleted({
+          name: t.name,
+          mode: t.mode,
+          when,
+        });
+        queueEmail({ ...tpl, to: t.email });
+      }
+    });
+  }
 
   return NextResponse.json({
     requested: userIds.length,

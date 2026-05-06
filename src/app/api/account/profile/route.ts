@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { profileUpdateSchema, flattenZodError } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
+import { queueEmail, templateEmailChanged } from "@/lib/email";
 
 export async function PATCH(req: Request) {
   const session = await auth();
@@ -88,8 +89,37 @@ export async function PATCH(req: Request) {
 
   if (emailChanged) {
     const userId = session.user.id;
+    const oldEmail = current.email;
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      null;
+    const ipShort = ip ? ip.slice(0, 64) : null;
+    const userName = updated.name;
     after(async () => {
-      await issueEmailVerificationToken(userId, updated.name, email);
+      await issueEmailVerificationToken(userId, userName, email);
+
+      // E9 — Eski adrese guvenlik uyarisi + yeni adrese hosgeldin.
+      const when = new Date();
+      const oldNotice = templateEmailChanged({
+        name: userName,
+        oldEmail,
+        newEmail: email,
+        when,
+        ip: ipShort,
+        forOldEmail: true,
+      });
+      queueEmail({ ...oldNotice, to: oldEmail });
+
+      const newNotice = templateEmailChanged({
+        name: userName,
+        oldEmail,
+        newEmail: email,
+        when,
+        ip: ipShort,
+        forOldEmail: false,
+      });
+      queueEmail({ ...newNotice, to: email });
     });
   }
 

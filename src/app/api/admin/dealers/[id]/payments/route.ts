@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { dealerPaymentSchema, flattenZodError } from "@/lib/validations";
 import { writeLedgerEntry } from "@/lib/ledger";
 import { logAudit } from "@/lib/audit";
+import { queueEmail, templateDealerLedgerEntry } from "@/lib/email";
 
 export async function POST(
   req: NextRequest,
@@ -50,6 +51,25 @@ export async function POST(
       reference: reference ?? null,
       balanceAfter: result.balanceAfter,
     },
+  });
+
+  // E13 — Bayiye tahsilat bildirim maili.
+  after(async () => {
+    const owner = await prisma.user
+      .findUnique({
+        where: { id: dealer.userId },
+        select: { email: true },
+      })
+      .catch(() => null);
+    if (!owner?.email) return;
+    const tpl = templateDealerLedgerEntry({
+      companyName: dealer.companyName,
+      kind: "PAYMENT",
+      amount: -amount,
+      note: note ?? null,
+      newBalance: result.balanceAfter,
+    });
+    queueEmail({ ...tpl, to: owner.email });
   });
 
   return NextResponse.json({

@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { flattenZodError } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { queueEmail, templateDealerCreditLimitChanged } from "@/lib/email";
 
 const MAX_IDS = 500;
 
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
       id: true,
       companyName: true,
       creditLimit: true,
+      user: { select: { email: true } },
     },
   });
 
@@ -89,7 +91,13 @@ export async function POST(req: NextRequest) {
   const updates = dealers.map((d) => {
     const current = Number(d.creditLimit);
     const next = applyMode(current, mode, value, minLimit);
-    return { id: d.id, name: d.companyName, current, next };
+    return {
+      id: d.id,
+      name: d.companyName,
+      current,
+      next,
+      email: d.user?.email ?? null,
+    };
   });
 
   const sample = updates.slice(0, 20);
@@ -130,6 +138,22 @@ export async function POST(req: NextRequest) {
       minLimit,
       sampleIds: updates.slice(0, 20).map((u) => u.id),
     },
+  });
+
+  // E12 — Limit gercekten degisenlere bildirim. Mod="set" ile mevcutla
+  // ayni hedefe gidenleri atla (kasti "no-op" mail gurultusu olusmasin).
+  after(() => {
+    for (const u of updates) {
+      if (u.current === u.next) continue;
+      if (!u.email) continue;
+      const tpl = templateDealerCreditLimitChanged({
+        companyName: u.name,
+        oldLimit: u.current,
+        newLimit: u.next,
+        reason: null,
+      });
+      queueEmail({ ...tpl, to: u.email });
+    }
   });
 
   return NextResponse.json({

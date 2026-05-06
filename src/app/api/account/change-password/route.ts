@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { changePasswordSchema, flattenZodError } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
+import { queueEmail, templatePasswordChanged } from "@/lib/email";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
   const { currentPassword, newPassword } = parsed.data;
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { passwordHash: true },
+    select: { passwordHash: true, email: true, name: true },
   });
   if (!user) {
     return NextResponse.json({ error: "Kullanici bulunamadi." }, { status: 404 });
@@ -54,6 +55,25 @@ export async function POST(req: Request) {
     action: "USER_PASSWORD_CHANGE",
     entityType: "user",
     entityId: session.user.id,
+  });
+
+  // E8 — Sifre degisti guvenlik bildirimi (ATO erken algilamasi).
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    null;
+  const userAgent = req.headers.get("user-agent");
+  const userEmail = user.email;
+  const userName = user.name;
+  after(() => {
+    if (!userEmail) return;
+    const tpl = templatePasswordChanged({
+      name: userName ?? "",
+      when: new Date(),
+      ip: ip ? ip.slice(0, 64) : null,
+      userAgent: userAgent ?? null,
+    });
+    queueEmail({ ...tpl, to: userEmail });
   });
 
   return NextResponse.json({ ok: true });

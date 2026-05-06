@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { dealerAdjustmentSchema, flattenZodError } from "@/lib/validations";
 import { writeLedgerEntry } from "@/lib/ledger";
 import { logAudit } from "@/lib/audit";
+import { queueEmail, templateDealerLedgerEntry } from "@/lib/email";
 
 export async function POST(
   req: NextRequest,
@@ -45,6 +46,25 @@ export async function POST(
     entityType: "dealer",
     entityId: id,
     metadata: { amount, balanceAfter: result.balanceAfter, note },
+  });
+
+  // E13 — Bayiye manuel duzeltme bildirimi.
+  after(async () => {
+    const owner = await prisma.user
+      .findUnique({
+        where: { id: dealer.userId },
+        select: { email: true },
+      })
+      .catch(() => null);
+    if (!owner?.email) return;
+    const tpl = templateDealerLedgerEntry({
+      companyName: dealer.companyName,
+      kind: "ADJUSTMENT",
+      amount,
+      note: note ?? null,
+      newBalance: result.balanceAfter,
+    });
+    queueEmail({ ...tpl, to: owner.email });
   });
 
   return NextResponse.json({

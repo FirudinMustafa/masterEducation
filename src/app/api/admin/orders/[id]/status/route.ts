@@ -3,7 +3,11 @@ import type { CargoCarrier, OrderEventType, OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { orderStatusUpdateSchema, flattenZodError } from "@/lib/validations";
-import { queueEmail, templateOrderStatusChanged } from "@/lib/email";
+import {
+  queueEmail,
+  templateOrderStatusChanged,
+  templateOrderCancelled,
+} from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 import { writeLedgerEntry } from "@/lib/ledger";
 import { shippingAdapter } from "@/lib/adapters/shipping";
@@ -235,15 +239,26 @@ export async function POST(
       },
     });
     after(() => {
-      const tpl = templateOrderStatusChanged({
-        customerName: order.shippingName,
-        orderNumber: order.orderNumber,
-        status,
-        trackingNumber: finalTrackingNumber ?? order.trackingNumber ?? null,
-        carrier: updated.trackingCarrier,
-        carrierName: updated.trackingCarrierName,
-        estimatedDeliveryAt: updated.estimatedDeliveryAt,
-      });
+      // E11 — CANCELLED jenerik mesaj yerine ozel "iptal edildi" mesaji
+      // (iptal sebebi + iade bilgisi). Diger durumlarda mevcut akis.
+      const tpl =
+        status === "CANCELLED"
+          ? templateOrderCancelled({
+              customerName: order.shippingName,
+              orderNumber: order.orderNumber,
+              total: Number(order.total),
+              paymentMethod: order.paymentMethod,
+              reason: adminNote ?? null,
+            })
+          : templateOrderStatusChanged({
+              customerName: order.shippingName,
+              orderNumber: order.orderNumber,
+              status,
+              trackingNumber: finalTrackingNumber ?? order.trackingNumber ?? null,
+              carrier: updated.trackingCarrier,
+              carrierName: updated.trackingCarrierName,
+              estimatedDeliveryAt: updated.estimatedDeliveryAt,
+            });
       queueEmail({ ...tpl, to: order.user.email });
     });
 

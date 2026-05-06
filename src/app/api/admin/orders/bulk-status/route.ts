@@ -4,7 +4,11 @@ import type { CargoCarrier, OrderEventType, OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { flattenZodError } from "@/lib/validations";
-import { queueEmail, templateOrderStatusChanged } from "@/lib/email";
+import {
+  queueEmail,
+  templateOrderStatusChanged,
+  templateOrderCancelled,
+} from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 import { writeLedgerEntry } from "@/lib/ledger";
 
@@ -240,15 +244,25 @@ export async function POST(req: NextRequest) {
 
       if (statusChanged && status) {
         after(() => {
-          const tpl = templateOrderStatusChanged({
-            customerName: order.shippingName,
-            orderNumber: order.orderNumber,
-            status,
-            trackingNumber: updated.trackingNumber ?? null,
-            carrier: updated.trackingCarrier,
-            carrierName: updated.trackingCarrierName,
-            estimatedDeliveryAt: updated.estimatedDeliveryAt,
-          });
+          // E11 — CANCELLED ozel mail (iade bilgisi).
+          const tpl =
+            status === "CANCELLED"
+              ? templateOrderCancelled({
+                  customerName: order.shippingName,
+                  orderNumber: order.orderNumber,
+                  total: Number(order.total),
+                  paymentMethod: order.paymentMethod,
+                  reason: adminNote ?? null,
+                })
+              : templateOrderStatusChanged({
+                  customerName: order.shippingName,
+                  orderNumber: order.orderNumber,
+                  status,
+                  trackingNumber: updated.trackingNumber ?? null,
+                  carrier: updated.trackingCarrier,
+                  carrierName: updated.trackingCarrierName,
+                  estimatedDeliveryAt: updated.estimatedDeliveryAt,
+                });
           queueEmail({ ...tpl, to: order.user.email });
         });
       }

@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
 import { anonymizeUser } from "@/lib/user-anonymize";
 import { cleanupDealerByUserId } from "@/lib/dealer-cleanup";
+import { queueEmail, templateAccountDeleted } from "@/lib/email";
 
 /**
  * DELETE /api/admin/users/[id]
@@ -41,6 +42,7 @@ export async function DELETE(
       id: true,
       role: true,
       email: true,
+      name: true,
       dealer: { select: { id: true, companyName: true } },
     },
   });
@@ -92,6 +94,11 @@ export async function DELETE(
       }
     : { dealerCleaned: false };
 
+  // E10 — Mail icin captured (silme/anonimlestirme sonrasi adres yok).
+  const capturedEmail = user.email;
+  const capturedName = user.name ?? "";
+  const when = new Date();
+
   if (wantsAnonymize) {
     const { originalEmail } = await anonymizeUser(id);
     logAudit({
@@ -106,6 +113,14 @@ export async function DELETE(
         previousRole: user.role,
         ...cleanupMeta,
       },
+    });
+    after(() => {
+      const tpl = templateAccountDeleted({
+        name: capturedName,
+        mode: "anonymize",
+        when,
+      });
+      queueEmail({ ...tpl, to: capturedEmail });
     });
     return NextResponse.json({ ok: true, strategy: "anonymize", dealerCleanup });
   }
@@ -124,6 +139,15 @@ export async function DELETE(
       previousRole: user.role,
       ...cleanupMeta,
     },
+  });
+
+  after(() => {
+    const tpl = templateAccountDeleted({
+      name: capturedName,
+      mode: "hard",
+      when,
+    });
+    queueEmail({ ...tpl, to: capturedEmail });
   });
 
   return NextResponse.json({ ok: true, strategy: "hard", dealerCleanup });

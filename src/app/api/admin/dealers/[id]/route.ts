@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { flattenZodError } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { cleanupDealerByUserId } from "@/lib/dealer-cleanup";
+import { queueEmail, templateDealerCreditLimitChanged } from "@/lib/email";
 
 const dealerEditSchema = z.object({
   companyName: z.string().min(2).max(200).optional(),
@@ -92,6 +93,29 @@ export async function PATCH(
       companyChanged: dealer.companyName !== updated.companyName,
     },
   });
+
+  // E12 — Kredi limiti gercekten degistiyse bayiye bildirim. paymentTerms
+  // PREPAID'a gectiyse limit zorla 0 oldu — bu da degisiklik sayilir, mail gider.
+  const oldLimitNum = Number(dealer.creditLimit);
+  const newLimitNum = Number(updated.creditLimit);
+  if (oldLimitNum !== newLimitNum) {
+    after(async () => {
+      const owner = await prisma.user
+        .findUnique({
+          where: { id: dealer.userId },
+          select: { email: true },
+        })
+        .catch(() => null);
+      if (!owner?.email) return;
+      const tpl = templateDealerCreditLimitChanged({
+        companyName: updated.companyName,
+        oldLimit: oldLimitNum,
+        newLimit: newLimitNum,
+        reason: null,
+      });
+      queueEmail({ ...tpl, to: owner.email });
+    });
+  }
 
   return NextResponse.json({
     id: updated.id,
