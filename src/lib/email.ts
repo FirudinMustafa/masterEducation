@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 import type { CargoCarrier } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { BRAND } from "@/lib/constants";
@@ -13,8 +14,19 @@ type EmailPayload = {
   text?: string;
 };
 
+// Iki transport: Vercel/serverless'ta Resend HTTP API (SMTP outbound bloklu),
+// lokal/self-host'ta nodemailer SMTP. RESEND_API_KEY varsa HTTP API onceligi var.
 let transporterCache: Transporter | null = null;
+let resendCache: Resend | null = null;
 let prodMisconfigWarned = false;
+
+function getResend(): Resend | null {
+  if (resendCache) return resendCache;
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key) return null;
+  resendCache = new Resend(key);
+  return resendCache;
+}
 
 function getTransporter(): Transporter | null {
   if (transporterCache) return transporterCache;
@@ -22,20 +34,7 @@ function getTransporter(): Transporter | null {
   const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
-  if (!host || !port || !user || !pass) {
-    // Production'da SMTP/Resend env eksik = sessiz veri kaybi.
-    // En azindan bir kez stderr'a sicak uyari yazsin (Sentry/Logtail bunu
-    // olarak yakalar; admin "kayit emaili gelmiyor" sikayetinde root cause hizli bulunur).
-    if (process.env.NODE_ENV === "production" && !prodMisconfigWarned) {
-      console.error(
-        "[email:misconfig] SMTP env eksik (SMTP_HOST/PORT/USER/PASS). " +
-        "Tum email gonderimleri DRYRUN moduna dustu — kullanici dogrulama/sifre reset/siparis emailleri ULASMIYOR."
-      );
-      prodMisconfigWarned = true;
-    }
-    return null;
-  }
-
+  if (!host || !port || !user || !pass) return null;
   transporterCache = nodemailer.createTransport({
     host,
     port,
@@ -45,12 +44,62 @@ function getTransporter(): Transporter | null {
   return transporterCache;
 }
 
+function warnProdMisconfig() {
+  if (process.env.NODE_ENV === "production" && !prodMisconfigWarned) {
+    console.error(
+      "[email:misconfig] Ne RESEND_API_KEY ne SMTP env tam set. " +
+        "Tum email gonderimleri DRYRUN moduna dustu — kullanici dogrulama/sifre reset/siparis emailleri ULASMIYOR."
+    );
+    prodMisconfigWarned = true;
+  }
+}
+
 export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const from =
     process.env.SMTP_FROM ?? `${BRAND.name} <${BRAND.email}>`;
-  const transporter = getTransporter();
 
+  // 1) Resend HTTP API onceligi (Vercel serverless icin SMTP yerine fetch).
+  const resend = getResend();
+  if (resend) {
+    try {
+      const { error } = await resend.emails.send({
+        from,
+        to: payload.to,
+        subject: payload.subject,
+        html: payload.html,
+        text: payload.text,
+      });
+      if (error) throw new Error(error.message ?? JSON.stringify(error));
+      await logEmail(payload, "SENT", null);
+      return true;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isSandbox =
+        msg.includes("You can only send testing emails") ||
+        (msg.includes("validation_error") && msg.includes("verify a domain")) ||
+        (msg.includes("403") && msg.includes("verify"));
+      if (isSandbox && process.env.NODE_ENV !== "production") {
+        console.warn(
+          `[email:resend-sandbox] ${payload.to} — "${payload.subject}" engellendi (domain dogrulanmasi gerek)`
+        );
+        await logEmail(payload, "DRYRUN_SANDBOX", "Resend sandbox kisitlamasi — domain dogrulayin");
+        return true;
+      }
+      if (isSandbox) {
+        console.error(
+          `[email:resend-sandbox-PROD] ${payload.to} — "${payload.subject}" — domain DOGRULANMAMIS, prod'da sandbox fallback yok!`
+        );
+      }
+      console.error("[email:error:resend-api]", payload.to, msg);
+      await logEmail(payload, "FAILED", msg);
+      return false;
+    }
+  }
+
+  // 2) SMTP fallback (lokal dev / self-host)
+  const transporter = getTransporter();
   if (!transporter) {
+    warnProdMisconfig();
     console.log("[email:dryrun]", payload.to, "—", payload.subject);
     await logEmail(payload, "DRYRUN", null);
     return true;
@@ -68,35 +117,17 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
     return true;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-
-    // Resend sandbox kısıtlaması: domain doğrulanmamış hesaplarda yalnızca
-    // hesap sahibinin email'ine gönderim açık. Diğer adreslerde "550 You can
-    // only send testing emails to your own email address" döner.
-    // Bu durumda **dev/staging'de** silently DRYRUN'a düş — kullanıcı akışı
-    // bozulmasın. **Production'da** sandbox fallback yok: domain dogrulanmamis
-    // bir Resend account ile prod'a cikilmamali; gercek failure olarak isle.
-    const isResendSandbox =
+    const isSandbox =
       msg.includes("You can only send testing emails") ||
       (msg.includes("550") && msg.includes("verify a domain"));
-    if (isResendSandbox && process.env.NODE_ENV !== "production") {
+    if (isSandbox && process.env.NODE_ENV !== "production") {
       console.warn(
         `[email:resend-sandbox] ${payload.to} — "${payload.subject}" engellendi (domain dogrulanmasi gerek)`
       );
-      await logEmail(
-        payload,
-        "DRYRUN_SANDBOX",
-        "Resend sandbox kisitlamasi — domain dogrulayin"
-      );
+      await logEmail(payload, "DRYRUN_SANDBOX", "Resend sandbox kisitlamasi — domain dogrulayin");
       return true;
     }
-    if (isResendSandbox) {
-      console.error(
-        `[email:resend-sandbox-PROD] ${payload.to} — "${payload.subject}" — domain DOGRULANMAMIS, prod'da sandbox fallback yok!`
-      );
-      // Devam et — asagida FAILED olarak loglanir
-    }
-
-    console.error("[email:error]", payload.to, msg);
+    console.error("[email:error:smtp]", payload.to, msg);
     await logEmail(payload, "FAILED", msg);
     return false;
   }
