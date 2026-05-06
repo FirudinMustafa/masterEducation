@@ -39,6 +39,13 @@ const schema = z.object({
     .string()
     .optional()
     .transform((v) => v === "true" || v === "1"),
+  // Dusuk stok daily digest (E17). Bu eşik alti yayinda urunler tek mail
+  // halinde admin'e raporlanir. Default 5 — saglikli envanter icin azaltin.
+  LOW_STOCK_THRESHOLD: z
+    .string()
+    .optional()
+    .default("5")
+    .transform((v) => Number(v)),
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),

@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/sync-shipping-tracking",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/low-stock-alert",
+      "schedule": "0 8 * * *"
     }
   ]
 }

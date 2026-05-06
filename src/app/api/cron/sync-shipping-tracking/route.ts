@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeCronRequest } from "@/lib/cron-auth";
 import { shippingAdapter, shippingConfigured } from "@/lib/adapters/shipping";
+import { runCronJob } from "@/lib/cron-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: "shipping_not_configured" });
   }
 
+  return runCronJob("sync-shipping-tracking", async () => {
   // Son 30 gün SHIPPED + henüz DELIVERED olmamış siparişler
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const orders = await prisma.order.findMany({
@@ -93,4 +95,5 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, synced, errors, eventsCreated });
+  });
 }

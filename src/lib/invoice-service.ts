@@ -25,7 +25,13 @@
 import { prisma } from "@/lib/prisma";
 import * as kolaybi from "@/lib/adapters/kolaybi";
 import { logAudit } from "@/lib/audit";
-import { queueEmail, templateInvoiceIssued } from "@/lib/email";
+import {
+  queueEmail,
+  templateInvoiceIssued,
+  templateInvoiceRetryExhaustedAdminNotice,
+} from "@/lib/email";
+import { env } from "@/lib/env";
+import { BRAND } from "@/lib/constants";
 import type { Prisma } from "@prisma/client";
 
 const MAX_ATTEMPTS = 5;
@@ -434,12 +440,13 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
     if (err instanceof kolaybi.KolaybiError && err.apiMessage) {
       detail = `${err.apiMessage} (code ${err.apiCode ?? "?"})`;
     }
-    await prisma.invoice.update({
+    const updated = await prisma.invoice.update({
       where: { id: invoiceId },
       data: {
         status: "FAILED",
         errorMessage: detail.slice(0, 500),
       },
+      select: { attemptCount: true },
     });
 
     logAudit({
@@ -449,6 +456,23 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
       entityId: invoiceId,
       metadata: { orderId: inv.orderId, error: detail.slice(0, 300) },
     });
+
+    // E19 — N defa retry tukendigi anda admin'e manuel mudahale uyarisi.
+    // attemptCount yukarida atomik increment edildi; eseik basinca tek mail.
+    if (updated.attemptCount >= MAX_ATTEMPTS) {
+      const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
+      if (adminTo) {
+        const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+        const tpl = templateInvoiceRetryExhaustedAdminNotice({
+          orderNumber: inv.order.orderNumber,
+          dealerCompany: inv.order.user.dealer?.companyName ?? "—",
+          total: Number(inv.totalAmount),
+          lastError: detail,
+          panelUrl: `${base}/admin/faturalar`,
+        });
+        queueEmail({ ...tpl, to: adminTo });
+      }
+    }
 
     return { status: "FAILED", reason: detail };
   }

@@ -1522,6 +1522,152 @@ export function templateNewUserSignupAdminNotice(args: {
   };
 }
 
+// ─── P3: Proaktif izleme bildirimleri ───────────────────────────
+
+/**
+ * E17 — Dusuk stok daily digest → ADMIN'E.
+ * Tek mail icinde tablo halinde threshold alti urunler.
+ */
+export function templateLowStockDigest(args: {
+  items: Array<{ sku: string; name: string; stock: number; productUrl: string }>;
+  total: number;
+  criticalCount: number;
+  threshold: number;
+}): EmailPayload {
+  // Outlook/Gmail tutarliligi icin satirlari prerender et.
+  const rows = args.items
+    .slice(0, 50)
+    .map(
+      (it, idx) => `<tr>
+        <td style="padding:10px 0;${idx > 0 ? `border-top:1px solid ${C.borderSoft};` : ""}font-size:13px;color:${C.text};">
+          <a href="${escapeHtml(it.productUrl)}" style="color:${C.black};text-decoration:none;font-weight:600;">${escapeHtml(it.name)}</a>
+          <br><span style="font-size:11px;color:${C.muted};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(it.sku)}</span>
+        </td>
+        <td style="padding:10px 0;${idx > 0 ? `border-top:1px solid ${C.borderSoft};` : ""}text-align:right;font-size:14px;font-weight:700;color:${it.stock === 0 ? C.rose : C.goldDark};white-space:nowrap;">
+          ${it.stock} adet
+        </td>
+      </tr>`
+    )
+    .join("");
+  const moreLine =
+    args.items.length > 50
+      ? `<p style="margin:12px 0 0 0;font-size:12px;color:${C.muted};">
+           ... ve ${args.items.length - 50} urun daha. Tam listeyi panelde gorun.
+         </p>`
+      : "";
+  return {
+    to: "",
+    subject: `Dusuk stok uyarisi — ${args.total} urun`,
+    html: wrap({
+      title: "Dusuk stok uyarisi",
+      preheader: `${args.total} urun esik altinda — ${args.criticalCount} tanesi kritik (0 stok)`,
+      subtitle: `Esik: ${args.threshold} adet ve alti.`,
+      heroAccent: args.criticalCount > 0 ? "rose" : "gold",
+      body: `
+        <p style="margin:0 0 16px 0;">
+          Yayinda olan
+          <strong style="color:${C.black};">${args.total}</strong>
+          urun stok esiginin altinda.
+          ${args.criticalCount > 0 ? `<strong style="color:${C.rose};">${args.criticalCount}</strong> urunun stogu sifir.` : ""}
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:8px 20px 4px 20px;">
+            <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:${C.muted};">Esik Alti Urunler</p>
+          </td></tr>
+          <tr><td style="padding:0 20px 14px 20px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
+            ${moreLine}
+          </td></tr>
+        </table>`,
+    }),
+  };
+}
+
+/**
+ * E18 — Cron job basarisiz → ADMIN'E.
+ * runCronJob wrapper'i tarafindan exception yakalandiginda yollanir.
+ */
+export function templateCronFailureAdminNotice(args: {
+  jobName: string;
+  error: string;
+  when: Date;
+}): EmailPayload {
+  const whenFmt = formatWhen(args.when);
+  return {
+    to: "",
+    subject: `Cron hatasi — ${args.jobName}`,
+    html: wrap({
+      title: "Cron job basarisiz",
+      preheader: `${args.jobName} - ${whenFmt}`,
+      subtitle: "Otomatik gorev calisirken hata olustu. Loglari kontrol edin.",
+      heroAccent: "rose",
+      body: `
+        <p style="margin:0 0 16px 0;">
+          <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.jobName)}</strong>
+          gorevı
+          <strong style="color:${C.rose};">basarisiz</strong>
+          oldu (${escapeHtml(whenFmt)}).
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
+          <tr><td style="padding:14px 18px;background:${C.roseBg};border-left:3px solid ${C.rose};border-radius:8px;">
+            <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.rose};">Hata</p>
+            <pre style="margin:6px 0 0 0;font-size:12px;color:${C.text};line-height:18px;font-family:'SF Mono','Menlo',monospace;white-space:pre-wrap;word-break:break-word;">${escapeHtml(args.error.slice(0, 2000))}</pre>
+          </td></tr>
+        </table>
+        ${infoCard(`Vercel cron loglarini ve <strong>error_logs</strong> tablosunu kontrol edin.<br>
+          KolayBi/SMTP/upstream servis kaynakli ise 3. parti durumunu da inceleyin.`)}`,
+    }),
+  };
+}
+
+/**
+ * E19 — Fatura retry tukendi (retryCount >= 5) → ADMIN'E manuel mudahale.
+ */
+export function templateInvoiceRetryExhaustedAdminNotice(args: {
+  orderNumber: string;
+  dealerCompany: string;
+  total: number;
+  lastError: string;
+  panelUrl: string;
+}): EmailPayload {
+  const totalFmt = formatPrice(args.total);
+  return {
+    to: "",
+    subject: `Fatura kesilemedi — ${args.orderNumber} (manuel mudahale)`,
+    html: wrap({
+      title: "Fatura kesilemedi",
+      preheader: `${args.orderNumber} icin 5 deneme basarisiz — manuel mudahale gerek`,
+      subtitle: `${args.dealerCompany} bayisi icin e-fatura akisi durdu.`,
+      heroAccent: "rose",
+      body: `
+        <p style="margin:0 0 14px 0;">
+          <strong style="color:${C.black};">${escapeHtml(args.dealerCompany)}</strong>
+          bayisinin
+          <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.orderNumber)}</strong>
+          numarali siparisi icin KolayBi e-fatura kesimi
+          <strong style="color:${C.rose};">5 denemenin sonunda basarisiz</strong>
+          oldu. Otomatik retry durduruldu.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("Siparis No", args.orderNumber, true)}
+              ${detailRow("Bayi", args.dealerCompany)}
+              ${detailRow("Tutar", totalFmt)}
+            </table>
+          </td></tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
+          <tr><td style="padding:14px 18px;background:${C.roseBg};border-left:3px solid ${C.rose};border-radius:8px;">
+            <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.rose};">Son Hata</p>
+            <pre style="margin:6px 0 0 0;font-size:12px;color:${C.text};line-height:18px;font-family:'SF Mono','Menlo',monospace;white-space:pre-wrap;word-break:break-word;">${escapeHtml(args.lastError.slice(0, 1000))}</pre>
+          </td></tr>
+        </table>
+        ${btn(args.panelUrl, "Faturalar Paneli", "dark")}`,
+    }),
+  };
+}
+
 export function templateEmailVerification(
   name: string,
   verifyUrl: string

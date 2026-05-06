@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeCronRequest } from "@/lib/cron-auth";
+import { runCronJob } from "@/lib/cron-runner";
 
 export const dynamic = "force-dynamic";
 
@@ -19,15 +20,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
   }
 
-  const now = new Date();
-  const result = await prisma.paymentSession.updateMany({
-    where: { status: "PENDING", expiresAt: { lt: now } },
-    data: { status: "EXPIRED" },
-  });
+  return runCronJob("cleanup-payment-sessions", async () => {
+    const now = new Date();
+    const result = await prisma.paymentSession.updateMany({
+      where: { status: "PENDING", expiresAt: { lt: now } },
+      data: { status: "EXPIRED" },
+    });
 
-  return NextResponse.json({
-    ok: true,
-    marked: result.count,
-    at: now.toISOString(),
+    return NextResponse.json({
+      ok: true,
+      marked: result.count,
+      at: now.toISOString(),
+    });
   });
 }
