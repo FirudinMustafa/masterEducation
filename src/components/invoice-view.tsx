@@ -47,11 +47,17 @@ interface InvoiceViewProps {
   order: InvoiceOrder;
   mode: "invoice" | "delivery-note";
   backHref: string;
+  /**
+   * Fiyat/tutar/KDV sütunları ve toplamlar yalnız bu true iken gösterilir.
+   * Admin görünümünde true (default); müşteri/bayi görünümünde false geçilir —
+   * fiyatlar sistem genelinde müşteri/bayiden gizlenir.
+   */
+  showPrices?: boolean;
 }
 
-export function InvoiceView({ order, mode, backHref }: InvoiceViewProps) {
+export function InvoiceView({ order, mode, backHref, showPrices = true }: InvoiceViewProps) {
   // "FATURA" yazmiyoruz — gercek e-Arsiv entegrasyonu yapilana kadar bu
-  // ekran sadece siparis kayit cikisidir (yasal baglayiciligi yoktur).
+  // ekran sadece sipariş kayıt çıkışidir (yasal baglayiciligi yoktur).
   const title = mode === "invoice" ? "SIPARIS OZETI" : "TESLIM FISI";
 
   // Aggregate VAT breakdown by rate
@@ -136,13 +142,13 @@ export function InvoiceView({ order, mode, backHref }: InvoiceViewProps) {
             </div>
             <div className="mt-2 text-xs text-gray-600">
               <p>
-                Siparis Durumu:{" "}
+                Sipariş Durumu:{" "}
                 <strong>
                   {ORDER_STATUS_LABELS[order.status] ?? order.status}
                 </strong>
               </p>
               <p>
-                Odeme:{" "}
+                Ödeme:{" "}
                 <strong>
                   {PAYMENT_METHOD_LABELS[order.paymentMethod] ??
                     order.paymentMethod}
@@ -158,21 +164,9 @@ export function InvoiceView({ order, mode, backHref }: InvoiceViewProps) {
         <table className="w-full mb-4 border-collapse">
           <thead>
             <tr className="bg-gray-100 text-xs uppercase text-gray-700">
-              <th className="text-left p-2 border border-gray-300">Urun</th>
+              <th className="text-left p-2 border border-gray-300">Ürün</th>
               <th className="text-left p-2 border border-gray-300">ISBN</th>
               <th className="text-right p-2 border border-gray-300">Adet</th>
-              <th className="text-right p-2 border border-gray-300">Birim</th>
-              {mode === "invoice" && (
-                <>
-                  <th className="text-right p-2 border border-gray-300">
-                    KDV %
-                  </th>
-                  <th className="text-right p-2 border border-gray-300">
-                    KDV Tutar
-                  </th>
-                </>
-              )}
-              <th className="text-right p-2 border border-gray-300">Tutar</th>
             </tr>
           </thead>
           <tbody>
@@ -185,29 +179,13 @@ export function InvoiceView({ order, mode, backHref }: InvoiceViewProps) {
                 <td className="p-2 border border-gray-300 text-right">
                   {i.quantity}
                 </td>
-                <td className="p-2 border border-gray-300 text-right">
-                  {formatPrice(i.unitPrice)}
-                </td>
-                {mode === "invoice" && (
-                  <>
-                    <td className="p-2 border border-gray-300 text-right">
-                      %{i.vatRate}
-                    </td>
-                    <td className="p-2 border border-gray-300 text-right">
-                      {formatPrice(i.vatAmount)}
-                    </td>
-                  </>
-                )}
-                <td className="p-2 border border-gray-300 text-right font-semibold">
-                  {formatPrice(i.lineTotal)}
-                </td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* Totals — only on invoice */}
-        {mode === "invoice" && (
+        {/* Totals — only on invoice, and only when prices are visible */}
+        {showPrices && mode === "invoice" && (
           <div className="flex justify-end">
             <table className="text-sm w-80">
               <tbody>
@@ -219,7 +197,7 @@ export function InvoiceView({ order, mode, backHref }: InvoiceViewProps) {
                 </tr>
                 {order.discountTotal > 0 && (
                   <tr>
-                    <td className="py-1 text-gray-600">Iskonto</td>
+                    <td className="py-1 text-gray-600">İskonto</td>
                     <td className="py-1 text-right text-emerald-700">
                       -{formatPrice(order.discountTotal)}
                     </td>
@@ -268,8 +246,8 @@ export function InvoiceView({ order, mode, backHref }: InvoiceViewProps) {
         )}
 
         <div className="mt-8 pt-4 border-t border-gray-200 text-xs text-gray-500 text-center">
-          Bu belge siparisinizin kayit ozetidir. Resmi e-Arsiv / e-Fatura
-          belgeniz siparisiniz onaylandiktan sonra ayrica email adresinize
+          Bu belge siparişinizin kayıt ozetidir. Resmi e-Arsiv / e-Fatura
+          belgeniz siparişiniz onaylandiktan sonra ayrica email adresinize
           iletilir.
         </div>
       </div>

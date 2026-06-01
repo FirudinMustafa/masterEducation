@@ -1,6 +1,18 @@
 import { z } from "zod";
 import { isValidLocation } from "@/lib/turkey-locations";
 
+/**
+ * F-0015: Ortak şifre kurallari — tüm şifre alanlari ayni minimum gucle.
+ * (Mevcut DB kullanıcılarinin şifreleri etkilenmez; sadece yeni/degisen
+ * şifreler bu kurali gecmek zorundadir.)
+ */
+export const passwordSchema = z
+  .string()
+  .min(8, "Şifre en az 8 karakter olmalidir.")
+  .max(128)
+  .regex(/[A-Za-z]/, "En az bir harf")
+  .regex(/[0-9]/, "En az bir rakam");
+
 const nullableString = (max: number) =>
   z
     .string()
@@ -69,24 +81,18 @@ export const registerSchema = z.object({
   name: z.string().min(2, "Ad en az 2 karakter olmalidir.").max(100),
   email: z.email("Gecerli bir email adresi girin.").toLowerCase(),
   phone: optionalTrPhoneSchema,
-  password: z
-    .string()
-    .min(8, "Sifre en az 8 karakter olmalidir.")
-    .max(128)
-    .refine((v) => /[A-Za-z]/.test(v) && /[0-9]/.test(v), {
-      message: "Sifre en az bir harf ve bir rakam icermelidir.",
-    }),
-  // KVKK acik riza — uye olabilmek icin Uyelik Sozlesmesi + KVKK Aydinlatma
+  password: passwordSchema,
+  // KVKK acik riza — üye olabilmek icin Üyelik Sözleşmesi + KVKK Aydınlatma
   // Metni'ni okudugu beyani gerekir. Form'da tek checkbox; backend bu literal
   // true degerini bekler (default = anlamsiz, eksik onay = kabul yok).
-  termsAccepted: z.literal(true, { error: "Devam etmek icin sozlesmeleri onaylamaniz gerekir." }),
-  // Ticari elektronik ileti (TETIK) — opsiyonel, default false. Kullanici
+  termsAccepted: z.literal(true, { error: "Devam etmek icin sözleşmeleri onaylamaniz gerekir." }),
+  // Ticari elektronik ileti (TETIK) — opsiyonel, default false. Kullanıcı
   // boyle bir mail almak isterse aktif eder; sonradan kapatabilir.
   marketingConsent: z.boolean().default(false),
-  // Honeypot — formda gorunmez "website" alani. Insan asla doldurmaz; bot'lar
+  // Honeypot — formda görünmez "website" alani. Insan asla doldurmaz; bot'lar
   // <input name="website"> goruyorsa otomatik doldurmaya calisir. Dolduysa
   // sessizce reddederiz (saldirgan loglara bakip ayrim yapamasin diye yine
-  // 200 donulebilir; biz simdilik 400 doneriz, audit'e dusup gozetlenir).
+  // 200 donulebilir; biz simdilik 400 doneriz, audit'e dusup gözetlenir).
   website: z
     .string()
     .max(0, "Bot tespit edildi.")
@@ -99,7 +105,7 @@ export const dealerApplySchema = z.object({
   name: z.string().min(2).max(100),
   email: z.email().toLowerCase(),
   phone: trPhoneSchema,
-  password: z.string().min(6).max(128),
+  password: passwordSchema,
   companyName: z.string().min(2).max(200),
   taxOffice: z.string().min(2).max(100),
   taxNumber: z
@@ -111,16 +117,47 @@ export const dealerApplySchema = z.object({
   city: z.string().min(2).max(50),
   district: z.string().min(2).max(50),
   addressLine: z.string().min(5).max(500),
-  termsAccepted: z.literal(true, { error: "Devam etmek icin sozlesmeleri onaylamaniz gerekir." }),
+  termsAccepted: z.literal(true, { error: "Devam etmek icin sözleşmeleri onaylamaniz gerekir." }),
   marketingConsent: z.boolean().default(false),
 }).refine(
   (v) => isValidLocation(v.city, v.district),
   { message: "Il/ilce listesi disinda bir deger.", path: ["city"] }
 );
 
+// Admin elle bayi oluşturma — başvuru akışından farklı: terms/marketing yok,
+// ödeme modu/kredi limiti/durum admin tarafından belirlenir, adres opsiyonel.
+export const adminCreateDealerSchema = z.object({
+  name: z.string().min(2).max(100),
+  email: z.email().toLowerCase(),
+  phone: trPhoneSchema,
+  password: passwordSchema,
+  companyName: z.string().min(2).max(200),
+  taxOffice: z.string().min(2).max(100),
+  taxNumber: z
+    .string()
+    .transform((v) => v.replace(/\s/g, ""))
+    .pipe(z.string().regex(/^\d{10,11}$/, "Vergi numarasi 10 veya 11 haneli olmalidir.")),
+  tradeRegNo: z.string().max(50).optional().or(z.literal("")).transform((v) => v || null),
+  contactPerson: z.string().max(100).optional().or(z.literal("")).transform((v) => v || null),
+  paymentTerms: z.enum(["OPEN_ACCOUNT", "PREPAID"]).default("OPEN_ACCOUNT"),
+  creditLimit: z.number().min(0).max(99999999).default(0),
+  status: z.enum(["PENDING", "APPROVED"]).default("APPROVED"),
+  city: z.string().max(50).optional().or(z.literal("")).transform((v) => v || null),
+  district: z.string().max(50).optional().or(z.literal("")).transform((v) => v || null),
+  addressLine: z.string().max(500).optional().or(z.literal("")).transform((v) => v || null),
+  notes: z.string().max(1000).optional().or(z.literal("")).transform((v) => v || null),
+});
+
+// Admin kullanıcıya şifre belirler/sıfırlar.
+export const adminSetPasswordSchema = z.object({
+  password: passwordSchema,
+});
+
 export const orderItemSchema = z.object({
   productId: z.string().min(1),
-  quantity: z.number().int().min(1).max(1000),
+  // Bayiler okul siparişlerinde yüksek adet girebilir (elle 1000+); üst sınır
+  // güvenlik amaçlı yüksek tutuldu.
+  quantity: z.number().int().min(1).max(100000),
 });
 
 export const orderCreateSchema = z.object({
@@ -160,10 +197,18 @@ export const orderCreateSchema = z.object({
     .nullable()
     .optional()
     .transform((v) => (v && v.length > 0 ? v : null)),
-  // Mesafeli Satis Sozlesmesi + On Bilgilendirme Formu onayi (zorunlu).
+  // Okul adı — bayi siparişlerinde zorunlu (server tarafında role'e göre kontrol
+  // edilir). Müşteri siparişlerinde boş gelebilir.
+  schoolName: z
+    .string()
+    .max(200)
+    .nullable()
+    .optional()
+    .transform((v) => (v && v.trim().length > 0 ? v.trim() : null)),
+  // Mesafeli Satis Sözleşmesi + On Bilgilendirme Formu onayi (zorunlu).
   // Yasal kanit — true literali bekleniyor.
   contractsAccepted: z.literal(true, {
-    error: "Mesafeli Satis Sozlesmesi ve On Bilgilendirme Formu'nu onaylamaniz gerekir.",
+    error: "Mesafeli Satis Sözleşmesi ve On Bilgilendirme Formu'nu onaylamaniz gerekir.",
   }),
 });
 
@@ -223,7 +268,7 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(10),
-  password: z.string().min(6).max(128),
+  password: passwordSchema,
 });
 
 export const dealerStatusUpdateSchema = z.object({
@@ -233,7 +278,7 @@ export const dealerStatusUpdateSchema = z.object({
   creditLimit: z.number().min(0).max(9999999).nullable().optional(),
   paymentTerms: z.enum(["OPEN_ACCOUNT", "PREPAID"]).optional(),
 }).refine(
-  // PREPAID modunda creditLimit > 0 mantiksiz; uyari niyetinde 0'a sıfırla
+  // PREPAID modunda creditLimit > 0 mantiksiz; uyarı niyetinde 0'a sıfırla
   // (admin form da aynı davranışı uygular). Burada sadece tutarsızlığı engelle.
   (v) => !(v.paymentTerms === "PREPAID" && (v.creditLimit ?? 0) > 0),
   { message: "PREPAID modunda kredi limiti 0 olmalidir.", path: ["creditLimit"] }
@@ -252,6 +297,7 @@ export const orderStatusUpdateSchema = z.object({
       "KOLAY_GELSIN",
       "HEPSIJET",
       "TRENDYOL",
+      "DEPODAN_TESLIM",
       "OTHER",
     ])
     .nullable()
@@ -380,7 +426,7 @@ export const addressSchema = addressBaseSchema.refine(
 export const addressUpdateSchema = z.object(addressBaseShape).partial().refine(
   (v) => {
     // PATCH'de city/district birlikte gelirse kontrol et; sadece biri gelirse
-    // mevcut DB degeri ile eslesemiyor olabilir, geciktirme — endpoint
+    // mevcut DB degeri ile eşleşemiyor olabilir, geciktirme — endpoint
     // tarafinda merge sonrasi kontrol et.
     if (v.city && v.district) return isValidLocation(v.city, v.district);
     if (v.city) return isValidLocation(v.city);
@@ -410,16 +456,10 @@ export const profileUpdateSchema = z.object({
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1),
-    newPassword: z
-      .string()
-      .min(8, "Sifre en az 8 karakter olmalidir.")
-      .max(128)
-      .refine((v) => /[A-Za-z]/.test(v) && /[0-9]/.test(v), {
-        message: "Yeni sifre en az bir harf ve bir rakam icermelidir.",
-      }),
+    newPassword: passwordSchema,
   })
   .refine((d) => d.currentPassword !== d.newPassword, {
-    message: "Yeni sifre mevcut sifre ile ayni olamaz.",
+    message: "Yeni şifre mevcut şifre ile ayni olamaz.",
     path: ["newPassword"],
   });
 

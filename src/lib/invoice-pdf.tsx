@@ -31,6 +31,11 @@ function ensureFonts() {
     // Try to find a TTF font in node_modules — Next.js'in built-in Inter font'u
     // .woff2 olduğu için PDF için kullanılmaz. Onun yerine common bir TTF arar.
     const candidates = [
+      // Linux (VPS) — DejaVu/Liberation/Noto Türkçe karakterleri destekler
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+      "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+      // Windows (yerel gelistirme)
       "C:/Windows/Fonts/calibri.ttf",
       "C:/Windows/Fonts/Calibri.ttf",
       "C:/Windows/Fonts/arial.ttf",
@@ -46,6 +51,9 @@ function ensureFonts() {
       });
       // Bold variant — calibrib.ttf veya arialbd.ttf
       const boldCandidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
         "C:/Windows/Fonts/calibrib.ttf",
         "C:/Windows/Fonts/arialbd.ttf",
       ];
@@ -66,10 +74,16 @@ function ensureFonts() {
   }
 }
 
+// Modül yüklenirken bir kez dene; font bulunamazsa @react-pdf'in yerleşik
+// Helvetica'sına düş (çökme yerine). Helvetica Türkçe latin-ext sınırlı olsa da
+// PDF üretimi hata vermez; sistemde DejaVu varsa (VPS) "TR" tam Türkçe çalışır.
+ensureFonts();
+const BODY_FONT = fontsRegistered ? "TR" : "Helvetica";
+
 const styles = StyleSheet.create({
   page: {
     padding: 36,
-    fontFamily: "TR",
+    fontFamily: BODY_FONT,
     fontSize: 10,
     color: "#0F0F0F",
   },
@@ -181,7 +195,7 @@ const STATUS_LABEL: Record<string, string> = {
   PROCESSING: "Hazirlaniyor",
   SHIPPED: "Kargoda",
   DELIVERED: "Teslim Edildi",
-  CANCELLED: "Iptal",
+  CANCELLED: "İptal",
 };
 
 function formatCurrency(n: number): string {
@@ -194,6 +208,8 @@ function formatDate(d: Date | string): string {
 
 interface Props {
   order: InvoiceOrder;
+  /** Fiyat/KDV/tutar sütunları ve toplamlar yalnız true iken çizilir (admin). */
+  showPrices?: boolean;
 }
 
 function loadLogoBuffer(): Buffer | null {
@@ -205,11 +221,11 @@ function loadLogoBuffer(): Buffer | null {
   }
 }
 
-function InvoiceDocument({ order, logoBuf }: Props & { logoBuf: Buffer | null }) {
+function InvoiceDocument({ order, logoBuf, showPrices = true }: Props & { logoBuf: Buffer | null }) {
   return (
     <Document
       author="Master Education"
-      title={`Siparis ${order.orderNumber}`}
+      title={`Sipariş ${order.orderNumber}`}
       creator="Master Education"
     >
       <Page size="A4" style={styles.page}>
@@ -219,11 +235,11 @@ function InvoiceDocument({ order, logoBuf }: Props & { logoBuf: Buffer | null })
             {logoBuf && <Image style={styles.logo} src={logoBuf} />}
             <View>
               <Text style={styles.brandName}>MASTER EDUCATION</Text>
-              <Text style={styles.brandTag}>Egitim Materyalleri</Text>
+              <Text style={styles.brandTag}>Eğitim Materyalleri</Text>
             </View>
           </View>
           <View style={styles.invoiceMeta}>
-            <Text style={styles.invoiceLabel}>Siparis No</Text>
+            <Text style={styles.invoiceLabel}>Sipariş No</Text>
             <Text style={styles.invoiceNumber}>{order.orderNumber}</Text>
             <Text style={styles.invoiceDate}>{formatDate(order.createdAt)}</Text>
             <Text style={styles.invoiceDate}>
@@ -254,7 +270,7 @@ function InvoiceDocument({ order, logoBuf }: Props & { logoBuf: Buffer | null })
             <Text style={styles.colLine}>{order.shippingCity}</Text>
             {order.shippingPhone && <Text style={styles.colLine}>{order.shippingPhone}</Text>}
             <Text style={styles.colLine}>
-              Odeme: {PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}
+              Ödeme: {PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}
             </Text>
           </View>
         </View>
@@ -262,11 +278,8 @@ function InvoiceDocument({ order, logoBuf }: Props & { logoBuf: Buffer | null })
         {/* Items table */}
         <View style={styles.table}>
           <View style={styles.tableHead}>
-            <Text style={[styles.th, { flex: 4 }]}>Urun</Text>
+            <Text style={[styles.th, { flex: 4 }]}>Ürün</Text>
             <Text style={[styles.th, { flex: 1, textAlign: "right" }]}>Adet</Text>
-            <Text style={[styles.th, { flex: 1.4, textAlign: "right" }]}>Birim</Text>
-            <Text style={[styles.th, { flex: 0.7, textAlign: "right" }]}>KDV</Text>
-            <Text style={[styles.th, { flex: 1.4, textAlign: "right" }]}>Tutar</Text>
           </View>
           {order.items.map((item, i) => (
             <View
@@ -282,48 +295,41 @@ function InvoiceDocument({ order, logoBuf }: Props & { logoBuf: Buffer | null })
                 )}
               </View>
               <Text style={[styles.tdRight, { flex: 1 }]}>{item.quantity}</Text>
-              <Text style={[styles.tdRight, { flex: 1.4 }]}>
-                {formatCurrency(Number(item.unitPrice))}
-              </Text>
-              <Text style={[styles.tdRight, { flex: 0.7 }]}>
-                %{item.vatRate ?? 0}
-              </Text>
-              <Text style={[styles.tdRight, { flex: 1.4, fontWeight: "bold" }]}>
-                {formatCurrency(Number(item.lineTotal))}
-              </Text>
             </View>
           ))}
         </View>
 
-        {/* Totals */}
-        <View style={styles.totals}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Ara Toplam</Text>
-            <Text style={styles.totalValue}>{formatCurrency(order.subtotal)}</Text>
-          </View>
-          {order.discountTotal > 0 && (
+        {/* Totals — yalnız fiyat görünür modunda (admin) */}
+        {showPrices && (
+          <View style={styles.totals}>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Indirim</Text>
-              <Text style={[styles.totalValue, { color: "#16A34A" }]}>
-                -{formatCurrency(order.discountTotal)}
+              <Text style={styles.totalLabel}>Ara Toplam</Text>
+              <Text style={styles.totalValue}>{formatCurrency(order.subtotal)}</Text>
+            </View>
+            {order.discountTotal > 0 && (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>İndirim</Text>
+                <Text style={[styles.totalValue, { color: "#16A34A" }]}>
+                  -{formatCurrency(order.discountTotal)}
+                </Text>
+              </View>
+            )}
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>KDV</Text>
+              <Text style={styles.totalValue}>{formatCurrency(order.vatTotal)}</Text>
+            </View>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Kargo</Text>
+              <Text style={styles.totalValue}>
+                {order.shippingCost === 0 ? "Ücretsiz" : formatCurrency(order.shippingCost)}
               </Text>
             </View>
-          )}
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>KDV</Text>
-            <Text style={styles.totalValue}>{formatCurrency(order.vatTotal)}</Text>
+            <View style={styles.grandRow}>
+              <Text style={styles.grandLabel}>Genel Toplam</Text>
+              <Text style={styles.grandValue}>{formatCurrency(order.total)}</Text>
+            </View>
           </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Kargo</Text>
-            <Text style={styles.totalValue}>
-              {order.shippingCost === 0 ? "Ucretsiz" : formatCurrency(order.shippingCost)}
-            </Text>
-          </View>
-          <View style={styles.grandRow}>
-            <Text style={styles.grandLabel}>Genel Toplam</Text>
-            <Text style={styles.grandValue}>{formatCurrency(order.total)}</Text>
-          </View>
-        </View>
+        )}
 
         {/* Note */}
         {order.note && (
@@ -341,9 +347,12 @@ function InvoiceDocument({ order, logoBuf }: Props & { logoBuf: Buffer | null })
   );
 }
 
-export async function generateInvoicePdf(order: InvoiceOrder): Promise<Buffer> {
+export async function generateInvoicePdf(
+  order: InvoiceOrder,
+  showPrices = true,
+): Promise<Buffer> {
   ensureFonts();
   const logoBuf = loadLogoBuffer();
-  const doc = <InvoiceDocument order={order} logoBuf={logoBuf} />;
+  const doc = <InvoiceDocument order={order} logoBuf={logoBuf} showPrices={showPrices} />;
   return await renderToBuffer(doc);
 }

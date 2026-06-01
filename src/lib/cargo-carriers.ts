@@ -7,7 +7,7 @@ export interface CarrierMeta {
 }
 
 // URL'ler kargo firmalarinin halka acik takip sayfalaridir. Degisirse
-// burada tek noktada guncellenir.
+// burada tek noktada güncellenir.
 export const CARGO_CARRIERS: Record<CargoCarrier, CarrierMeta> = {
   ARAS: {
     label: "Aras Kargo",
@@ -56,6 +56,11 @@ export const CARGO_CARRIERS: Record<CargoCarrier, CarrierMeta> = {
     trackingUrl: (no) =>
       `https://trendyolexpress.com/gonderi-takip?code=${encodeURIComponent(no)}`,
     color: "#F27A1A",
+  },
+  DEPODAN_TESLIM: {
+    label: "Depodan Teslim",
+    trackingUrl: () => null, // depodan elden/araçla teslim — harici takip yok
+    color: "#0F766E",
   },
   OTHER: {
     label: "Diger",

@@ -39,6 +39,7 @@ const CARRIER_KEYS: CargoCarrier[] = [
   "KOLAY_GELSIN",
   "HEPSIJET",
   "TRENDYOL",
+  "DEPODAN_TESLIM",
   "OTHER",
 ];
 
@@ -73,6 +74,10 @@ export function OrderStatusForm({
   const [eta, setEta] = useState(toDateInput(estimatedDeliveryAt));
   const [note, setNote] = useState(adminNote ?? "");
 
+  // Depodan teslimde harici kargo takibi yoktur — takip no alanı gizlenir
+  // ve gönderimde boş geçilir.
+  const isWarehouse = carrier === "DEPODAN_TESLIM";
+
   function submit() {
     return run(async () => {
       setError(null);
@@ -81,7 +86,7 @@ export function OrderStatusForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: newStatus,
-          trackingNumber: tracking || undefined,
+          trackingNumber: isWarehouse ? undefined : tracking || undefined,
           trackingCarrier: carrier || null,
           trackingCarrierName: carrier === "OTHER" ? carrierName || "" : "",
           estimatedDeliveryAt: eta || null,
@@ -153,15 +158,17 @@ export function OrderStatusForm({
           </select>
         </label>
 
-        <label className="block">
-          <span className="block text-xs font-medium text-gray-500 mb-1">Kargo Takip No</span>
-          <input
-            type="text"
-            value={tracking}
-            onChange={(e) => setTracking(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-gold font-mono"
-          />
-        </label>
+        {!isWarehouse && (
+          <label className="block">
+            <span className="block text-xs font-medium text-gray-500 mb-1">Kargo Takip No</span>
+            <input
+              type="text"
+              value={tracking}
+              onChange={(e) => setTracking(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-gold font-mono"
+            />
+          </label>
+        )}
       </div>
 
       {carrier === "OTHER" && (

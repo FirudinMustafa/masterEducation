@@ -4,10 +4,11 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { formatPrice } from "@/lib/utils";
 import { ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/constants";
+import { carrierLabel } from "@/lib/cargo-carriers";
 import { OrderStatusForm } from "@/components/admin/order-status-form";
 import { InvoiceRetryButton } from "@/components/admin/invoice-retry-button";
 
-export const metadata: Metadata = { title: "Siparis Detayi - Admin" };
+export const metadata: Metadata = { title: "Sipariş Detayi - Admin" };
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -34,7 +35,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center gap-3">
         <Link href="/admin/siparisler" className="text-sm text-gray-500 hover:text-brand-black">
-          &larr; Siparisler
+          &larr; Siparişler
         </Link>
       </div>
 
@@ -55,7 +56,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
-            PDF Indir
+            PDF İndir
           </a>
           <Link
             href={`/admin/siparisler/${order.id}/fatura`}
@@ -115,10 +116,19 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
               {order.shippingCity}
               {order.address.postalCode && ` ${order.address.postalCode}`}
             </p>
+            {order.schoolName && (
+              <p className="pt-2 mt-1 border-t border-gray-100">
+                <span className="text-gray-500">Okul: </span>
+                <span className="font-medium text-brand-black">{order.schoolName}</span>
+              </p>
+            )}
             {order.trackingNumber && (
               <p className="pt-2 mt-1 border-t border-gray-100 text-xs">
                 <span className="text-gray-500">
-                  {order.trackingCarrier ?? "Kargo"}:{" "}
+                  {order.trackingCarrier
+                    ? carrierLabel(order.trackingCarrier, order.trackingCarrierName)
+                    : "Kargo"}
+                  :{" "}
                 </span>
                 <Link
                   href={`/kargo-takip/${order.trackingNumber}`}
@@ -207,16 +217,16 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="p-5 border-b border-gray-100">
-          <h2 className="font-semibold text-brand-black">Urunler ({order.items.length})</h2>
+          <h2 className="font-semibold text-brand-black">Ürünler ({order.items.length})</h2>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Urun</th>
+              <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Ürün</th>
               <th className="text-center p-3 text-xs font-semibold text-gray-500 uppercase">ISBN</th>
               <th className="text-center p-3 text-xs font-semibold text-gray-500 uppercase">Adet</th>
               <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Birim</th>
-              <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Iskonto</th>
+              <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">İskonto</th>
               <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Tutar</th>
             </tr>
           </thead>
@@ -239,7 +249,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
             </tr>
             {Number(order.discountTotal) > 0 && (
               <tr>
-                <td colSpan={5} className="p-3 text-right text-gray-500">Iskonto</td>
+                <td colSpan={5} className="p-3 text-right text-gray-500">İskonto</td>
                 <td className="p-3 text-right text-emerald-600">
                   -{formatPrice(Number(order.discountTotal))}
                 </td>
@@ -259,8 +269,8 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
         </table>
       </div>
 
-      {/* Sadece musteri notu — admin notu zaten asagidaki "Durum Guncelle"
-          textbox'inda mevcut, ekstra kart cikarildi (kullanici istegi). */}
+      {/* Sadece musteri notu — admin notu zaten asagidaki "Durum Güncelle"
+          textbox'inda mevcut, ekstra kart çıkarildi (kullanıcı istegi). */}
       {order.note && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
@@ -271,7 +281,7 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
       )}
 
       <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="font-semibold text-brand-black mb-4">Durum Guncelle</h2>
+        <h2 className="font-semibold text-brand-black mb-4">Durum Güncelle</h2>
         <OrderStatusForm
           orderId={order.id}
           status={order.status}

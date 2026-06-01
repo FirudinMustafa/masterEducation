@@ -29,6 +29,7 @@ const CARRIER_OPTIONS: CargoCarrier[] = [
   "KOLAY_GELSIN",
   "HEPSIJET",
   "TRENDYOL",
+  "DEPODAN_TESLIM",
   "OTHER",
 ];
 
@@ -41,6 +42,7 @@ const CARRIER_LABELS: Record<CargoCarrier, string> = {
   KOLAY_GELSIN: "Kolay Gelsin",
   HEPSIJET: "HepsiJet",
   TRENDYOL: "Trendyol Express",
+  DEPODAN_TESLIM: "Depodan Teslim",
   OTHER: "Diğer",
 };
 

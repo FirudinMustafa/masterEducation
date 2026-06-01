@@ -279,6 +279,7 @@ enum CargoCarrier {
   KOLAY_GELSIN
   HEPSIJET
   TRENDYOL
+  DEPODAN_TESLIM
   OTHER
 }
 
@@ -315,6 +316,10 @@ model Order {
 
   note      String?
   adminNote String?
+
+  // Bayi siparişlerinde zorunlu — siparişin hangi okul için verildiği.
+  // Müşteri siparişlerinde boş kalır (nullable).
+  schoolName String?
 
   shippingName    String
   shippingCity    String

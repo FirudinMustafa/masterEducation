@@ -39,6 +39,7 @@ const bodySchema = z
         "KOLAY_GELSIN",
         "HEPSIJET",
         "TRENDYOL",
+        "DEPODAN_TESLIM",
         "OTHER",
       ])
       .nullable()
@@ -54,7 +55,7 @@ const bodySchema = z
       v.trackingCarrierName !== undefined ||
       v.estimatedDeliveryAt !== undefined ||
       (v.adminNote && v.adminNote.length > 0),
-    { message: "En az bir alan guncellenmeli." }
+    { message: "En az bir alan güncellenmeli." }
   );
 
 /**
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
   for (const orderId of orderIds) {
     const order = orderMap.get(orderId);
     if (!order) {
-      failed.push({ id: orderId, error: "Siparis bulunamadi." });
+      failed.push({ id: orderId, error: "Sipariş bulunamadi." });
       continue;
     }
 
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
     if (wasCancelled && status && status !== "CANCELLED") {
       failed.push({
         id: orderId,
-        error: "Iptal edilmis siparis tekrar aktif edilemez.",
+        error: "İptal edilmis sipariş tekrar aktif edilemez.",
       });
       continue;
     }
@@ -185,7 +186,7 @@ export async function POST(req: NextRequest) {
                 kind: "ORDER_CANCEL_CREDIT",
                 amount: -Number(order.total),
                 orderId: order.id,
-                note: `Iptal: ${order.orderNumber}`,
+                note: `İptal: ${order.orderNumber}`,
                 createdBy: gate.session.user.id,
               });
             }
@@ -244,7 +245,7 @@ export async function POST(req: NextRequest) {
 
       if (statusChanged && status) {
         after(() => {
-          // E11 — CANCELLED ozel mail (iade bilgisi).
+          // E11 — CANCELLED özel mail (iade bilgisi).
           const tpl =
             status === "CANCELLED"
               ? templateOrderCancelled({
