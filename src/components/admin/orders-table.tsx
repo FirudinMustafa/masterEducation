@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/utils";
 import { ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/constants";
 import type { OrderStatus, PaymentMethod } from "@prisma/client";
 import { OrdersBulkStatusModal, type BulkPatch } from "./orders-bulk-status-modal";
+import { toast } from "@/stores/toast-store";
 
 export interface OrderRow {
   id: string;
@@ -78,16 +79,20 @@ export function OrdersTable({ orders }: Props) {
       total?: number;
     };
     if (!res.ok) {
-      setError(data.error ?? "Toplu işlem başarısız.");
+      const msg = data.error ?? "Toplu işlem başarısız.";
+      setError(msg);
+      toast.error("Toplu işlem başarısız", msg);
       return;
     }
     const failed = data.failed ?? [];
     if (failed.length > 0) {
-      setInfo(
-        `${data.succeeded ?? 0}/${data.total ?? 0} başarılı, ${failed.length} sipariş atlandı (${failed[0]?.error}…).`
-      );
+      const msg = `${data.succeeded ?? 0}/${data.total ?? 0} başarılı, ${failed.length} sipariş atlandı (${failed[0]?.error}…).`;
+      setInfo(msg);
+      toast.warning("Kısmen tamamlandı", msg);
     } else {
-      setInfo(`${data.succeeded ?? 0} sipariş güncellendi.`);
+      const msg = `${data.succeeded ?? 0} sipariş güncellendi.`;
+      setInfo(msg);
+      toast.success("Sipariş güncellendi", msg);
     }
     setShowModal(false);
     setSelected(new Set());
@@ -137,7 +142,7 @@ export function OrdersTable({ orders }: Props) {
               <span className="text-gray-500">
                 {PAYMENT_METHOD_LABELS[o.paymentMethod] || o.paymentMethod}
               </span>
-              <span className="text-gray-400">· {o.itemCount} urun</span>
+              <span className="text-gray-400">· {o.itemCount} ürün</span>
               <span className="ml-auto text-gray-400">
                 {new Date(o.createdAt).toLocaleDateString("tr-TR")}
               </span>
@@ -150,7 +155,7 @@ export function OrdersTable({ orders }: Props) {
       <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
         {orders.length === 0 ? (
           <div className="p-8 text-center text-gray-500 text-sm">
-            Siparis bulunamadi.
+            Sipariş bulunamadi.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -162,21 +167,21 @@ export function OrdersTable({ orders }: Props) {
                       type="checkbox"
                       checked={allChecked}
                       onChange={toggleAll}
-                      aria-label="Tumunu sec"
+                      aria-label="Tümunu seç"
                       className="h-4 w-4 cursor-pointer"
                     />
                   </th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
-                    Siparis No
+                    Sipariş No
                   </th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
                     Musteri
                   </th>
                   <th className="text-center p-3 text-xs font-semibold text-gray-500 uppercase">
-                    Urun
+                    Ürün
                   </th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
-                    Odeme
+                    Ödeme
                   </th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
                     Durum
@@ -202,7 +207,7 @@ export function OrdersTable({ orders }: Props) {
                         type="checkbox"
                         checked={selected.has(o.id)}
                         onChange={() => toggleOne(o.id)}
-                        aria-label={`${o.orderNumber} sec`}
+                        aria-label={`${o.orderNumber} seç`}
                         className="h-4 w-4 cursor-pointer"
                       />
                     </td>
@@ -258,7 +263,7 @@ export function OrdersTable({ orders }: Props) {
           <div className="px-4 py-3 flex flex-wrap items-center gap-2 justify-between">
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-brand-black">
-                {selected.size} siparis secildi
+                {selected.size} sipariş secildi
               </span>
               <button
                 onClick={() => setSelected(new Set())}

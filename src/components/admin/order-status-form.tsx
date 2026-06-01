@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CargoCarrier, OrderStatus } from "@prisma/client";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import { CARGO_CARRIERS } from "@/lib/cargo-carriers";
+import { useBusy } from "@/lib/hooks/use-busy";
+import { toast } from "@/stores/toast-store";
 
 interface OrderStatusFormProps {
   orderId: string;
@@ -17,8 +19,8 @@ interface OrderStatusFormProps {
 }
 
 // Backend whitelist'i ile birebir aynı (orders/[id]/status + bulk-status).
-// Admin yanlış geçiş seçip 400 almasin diye dropdown sadece izinli sonraki
-// state'leri + mevcut state'i (no-op tracking/note guncelleme icin) gösterir.
+// Admin yanlış geçiş secip 400 almasin diye dropdown sadece izinli sonraki
+// state'leri + mevcut state'i (no-op tracking/note güncelleme icin) gösterir.
 const ALLOWED_NEXT: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ["APPROVED", "CANCELLED"],
   APPROVED: ["PROCESSING", "CANCELLED"],
@@ -60,7 +62,7 @@ export function OrderStatusForm({
   adminNote,
 }: OrderStatusFormProps) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<OrderStatus>(status);
   const [tracking, setTracking] = useState(trackingNumber ?? "");
@@ -71,26 +73,34 @@ export function OrderStatusForm({
   const [eta, setEta] = useState(toDateInput(estimatedDeliveryAt));
   const [note, setNote] = useState(adminNote ?? "");
 
-  async function submit() {
-    setError(null);
-    const res = await fetch(`/api/admin/orders/${orderId}/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        status: newStatus,
-        trackingNumber: tracking || undefined,
-        trackingCarrier: carrier || null,
-        trackingCarrierName: carrier === "OTHER" ? carrierName || "" : "",
-        estimatedDeliveryAt: eta || null,
-        adminNote: note || undefined,
-      }),
+  function submit() {
+    return run(async () => {
+      setError(null);
+      const res = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: newStatus,
+          trackingNumber: tracking || undefined,
+          trackingCarrier: carrier || null,
+          trackingCarrierName: carrier === "OTHER" ? carrierName || "" : "",
+          estimatedDeliveryAt: eta || null,
+          adminNote: note || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = data.error ?? "Güncelleme başarısız.";
+        setError(msg);
+        toast.error("Güncelleme başarısız", msg);
+        return;
+      }
+      toast.success(
+        "Sipariş güncellendi",
+        `Durum: ${ORDER_STATUS_LABELS[newStatus]}`,
+      );
+      router.refresh();
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Guncelleme basarisiz.");
-      return;
-    }
-    startTransition(() => router.refresh());
   }
 
   return (
@@ -187,17 +197,17 @@ export function OrderStatusForm({
           rows={2}
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Musteriye gorunen aciklama (timeline'da yer alir)"
+          placeholder="Musteriye görünen açıklama (timeline'da yer alir)"
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-gold"
         />
       </label>
 
       <button
         onClick={submit}
-        disabled={pending}
+        disabled={busy}
         className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
       >
-        Guncelle
+        Güncelle
       </button>
     </div>
   );
