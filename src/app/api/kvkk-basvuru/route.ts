@@ -43,16 +43,14 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali, QA 2026-05-18)
+  const ip = (await import("@/lib/get-client-ip")).getClientIp(req.headers);
 
   // Saatte 3 basvuru / IP — spam koruma. Yasal basvuru icin yeterli sinir.
   const rl = rateLimit(`kvkk-basvuru:${ip}`, 3, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: "Cok fazla basvuru. Bir saat sonra tekrar deneyin." },
+      { error: "Çok fazla basvuru. Bir saat sonra tekrar deneyin." },
       { status: 429 }
     );
   }
@@ -67,7 +65,7 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Lutfen zorunlu alanlari kontrol edin." },
+      { error: "Lütfen zorunlu alanlari kontrol edin." },
       { status: 400 }
     );
   }
@@ -115,7 +113,7 @@ export async function POST(req: NextRequest) {
       <pre style="background:#fafafa;padding:12px;border:1px solid #eee;border-radius:8px;white-space:pre-wrap;font-family:inherit;font-size:13px;">${escapeHtml(data.detail)}</pre>
       <p style="margin-top:24px;font-size:12px;color:#888">
         IP: ${escapeHtml(ip.slice(0, 64))} · Tarih: ${new Date().toLocaleString("tr-TR")}<br>
-        KVKK madde 13/2 uyarinca <strong>30 gun</strong> icinde basvuranin yontemine gore donus yapilmalidir.
+        KVKK madde 13/2 uyarınca <strong>30 gün</strong> icinde basvuranin yontemine göre donus yapilmalidir.
       </p>
     </body></html>`;
     await sendEmail({
@@ -128,8 +126,8 @@ export async function POST(req: NextRequest) {
     const userSubject = `KVKK basvurunuz alindi — ${requestId}`;
     const userHtml = `<!doctype html><html><body style="font-family:system-ui,sans-serif;max-width:640px;margin:24px auto;color:#111;">
       <h2 style="margin:0 0 8px 0">Basvurunuz alindi</h2>
-      <p>Sayin ${escapeHtml(data.fullName)},</p>
-      <p>6698 sayili KVKK kapsaminda yaptiginiz basvuru tarafimiza ulasti. Talebiniz, KVKK madde 13/2 uyarinca en gec <strong>30 gun</strong> icinde sonuclandirilarak ${data.channel === "email" ? "email" : "posta"} yoluyla tarafiniza iletilecektir.</p>
+      <p>Sayın ${escapeHtml(data.fullName)},</p>
+      <p>6698 sayıli KVKK kapsaminda yaptiginiz basvuru tarafimiza ulasti. Talebiniz, KVKK madde 13/2 uyarınca en gec <strong>30 gün</strong> icinde sonuclandirilarak ${data.channel === "email" ? "email" : "posta"} yoluyla tarafiniza iletilecektir.</p>
       <p style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:13px">
         <strong>Basvuru No:</strong> ${escapeHtml(requestId)}<br>
         <strong>Talep Turu:</strong> ${escapeHtml(typeLabel)}

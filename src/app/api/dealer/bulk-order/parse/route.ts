@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const sheet = wb.getWorksheet("Siparis") ?? wb.worksheets[0];
+  const sheet = wb.getWorksheet("Sipariş") ?? wb.worksheets[0];
   if (!sheet) {
     return NextResponse.json({ error: "Sayfa bulunamadi." }, { status: 400 });
   }
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     const qtyRaw = row.getCell(iQty + 1).value;
     const qty = Number(qtyRaw);
     if (!Number.isInteger(qty) || qty < 1) {
-      // Branded footer / aciklama satiri: gecerli data degil, sessizce atla.
+      // Branded footer / açıklama satiri: gecerli data degil, sessizce atla.
       if (/@|·/.test(sku) && sku.length > 20) continue;
       parseErrors.push(`Satir ${rn}: gecersiz adet.`);
       continue;
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
         unitPrice: null,
         lineTotal: null,
         ok: false,
-        error: "Urun bulunamadi veya yayinda degil.",
+        error: "Ürün bulunamadi veya yayinda degil.",
       };
     }
     if (product.stockQuantity < r.quantity) {

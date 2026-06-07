@@ -173,14 +173,14 @@ export function DealersTable({ dealers }: Props) {
                       type="checkbox"
                       checked={allChecked}
                       onChange={toggleAll}
-                      aria-label="Tumunu sec"
+                      aria-label="Tümunu seç"
                       className="h-4 w-4 cursor-pointer"
                     />
                   </th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Firma</th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Yetkili</th>
-                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Iletisim</th>
-                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Odeme</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">İletişim</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Ödeme</th>
                   <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Limit</th>
                   <th className="text-center p-3 text-xs font-semibold text-gray-500 uppercase">Durum</th>
                   <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Basvuru</th>
@@ -199,7 +199,7 @@ export function DealersTable({ dealers }: Props) {
                         type="checkbox"
                         checked={selected.has(d.id)}
                         onChange={() => toggleOne(d.id)}
-                        aria-label={`${d.companyName} sec`}
+                        aria-label={`${d.companyName} seç`}
                         className="h-4 w-4 cursor-pointer"
                       />
                     </td>

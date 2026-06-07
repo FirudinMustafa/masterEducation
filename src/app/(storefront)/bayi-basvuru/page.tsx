@@ -36,7 +36,7 @@ export default function DealerApplicationPage() {
     setError("");
     if (!termsAccepted) {
       setError(
-        "Devam etmek icin Uyelik Sozlesmesi ve KVKK Aydinlatma Metni'ni onaylamaniz gerekir."
+        "Devam etmek icin Üyelik Sözleşmesi ve KVKK Aydınlatma Metni'ni onaylamaniz gerekir."
       );
       return;
     }
@@ -52,7 +52,7 @@ export default function DealerApplicationPage() {
     setLoading(false);
 
     if (!res.ok) {
-      setError(data.error || "Basvuru sirasinda bir hata olustu.");
+      setError(data.error || "Basvuru sirasinda bir hata oluştu.");
     } else {
       setSuccess(true);
     }
@@ -125,7 +125,7 @@ export default function DealerApplicationPage() {
             <Input id="name" label="Ad Soyad *" value={form.name} onChange={(e) => update("name", e.target.value)} required />
             <Input id="email" label="Email *" type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required />
             <Input id="phone" label="Telefon *" type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} required />
-            <Input id="password" label="Sifre *" type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required placeholder="En az 6 karakter" />
+            <Input id="password" label="Şifre *" type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required placeholder="En az 6 karakter" />
           </div>
         </div>
 
@@ -178,7 +178,7 @@ export default function DealerApplicationPage() {
                 target="_blank"
                 className="font-medium underline underline-offset-2 hover:text-neutral-900"
               >
-                Uyelik Sozlesmesi
+                Üyelik Sözleşmesi
               </Link>
               &apos;ni ve{" "}
               <Link
@@ -186,7 +186,7 @@ export default function DealerApplicationPage() {
                 target="_blank"
                 className="font-medium underline underline-offset-2 hover:text-neutral-900"
               >
-                KVKK Aydinlatma Metni
+                KVKK Aydınlatma Metni
               </Link>
               &apos;ni okudum, kabul ediyorum.{" "}
               <span className="text-rose-600">*</span>

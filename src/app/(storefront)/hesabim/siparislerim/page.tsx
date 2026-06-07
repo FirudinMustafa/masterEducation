@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { OrderCard, type OrderCardData } from "./order-card";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 
-export const metadata: Metadata = { title: "Siparislerim" };
+export const metadata: Metadata = { title: "Siparişlerim" };
 
 export default async function MyOrdersPage() {
   const session = await auth();
@@ -70,18 +70,18 @@ export default async function MyOrdersPage() {
         <Link
           href="/hesabim"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
-          aria-label="Hesabim'a don"
+          aria-label="Hesabım'a don"
         >
           <ChevronLeftIcon className="h-5 w-5" />
         </Link>
         <div className="min-w-0">
           <h1 className="font-display text-xl font-bold text-neutral-950 sm:text-2xl">
-            Siparislerim
+            Siparişlerim
           </h1>
           <p className="text-[12px] text-neutral-500">
             {data.length === 0
-              ? "Henuz siparisiniz yok"
-              : `Toplam ${data.length} siparis`}
+              ? "Henuz siparişiniz yok"
+              : `Toplam ${data.length} sipariş`}
           </p>
         </div>
       </div>
@@ -103,7 +103,7 @@ export default async function MyOrdersPage() {
               />
             </svg>
           </div>
-          <p className="text-sm text-neutral-500">Henuz siparisiniz bulunmamaktadir.</p>
+          <p className="text-sm text-neutral-500">Henuz siparişiniz bulunmamaktadir.</p>
           <Link
             href="/urunler"
             className="mt-5 inline-flex items-center justify-center rounded-xl bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"

@@ -38,12 +38,12 @@ export function AuthShell({ title, subtitle, children, footer }: Props) {
 
           {/* Top: logo — transparent versiyonu kullaniyoruz ki siyah panelde
               brightness-0 invert filter ile sadece mark+yazi beyaza cevrilsin,
-              etrafi transparent kalsin. Aksi halde tum kare beyaza donerdi. */}
+              etrafi transparent kalsin. Aksi halde tüm kare beyaza donerdi. */}
           <Link href="/" className="relative z-10 inline-flex items-center">
             <Image
               src="/me-logo-v2-transparent.png"
               alt="Master Education"
-              width={132}
+              width={196}
               height={70}
               className="object-contain brightness-0 invert"
               priority
@@ -53,22 +53,22 @@ export function AuthShell({ title, subtitle, children, footer }: Props) {
           {/* Middle: hero copy — cesur, sade, tek vuruş */}
           <div className="relative z-10 max-w-md">
             <h2 className="font-display text-[44px] font-semibold leading-[1.05] tracking-tight text-white">
-              Egitimin{" "}
+              Eğitimin{" "}
               <span className="bg-gradient-to-r from-brand-gold via-amber-200 to-brand-gold bg-clip-text text-transparent">
                 tek adresi.
               </span>
             </h2>
             <p className="mt-6 text-[15px] leading-relaxed text-neutral-400">
-              Cambridge, Pearson, Collins, Klett ve 15+ yayinevinden 4.800 kitap.
-              Bayi ve okul siparisleri icin ozel iskontolar.
+              Cambridge, Pearson, Collins, Klett ve 15+ yayınevinden 4.800 kitap.
+              Bayi ve okul siparişleri icin özel iskontolar.
             </p>
           </div>
 
           {/* Bottom: minimal footer + minimal stat strip */}
           <div className="relative z-10 space-y-6">
             <div className="grid grid-cols-3 gap-6 border-t border-white/10 pt-6">
-              <Stat label="Urun" value="4.800+" />
-              <Stat label="Yayinevi" value="15+" />
+              <Stat label="Ürün" value="4.800+" />
+              <Stat label="Yayınevi" value="15+" />
               <Stat label="Bayi" value="200+" />
             </div>
             <p className="text-[11px] text-neutral-500">
@@ -79,15 +79,15 @@ export function AuthShell({ title, subtitle, children, footer }: Props) {
 
         {/* ── FORM PANEL ──────────────────────────────────────── */}
         <main className="flex flex-col bg-white">
-          {/* Mobile mini-header — sadece logo + giris/kayit toggle yok */}
+          {/* Mobile mini-header — sadece logo + giriş/kayit toggle yok */}
           <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 lg:hidden">
             <Link href="/" className="inline-flex items-center">
               <Image
                 src="/me-logo-v2.png"
                 alt="Master Education"
-                width={108}
-                height={32}
-                className="h-8 w-auto object-contain"
+                width={112}
+                height={40}
+                className="h-9 w-auto object-contain"
                 priority
               />
             </Link>

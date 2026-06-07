@@ -47,7 +47,7 @@ export function ProductFilters({
       const merged = { ...currentFilters, ...overrides };
       const params = new URLSearchParams();
       if (merged.search) params.set("ara", merged.search);
-      if (merged.publisherSlug) params.set("yayinevi", merged.publisherSlug);
+      if (merged.publisherSlug) params.set("yayınevi", merged.publisherSlug);
       if (merged.categorySlug) params.set("kategori", merged.categorySlug);
       if (merged.language) params.set("dil", merged.language);
       if (merged.productType) params.set("tur", merged.productType);
@@ -95,7 +95,7 @@ export function ProductFilters({
         >
           <MagnifyingGlassIcon className="ml-3 mr-2 h-4 w-4 self-center text-neutral-400" />
           <input
-            placeholder="Urun adi, ISBN..."
+            placeholder="Ürün adi, ISBN..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             className="flex-1 bg-transparent py-2 pr-2 text-sm focus:outline-none"
@@ -173,7 +173,7 @@ export function ProductFilters({
       )}
 
       {publishers.length > 0 && (
-        <FilterGroup title="Yayinevi">
+        <FilterGroup title="Yayınevi">
           <FilterList
             items={publishers.map((p) => ({ value: p.slug, label: p.name }))}
             active={currentFilters.publisherSlug}
@@ -194,7 +194,7 @@ export function ProductFilters({
       )}
 
       {productTypes.length > 0 && (
-        <FilterGroup title="Urun Turu">
+        <FilterGroup title="Ürün Turu">
           <FilterList
             items={productTypes.map((t) => ({ value: t, label: t }))}
             active={currentFilters.productType}
@@ -208,7 +208,7 @@ export function ProductFilters({
           onClick={reset}
           className="mt-3 w-full rounded-lg border border-neutral-200 bg-white py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 cursor-pointer"
         >
-          Tum Filtreleri Temizle
+          Tüm Filtreleri Temizle
         </button>
       )}
     </div>

@@ -17,7 +17,7 @@ interface PageProps {
   searchParams: Promise<{
     sayfa?: string;
     ara?: string;
-    yayinevi?: string;
+    yayınevi?: string;
     dil?: string;
     tur?: string;
     siralama?: string;
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const baseUrl = process.env.NEXTAUTH_URL ?? "https://mastereducation.com.tr";
   return {
     title: `${category.name} Kitaplari`,
-    description: `Master Education'da ${category.name} kategorisindeki tum kitaplar ve egitim materyalleri.`,
+    description: `Master Education'da ${category.name} kategorisindeki tüm kitaplar ve eğitim materyalleri.`,
     alternates: { canonical: `${baseUrl}/kategoriler/${slug}` },
   };
 }
@@ -47,7 +47,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
   const page = Math.max(1, parseInt(sp.sayfa || "1"));
   const search = sp.ara || "";
-  const publisherSlug = sp.yayinevi || "";
+  const publisherSlug = sp.yayınevi || "";
   const language = sp.dil || "";
   const productType = sp.tur || "";
   const sort = sp.siralama || "yeni";
@@ -77,7 +77,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     case "isim":
       orderBy = { name: "asc" };
       break;
-    case "cok-satan":
+    case "çok-satan":
       orderBy = { orderItems: { _count: "desc" } };
       break;
     default:
@@ -99,7 +99,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
     createdAt: true,
     publisher: { select: { name: true } },
     images: {
-      orderBy: { displayOrder: "asc" as const },
+      orderBy: [{ displayOrder: "asc" as const }, { pictureId: "asc" as const }],
       take: 1,
       select: { filename: true },
     },
@@ -164,19 +164,19 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
 
   const currentParams: Record<string, string> = {};
   if (search) currentParams.ara = search;
-  if (publisherSlug) currentParams.yayinevi = publisherSlug;
+  if (publisherSlug) currentParams.yayınevi = publisherSlug;
   if (language) currentParams.dil = language;
   if (productType) currentParams.tur = productType;
   if (sort !== "yeni") currentParams.siralama = sort;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <nav className="flex items-center gap-2 text-sm text-brand-muted mb-6">
+      <nav aria-label="breadcrumb" className="flex items-center gap-2 text-sm text-brand-muted mb-6">
         <Link href="/" className="hover:text-brand-black">Anasayfa</Link>
-        <span>/</span>
-        <Link href="/urunler" className="hover:text-brand-black">Urunler</Link>
-        <span>/</span>
-        <span className="text-brand-black">{category.name}</span>
+        <span aria-hidden="true">/</span>
+        <Link href="/urunler" className="hover:text-brand-black">Ürünler</Link>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page" className="text-brand-black">{category.name}</span>
       </nav>
 
       <div className="mb-8">
@@ -184,7 +184,7 @@ export default async function CategoryPage({ params, searchParams }: PageProps) 
           {category.name}
         </h1>
         <p className="text-brand-muted text-sm">
-          {totalCount.toLocaleString("tr-TR")} urun bulundu
+          {totalCount.toLocaleString("tr-TR")} ürün bulundu
         </p>
       </div>
 

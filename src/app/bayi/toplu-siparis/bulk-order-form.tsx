@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatPrice } from "@/lib/utils";
 
 interface ParseLine {
   sku: string;
@@ -59,6 +58,7 @@ export function BulkOrderForm({
     address: defaultAddress?.address ?? "",
   });
   const [note, setNote] = useState("");
+  const [schoolName, setSchoolName] = useState("");
 
   async function handleUpload(file: File) {
     setError(null);
@@ -100,11 +100,16 @@ export function BulkOrderForm({
       return;
     }
 
+    if (!schoolName.trim()) {
+      setError("Okul adı zorunludur.");
+      return;
+    }
+
     setSubmitting(true);
     const res = await fetch("/api/dealer/bulk-order/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items, shipping, note }),
+      body: JSON.stringify({ items, shipping, note, schoolName: schoolName.trim() }),
     });
     setSubmitting(false);
     const data = (await res.json().catch(() => ({}))) as {
@@ -113,7 +118,7 @@ export function BulkOrderForm({
       error?: string;
     };
     if (!res.ok) {
-      setError(data.error ?? "Siparis olusturulamadi.");
+      setError(data.error ?? "Sipariş oluşturulamadi.");
       return;
     }
     router.replace(`/bayi/siparisler`);
@@ -127,10 +132,10 @@ export function BulkOrderForm({
             href="/api/dealer/bulk-order/template"
             className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50"
           >
-            Sablon Indir
+            Sablon İndir
           </a>
           <label className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark cursor-pointer">
-            {parsing ? "Okunuyor..." : "Excel Yukle"}
+            {parsing ? "Okunuyor..." : "Excel Yükle"}
             <input
               type="file"
               accept=".xlsx"
@@ -145,8 +150,7 @@ export function BulkOrderForm({
           </label>
           {parse && (
             <span className="text-sm text-gray-500">
-              {parse.summary.okRows} / {parse.summary.totalRows} satir onaylandi ·
-              Toplam {formatPrice(parse.summary.total)}
+              {parse.summary.okRows} / {parse.summary.totalRows} satir onaylandi
             </span>
           )}
         </div>
@@ -160,7 +164,7 @@ export function BulkOrderForm({
 
       {parse && parse.parseErrors.length > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          <p className="font-semibold mb-1">Ayristirma uyarilari:</p>
+          <p className="font-semibold mb-1">Ayristirma uyarılari:</p>
           <ul className="list-disc list-inside text-xs space-y-0.5">
             {parse.parseErrors.map((e, i) => (
               <li key={i}>{e}</li>
@@ -175,10 +179,8 @@ export function BulkOrderForm({
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs uppercase">
                 <th className="text-left p-3">ISBN</th>
-                <th className="text-left p-3">Urun</th>
+                <th className="text-left p-3">Ürün</th>
                 <th className="text-right p-3">Adet</th>
-                <th className="text-right p-3">Birim</th>
-                <th className="text-right p-3">Tutar</th>
                 <th className="text-left p-3">Durum</th>
               </tr>
             </thead>
@@ -191,12 +193,6 @@ export function BulkOrderForm({
                   <td className="p-3 font-mono text-xs">{l.sku}</td>
                   <td className="p-3 line-clamp-1">{l.productName ?? "-"}</td>
                   <td className="p-3 text-right">{l.quantity}</td>
-                  <td className="p-3 text-right">
-                    {l.unitPrice != null ? formatPrice(l.unitPrice) : "-"}
-                  </td>
-                  <td className="p-3 text-right font-semibold">
-                    {l.lineTotal != null ? formatPrice(l.lineTotal) : "-"}
-                  </td>
                   <td className="p-3 text-xs">
                     {l.ok ? (
                       <span className="text-emerald-700">OK</span>
@@ -238,13 +234,13 @@ export function BulkOrderForm({
               required
             />
             <TextField
-              label="Sehir"
+              label="Şehir"
               value={shipping.city}
               onChange={(v) => setShipping({ ...shipping, city: v })}
               required
             />
             <TextField
-              label="Ilce"
+              label="İlçe"
               value={shipping.district}
               onChange={(v) => setShipping({ ...shipping, district: v })}
             />
@@ -268,9 +264,15 @@ export function BulkOrderForm({
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </label>
+          <TextField
+            label="Okul Adı"
+            value={schoolName}
+            onChange={setSchoolName}
+            required
+          />
           <label className="block">
             <span className="block text-xs font-medium text-gray-500 mb-1">
-              Siparis Notu
+              Sipariş Notu
             </span>
             <textarea
               value={note}
@@ -283,10 +285,7 @@ export function BulkOrderForm({
           <div className="flex justify-between items-center">
             <div>
               <p className="text-xs text-gray-500">
-                {parse.summary.okRows} satir siparis olusturulacak
-              </p>
-              <p className="text-lg font-bold text-brand-black">
-                Toplam: {formatPrice(parse.summary.total)}
+                {parse.summary.okRows} satir sipariş oluşturulacak
               </p>
             </div>
             <button
@@ -294,7 +293,7 @@ export function BulkOrderForm({
               disabled={submitting}
               className="px-5 py-2.5 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
             >
-              {submitting ? "Siparis olusturuluyor..." : "Acik Hesap ile Onayla"}
+              {submitting ? "Sipariş oluşturuluyor..." : "Acik Hesap ile Onayla"}
             </button>
           </div>
         </form>

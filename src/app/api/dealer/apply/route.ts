@@ -12,17 +12,16 @@ import { logAudit } from "@/lib/audit";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
 import { env } from "@/lib/env";
 import { BRAND } from "@/lib/constants";
+import { getClientIp } from "@/lib/get-client-ip";
 
 export async function POST(request: NextRequest) {
   try {
-    const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
+    // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali, QA 2026-05-18)
+    const ip = getClientIp(request.headers);
     const rl = rateLimit(`dealer-apply:${ip}`, 5, 60 * 60 * 1000);
     if (!rl.allowed) {
       return NextResponse.json(
-        { error: "Cok fazla basvuru. Daha sonra tekrar deneyin." },
+        { error: "Çok fazla basvuru. Daha sonra tekrar deneyin." },
         { status: 429 }
       );
     }
@@ -53,9 +52,9 @@ export async function POST(request: NextRequest) {
     } = parsed.data;
     const now = new Date();
 
-    // Enumeration suppression: var olan email için generic 201 dönülür.
-    // (Customer register ile aynı pattern — saldırgan kayıtlı email'leri
-    // 409 / "zaten kayitli" mesajlarından ayırt edemez.) Audit'e iz düşülür.
+    // Bayi-only B2B sistem: kafa karışıklığını önlemek için var olan e-postada
+    // sessiz "başarı" yerine net hata döndürülür. (Müşteri kaydı kapalı olduğu
+    // için e-posta enumeration riski düşük; net mesaj UX'i çok daha iyi.)
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       logAudit({
@@ -66,8 +65,11 @@ export async function POST(request: NextRequest) {
         metadata: { source: "apply-attempt-existing", ip: ip.slice(0, 64) },
       });
       return NextResponse.json(
-        { id: null, message: "Basvurunuz alindi." },
-        { status: 201 }
+        {
+          error:
+            "Bu e-posta ile zaten bir başvuru/hesap mevcut. Giriş yapın ya da farklı bir e-posta ile başvurun.",
+        },
+        { status: 409 }
       );
     }
 
@@ -137,7 +139,7 @@ export async function POST(request: NextRequest) {
       queueEmail({ ...notice, to: email });
 
       // E2 — Admin'e yeni bayi basvurusu bildirimi. Admin panele bakana
-      // kadar saatlerce bekleyebilir; aciklayicidir.
+      // kadar saatlerce bekleyebilir; açıklayicidir.
       const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
       if (adminTo) {
         const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
@@ -161,7 +163,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Dealer application error:", error);
     return NextResponse.json(
-      { error: "Basvuru sirasinda bir hata olustu." },
+      { error: "Basvuru sirasinda bir hata oluştu." },
       { status: 500 }
     );
   }

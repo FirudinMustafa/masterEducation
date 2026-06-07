@@ -22,17 +22,22 @@ export async function GET(
     session.user.role === "ADMIN" ? undefined : session.user.id
   );
   if (!order) {
-    return NextResponse.json({ error: "Siparis bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Sipariş bulunamadi." }, { status: 404 });
   }
 
+  // Hiçbir PDF'de fiyat/toplam gösterilmez (admin dahil).
   const pdf = await generateInvoicePdf(order);
   // Buffer → Uint8Array (Next.js Response için)
   const body = new Uint8Array(pdf);
 
+  // HTTP headerlar Latin-1; Turkce 'ş' (codepoint 351) ByteString'e cevrilemez
+  // ve Response throw eder. ASCII fallback + RFC 5987 UTF-8 ile filename ver.
+  const asciiName = `siparis-${order.orderNumber}.pdf`;
+  const utf8Name = `sipariş-${order.orderNumber}.pdf`;
   return new NextResponse(body, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="siparis-${order.orderNumber}.pdf"`,
+      "Content-Disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(utf8Name)}`,
       "Cache-Control": "private, no-store",
     },
   });

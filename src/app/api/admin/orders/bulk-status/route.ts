@@ -27,7 +27,7 @@ const bodySchema = z
   .object({
     orderIds: z.array(z.string().min(1)).min(1).max(MAX_IDS),
     status: z
-      .enum(["APPROVED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"])
+      .enum(["PENDING", "APPROVED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"])
       .optional(),
     trackingCarrier: z
       .enum([
@@ -126,22 +126,17 @@ export async function POST(req: NextRequest) {
     const isCancellingNow =
       status === "CANCELLED" && order.status !== "CANCELLED";
     const wasCancelled = order.status === "CANCELLED";
+    // Reaktivasyon: yanlışlıkla iptal edilen sipariş PENDING'e geri alınır.
+    const isReactivating = wasCancelled && status === "PENDING";
     const isShippingNow =
       status === "SHIPPED" && order.status !== "SHIPPED";
     const isDeliveringNow =
       status === "DELIVERED" && order.status !== "DELIVERED";
     const statusChanged = status !== undefined && status !== order.status;
 
-    if (wasCancelled && status && status !== "CANCELLED") {
-      failed.push({
-        id: orderId,
-        error: "İptal edilmis sipariş tekrar aktif edilemez.",
-      });
-      continue;
-    }
-
     // State machine — atlamalı geçiş engelle (PENDING→DELIVERED yasak vb.).
     // Tek tek admin akışıyla aynı whitelist (single-status route ile uyum).
+    // CANCELLED yalnız PENDING'e geri alınabilir (reaktivasyon).
     if (statusChanged && status) {
       const allowed: Record<typeof order.status, readonly typeof status[]> = {
         PENDING: ["APPROVED", "CANCELLED"],
@@ -149,7 +144,7 @@ export async function POST(req: NextRequest) {
         PROCESSING: ["SHIPPED", "CANCELLED"],
         SHIPPED: ["DELIVERED", "CANCELLED"],
         DELIVERED: [],
-        CANCELLED: [],
+        CANCELLED: ["PENDING"],
       };
       if (!allowed[order.status].includes(status)) {
         failed.push({
@@ -193,6 +188,37 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // Reaktivasyon (CANCELLED → PENDING): iptal yan etkilerini tersine çevir.
+        if (isReactivating) {
+          const items = await tx.orderItem.findMany({
+            where: { orderId },
+            select: { productId: true, quantity: true },
+          });
+          for (const item of items) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stockQuantity: { decrement: item.quantity } },
+            });
+          }
+          if (order.paymentMethod === "OPEN_ACCOUNT") {
+            const dealer = await tx.dealer.findUnique({
+              where: { userId: order.userId },
+              select: { id: true },
+            });
+            if (dealer) {
+              await writeLedgerEntry(tx, {
+                dealerId: dealer.id,
+                kind: "ORDER_DEBIT",
+                amount: Number(order.total),
+                orderId: order.id,
+                note: `Reaktivasyon: ${order.orderNumber}`,
+                createdBy: gate.session.user.id,
+                enforceCreditLimit: true,
+              });
+            }
+          }
+        }
+
         const upd = await tx.order.update({
           where: { id: orderId },
           data: {
@@ -214,6 +240,10 @@ export async function POST(req: NextRequest) {
             ...(status === "CANCELLED" &&
               order.paymentStatus === "PAID" && {
                 paymentStatus: "REFUNDED" as const,
+              }),
+            ...(isReactivating &&
+              order.paymentStatus === "REFUNDED" && {
+                paymentStatus: "PAID" as const,
               }),
           },
         });
@@ -268,10 +298,13 @@ export async function POST(req: NextRequest) {
         });
       }
     } catch (e) {
-      failed.push({
-        id: orderId,
-        error: e instanceof Error ? e.message : "Bilinmeyen hata",
-      });
+      const msg =
+        e instanceof Error && e.message === "CREDIT_LIMIT_EXCEEDED"
+          ? "Reaktivasyon başarısız: bayinin kredi limiti yetersiz."
+          : e instanceof Error
+            ? e.message
+            : "Bilinmeyen hata";
+      failed.push({ id: orderId, error: msg });
     }
   }
 

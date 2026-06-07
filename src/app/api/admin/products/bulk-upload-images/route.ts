@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
   const rl = rateLimit(`bulk-image-upload:${gate.session.user.id}`, 10, 60_000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: "Cok hizli toplu yukleme — kisa bir sure bekleyin." },
+      { error: "Çok hızlı toplu yükleme — kisa bir sure bekleyin." },
       { status: 429 }
     );
   }
@@ -273,7 +273,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Magic-bytes hata sayisi counts'a yansisin
+  // Magic-bytes hata sayısi counts'a yansisin
   const newCounts = {
     ...counts,
     matched: saved,

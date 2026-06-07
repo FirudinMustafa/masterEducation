@@ -50,7 +50,7 @@ export function ActiveFilterChips({ chips, baseParams }: Props) {
         onClick={clearAll}
         className="text-xs font-semibold text-rose-600 hover:underline cursor-pointer"
       >
-        Tumunu temizle
+        Tümunu temizle
       </button>
     </div>
   );

@@ -23,15 +23,32 @@ describe("Faz 18 — partial() default leak regression", () => {
     expect(r.price).toBe(130);
   });
 
-  it("productCreateSchema: defaults still apply on create", () => {
-    const r = productCreateSchema.parse({
+  it("productCreateSchema: isPublished defaults; sınıflandırma alanları zorunlu", () => {
+    // 2026-06-08: Yayınevi/Kategori/Ana-Detay Tür/Dil/Ürün Tipi + KDV/Stok artık
+    // zorunlu. Yalnız isPublished default'u (true) kaldı.
+    const full = {
       name: "Kitap",
       sku: "X1",
       price: 10,
-    });
-    expect(r.stockQuantity).toBe(0);
-    expect(r.vatRate).toBe(0);
+      vatRate: 0,
+      stockQuantity: 0,
+      publisherId: "pub1",
+      categoryId: "cat1",
+      anaTur: "Kitap",
+      detayTur: "Roman",
+      language: "Türkçe",
+      productType: "Basılı",
+    };
+    const r = productCreateSchema.parse(full);
     expect(r.isPublished).toBe(true);
+    expect(r.vatRate).toBe(0);
+    expect(r.stockQuantity).toBe(0);
+
+    // Zorunlu bir sınıflandırma alanı boş/eksikse hata fırlatır.
+    expect(() => productCreateSchema.parse({ ...full, productType: "" })).toThrow();
+    const { categoryId: _omit, ...withoutCategory } = full;
+    void _omit;
+    expect(() => productCreateSchema.parse(withoutCategory)).toThrow();
   });
 
   it("couponUpdateSchema: omitted minSubtotal/isActive stay undefined", () => {

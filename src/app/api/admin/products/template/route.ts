@@ -17,11 +17,11 @@ export async function GET() {
 
   const wb = createBrandedWorkbook();
 
-  buildBrandedSheet(wb, "Urunler", {
-    title: "Toplu Urun Yukleme Sablonu",
+  buildBrandedSheet(wb, "Ürünler", {
+    title: "Toplu Ürün Yükleme Sablonu",
     subtitle: `${new Date().toLocaleDateString("tr-TR")}  ·  satir bazli doldurun`,
     intro:
-      "Zorunlu alanlar: nopId (benzersiz numara), name, isbn, price. Yayinevi ve kategori REFERANS sayfasindaki isimlerden yazin. Bos alanlari atlayin. price/vatRate/stockQuantity sayisaldir, isPublished TRUE/FALSE. (Eski sablonlardaki 'sku' basligi da kabul edilir.)",
+      "Zorunlu alanlar: nopId (benzersiz numara), name, isbn, price. Yayınevi ve kategori REFERANS sayfasindaki isimlerden yazin. Bos alanlari atlayin. price/vatRate/stockQuantity sayısaldir, isPublished TRUE/FALSE. (Eski sablonlardaki 'sku' basligi da kabul edilir.)",
     columns: [
       { header: "nopId", key: "nopId", width: 10, numFmt: "0" },
       { header: "name", key: "name", width: 40 },
@@ -60,8 +60,8 @@ export async function GET() {
     ],
   });
 
-  buildBrandedSheet(wb, "Yayinevleri", {
-    title: "Yayinevi Referans",
+  buildBrandedSheet(wb, "Yayınevleri", {
+    title: "Yayınevi Referans",
     subtitle: "Bu listedeki isimleri kullanin",
     columns: [
       { header: "name", key: "name", width: 36 },
@@ -82,5 +82,9 @@ export async function GET() {
   });
 
   const buffer = await wb.xlsx.writeBuffer();
-  return excelResponse(buffer as ArrayBuffer, "urun-toplu-yukleme-sablon.xlsx");
+  return excelResponse(
+    buffer as ArrayBuffer,
+    "urun-toplu-yukleme-sablon.xlsx",
+    "ürün-toplu-yükleme-şablon.xlsx",
+  );
 }

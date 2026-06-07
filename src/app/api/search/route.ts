@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { productImageUrl } from "@/lib/images";
+import { getClientIp } from "@/lib/get-client-ip";
 
 const MAX_RESULTS = 8;
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+  // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali).
+  const ip = getClientIp(req.headers);
   const rl = rateLimit(`search:${ip}`, 60, 60 * 1000);
   if (!rl.allowed) {
-    return NextResponse.json({ error: "Cok hizli." }, { status: 429 });
+    return NextResponse.json({ error: "Çok hızlı." }, { status: 429 });
   }
 
   const q = (req.nextUrl.searchParams.get("q") ?? "").trim();
@@ -34,7 +36,7 @@ export async function GET(req: NextRequest) {
         price: true,
         publisher: { select: { name: true } },
         images: {
-          orderBy: { displayOrder: "asc" },
+          orderBy: [{ displayOrder: "asc" }, { pictureId: "asc" }],
           take: 1,
           select: { filename: true },
         },

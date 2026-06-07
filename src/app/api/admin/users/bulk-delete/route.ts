@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
+import crypto from "crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
@@ -10,13 +11,30 @@ import { queueEmail, templateAccountDeleted } from "@/lib/email";
 
 const MAX_IDS = 200;
 
+// F-0715: cifte tiklama / aceleci retry'larda ayni payload icin idempotency
+// guard. In-memory Map yeterli — serverless worker bazinda kaybedilse de UI
+// busy-guard ile yeterli koruma saglar.
+const IDEMPOTENCY_TTL_MS = 60_000;
+const recentBulkDeletes = new Map<string, number>();
+function checkIdempotency(key: string): boolean {
+  const now = Date.now();
+  // Eski kayıtlari temizle.
+  for (const [k, ts] of recentBulkDeletes) {
+    if (now - ts > IDEMPOTENCY_TTL_MS) recentBulkDeletes.delete(k);
+  }
+  const prev = recentBulkDeletes.get(key);
+  if (prev && now - prev < IDEMPOTENCY_TTL_MS) return true;
+  recentBulkDeletes.set(key, now);
+  return false;
+}
+
 const bodySchema = z.object({
   userIds: z.array(z.string().min(1)).min(1).max(MAX_IDS),
   mode: z.enum(["auto", "anonymize_all", "hard_only"]).default("auto"),
 });
 
 /**
- * Toplu kullanici silme.
+ * Toplu kullanıcı silme.
  *
  * Modlar:
  *   - "auto" (default): siparişi olmayan → hard delete; siparişi olan → anonymize
@@ -42,6 +60,16 @@ export async function POST(req: NextRequest) {
   }
   const { userIds, mode } = parsed.data;
 
+  // F-0715: idempotency — actor + sorted(userIds) + mode uzerinden SHA-256.
+  const sortedIds = [...userIds].sort();
+  const idemKey = crypto
+    .createHash("sha256")
+    .update(`${gate.session.user.id}|${mode}|${sortedIds.join(",")}`)
+    .digest("hex");
+  if (checkIdempotency(idemKey)) {
+    return NextResponse.json({ skipped: true });
+  }
+
   // Self-id'yi at
   const filteredIds = userIds.filter((id) => id !== gate.session.user.id);
   const skippedSelf = userIds.length - filteredIds.length;
@@ -63,7 +91,7 @@ export async function POST(req: NextRequest) {
   let dealersCleanedUp = 0;
   let cancelledOrdersTotal = 0;
   const skipped: Array<{ id: string; reason: string }> = [];
-  // E10 — Silme/anonimlestirme sonrasi mail gonderilecek kullanicilar.
+  // E10 — Silme/anonimlestirme sonrasi mail gonderilecek kullanıcılar.
   // Adresler simdi yakalanir; islem sonrasi after() icinde queue'lenir.
   const mailTargets: Array<{ email: string; name: string; mode: "hard" | "anonymize" }> = [];
   const when = new Date();
@@ -76,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     try {
       // Bayi ise once dealer cleanup — APPROVED da olsa siliniyor (admin
-      // tek tikla temizlemek istiyor). Aktif siparisler iptal, stok geri,
+      // tek tikla temizlemek istiyor). Aktif siparişler iptal, stok geri,
       // ledger temizlenir, dealer kaydi silinir.
       if (u.dealer) {
         const cleanup = await cleanupDealerByUserId(u.id, gate.session.user.id);
@@ -86,10 +114,10 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Dealer cleanup kalan siparisleri (DELIVERED/CANCELLED) etkilemez.
+      // Dealer cleanup kalan siparişleri (DELIVERED/CANCELLED) etkilemez.
       // hasOrders flag'i CLEANUP SONRASI yeniden hesaplanir (cancel olmus
-      // siparisler hala "var" sayilir cunku kayit silinmedi, sadece status
-      // CANCELLED). KVKK acisindan bu siparisler User'a bagli kalir.
+      // siparişler hala "var" sayılir cunku kayıt silinmedi, sadece status
+      // CANCELLED). KVKK acisindan bu siparişler User'a bagli kalir.
       const hasOrders = u._count.orders > 0;
       const wantsAnonymize =
         mode === "anonymize_all" || (mode === "auto" && hasOrders);
@@ -104,7 +132,7 @@ export async function POST(req: NextRequest) {
         if (hasOrders && mode === "hard_only") {
           skipped.push({
             id: u.id,
-            reason: "Siparis var (hard_only modunda atlandi)",
+            reason: "Sipariş var (hard_only modunda atlandi)",
           });
           continue;
         }
@@ -138,7 +166,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // E10 — Tum silinen/anonimlestirilen kullanicilar icin tek after()
+  // E10 — Tüm silinen/anonimlestirilen kullanıcılar icin tek after()
   // bloku; serverless'da ayri ayri queue spam'lemekten kacinilir.
   if (mailTargets.length > 0) {
     after(() => {

@@ -47,7 +47,7 @@ export async function searchProductIds(
     const total = Number(totalRow[0]?.count ?? 0);
     return { ids: rows.map((r) => r.id), total };
   } catch (err) {
-    // FTS parse hatalari (kotu karakter, bozuk tsquery) kullaniciya 500
+    // FTS parse hatalari (kotu karakter, bozuk tsquery) kullanıcıya 500
     // donmesin — log at, ILIKE ile fallback yap.
     logError({
       source: "server",

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { DiscountManager } from "@/components/admin/discount-manager";
 import { AdminSearchBar } from "@/components/admin/search-bar";
 
-export const metadata: Metadata = { title: "Iskontolar - Admin" };
+export const metadata: Metadata = { title: "İskontolar - Admin" };
 
 interface PageProps {
   searchParams: Promise<{ bayi?: string; ara?: string }>;
@@ -40,9 +40,9 @@ export default async function AdminDiscountsPage({ searchParams }: PageProps) {
     const totalRules = dealers.reduce((s, d) => s + d.discountRules.length, 0);
     return (
       <div className="max-w-4xl">
-        <h1 className="text-2xl font-display font-bold text-brand-black mb-1">Iskontolar</h1>
+        <h1 className="text-2xl font-display font-bold text-brand-black mb-1">İskontolar</h1>
         <p className="text-sm text-gray-500 mb-4">
-          {dealers.length} onayli bayi · {totalRules} toplam kural
+          {dealers.length} onaylı bayi · {totalRules} toplam kural
         </p>
         <AdminSearchBar
           defaultValue={search}
@@ -50,7 +50,7 @@ export default async function AdminDiscountsPage({ searchParams }: PageProps) {
         />
         <div className="bg-white rounded-xl border border-gray-200 p-5 mt-4">
           <p className="text-sm text-gray-600 mb-3">
-            Iskonto kurallarini yonetmek icin bir bayi secin.
+            İskonto kurallarini yonetmek icin bir bayi secin.
           </p>
           <ul className="divide-y divide-gray-100">
             {dealers.map((d) => {
@@ -177,7 +177,7 @@ export default async function AdminDiscountsPage({ searchParams }: PageProps) {
         <h1 className="text-2xl font-display font-bold text-brand-black">
           {dealer.companyName}
         </h1>
-        <p className="text-sm text-gray-500 mt-1">Iskonto Kurallari</p>
+        <p className="text-sm text-gray-500 mt-1">İskonto Kurallari</p>
       </div>
 
       <DiscountManager

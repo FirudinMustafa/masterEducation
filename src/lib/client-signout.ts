@@ -22,7 +22,7 @@ export async function signOutWithCleanup(callbackUrl: string = "/"): Promise<voi
     useCompareStore.getState().clear();
     useRecentlyViewedStore.getState().clear();
   } catch {
-    // Store temizleme basarisiz olsa bile logout akisi durmasin —
+    // Store temizleme başarısız olsa bile logout akisi durmasin —
     // NextAuth cookie'yi zaten siler.
   }
   await signOut({ callbackUrl });

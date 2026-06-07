@@ -49,7 +49,7 @@ export function KvkkApplicationForm() {
     e.preventDefault();
     setError(null);
     if (!form.fullName || !form.email || !form.detail) {
-      setError("Lutfen zorunlu alanlari doldurun.");
+      setError("Lütfen zorunlu alanlari doldurun.");
       return;
     }
     setLoading(true);
@@ -61,12 +61,12 @@ export function KvkkApplicationForm() {
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        throw new Error(data.error ?? "Basvuru iletilirken bir hata olustu.");
+        throw new Error(data.error ?? "Basvuru iletilirken bir hata oluştu.");
       }
       setSubmitted(true);
-      toast.success("Basvurunuz alindi", "30 gun icinde tarafiniza donus yapilacaktir.");
+      toast.success("Basvurunuz alindi", "30 gün icinde tarafiniza donus yapilacaktir.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Bir hata olustu.");
+      setError(err instanceof Error ? err.message : "Bir hata oluştu.");
     } finally {
       setLoading(false);
     }
@@ -90,8 +90,8 @@ export function KvkkApplicationForm() {
           Basvurunuz alindi
         </h2>
         <p className="text-sm text-emerald-800">
-          KVKK basvurunuz tarafimiza ulasti. KVKK madde 13/2 uyarinca en gec{" "}
-          <strong>30 gun</strong> icinde tarafiniza donus yapilacaktir.
+          KVKK basvurunuz tarafimiza ulasti. KVKK madde 13/2 uyarınca en gec{" "}
+          <strong>30 gün</strong> icinde tarafiniza donus yapilacaktir.
         </p>
       </div>
     );
@@ -191,7 +191,7 @@ export function KvkkApplicationForm() {
 
       <section>
         <label className="block text-sm font-medium text-brand-black mb-1.5">
-          Talebinizi Detayli Aciklayin *
+          Talebinizi Detayli Açıklayin *
         </label>
         <textarea
           value={form.detail}
@@ -209,7 +209,7 @@ export function KvkkApplicationForm() {
 
       <section>
         <label className="block text-sm font-medium text-brand-black mb-2">
-          Cevabin Tarafiniza Iletilmesini Istediginiz Yontem
+          Cevabin Tarafiniza Iletilmesini İştediginiz Yontem
         </label>
         <div className="flex gap-3">
           {(["email", "post"] as Channel[]).map((c) => (

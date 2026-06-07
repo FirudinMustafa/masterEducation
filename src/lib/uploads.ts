@@ -23,7 +23,7 @@ export interface StoredFile {
 
 /**
  * Client-iddiali MIME tipini dosya icerigi ile dogrular. Bazi dosya turleri
- * icin "magic bytes" (file signature) kontrolu yapilir — boylece kullanici
+ * icin "magic bytes" (file signature) kontrolu yapilir — boylece kullanıcı
  * Content-Type'i yalan soylese bile bypass edemez.
  *
  * PDF  : "%PDF-"  (25 50 44 46 2D)

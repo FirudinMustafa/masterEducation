@@ -46,13 +46,13 @@ export async function GET(req: NextRequest) {
 
   const wb = createBrandedWorkbook();
 
-  buildBrandedSheet(wb, "Iskontolar", {
-    title: "Iskonto Matrisi",
+  buildBrandedSheet(wb, "İskontolar", {
+    title: "İskonto Matrisi",
     subtitle: `Bayi: ${dealer.companyName}  ·  ${new Date().toLocaleDateString("tr-TR")}  ·  ${rules.length} kural`,
     intro:
       "scope: PRODUCT, CATEGORY, DISCOUNT_GROUP, PUBLISHER veya GLOBAL. Oncelik sirasi: PRODUCT > CATEGORY > DISCOUNT_GROUP > PUBLISHER > GLOBAL. " +
       "PRODUCT icin productSku/productId, CATEGORY icin categorySlug/categoryId, PUBLISHER icin publisherSlug/publisherId, DISCOUNT_GROUP icin discountGroup yeterli. " +
-      "Yeni kural eklemek icin bos satira scope + discountPct ve ilgili kimlikleri girip yukleyin.",
+      "Yeni kural eklemek icin bos satira scope + discountPct ve ilgili kimlikleri girip yükleyin.",
     columns: [
       { header: "scope", key: "scope", width: 16 },
       { header: "discountPct", key: "discountPct", width: 12, numFmt: "0.00" },
@@ -79,13 +79,13 @@ export async function GET(req: NextRequest) {
     })),
   });
 
-  buildBrandedSheet(wb, "Yayinevleri", {
-    title: "Yayinevi Referans",
+  buildBrandedSheet(wb, "Yayınevleri", {
+    title: "Yayınevi Referans",
     subtitle: "PUBLISHER scope icin publisherSlug veya publisherId kullanin",
     columns: [
       { header: "publisherSlug", key: "slug", width: 22 },
       { header: "publisherId", key: "id", width: 28 },
-      { header: "Yayinevi Adi", key: "name", width: 36 },
+      { header: "Yayınevi Adi", key: "name", width: 36 },
     ],
     rows: publishers.map((p) => ({ slug: p.slug, id: p.id, name: p.name })),
   });
@@ -103,8 +103,8 @@ export async function GET(req: NextRequest) {
   });
 
   const groupList = discountGroups.filter((g) => !!g.discountGroup).map((g) => g.discountGroup!);
-  buildBrandedSheet(wb, "Iskonto Gruplari", {
-    title: "Iskonto Grup Referans",
+  buildBrandedSheet(wb, "İskonto Gruplari", {
+    title: "İskonto Grup Referans",
     subtitle: "DISCOUNT_GROUP scope icin kullanilabilecek etiketler",
     columns: [
       { header: "discountGroup", key: "group", width: 30 },

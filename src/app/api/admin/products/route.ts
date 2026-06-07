@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   const baseSlug = slugify(data.name);
   if (!baseSlug) {
     return NextResponse.json(
-      { error: "Urun adi slug olusturmak icin uygun degil." },
+      { error: "Ürün adi slug oluşturmak icin uygun degil." },
       { status: 400 }
     );
   }
@@ -46,7 +46,8 @@ export async function POST(req: NextRequest) {
   const product = await prisma.product.create({
     data: {
       name: data.name,
-      nameEn: data.nameEn ?? null,
+      // nameEn formdan kaldırıldı (2026-06-08); kolon korunur, null bırakılır.
+      nameEn: null,
       slug,
       sku: data.sku,
       price: data.price,

@@ -4,7 +4,6 @@ import type { InvoiceStatus } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { formatPrice } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Faturalarım - Bayi" };
 
@@ -63,7 +62,6 @@ export default async function DealerInvoicesPage() {
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Sipariş</th>
-              <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Tutar</th>
               <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Belge No</th>
               <th className="text-center p-3 text-xs font-semibold text-gray-500 uppercase">Durum</th>
               <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Tarih</th>
@@ -73,7 +71,7 @@ export default async function DealerInvoicesPage() {
           <tbody>
             {invoices.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-gray-500">
+                <td colSpan={5} className="p-6 text-center text-gray-500">
                   Henüz fatura yok. Sipariş teslim edildiğinde burada görünür.
                 </td>
               </tr>
@@ -87,9 +85,6 @@ export default async function DealerInvoicesPage() {
                   >
                     {inv.order.orderNumber}
                   </Link>
-                </td>
-                <td className="p-3 text-right">
-                  {formatPrice(Number(inv.totalAmount))} {inv.currency}
                 </td>
                 <td className="p-3 text-gray-600 font-mono text-xs">
                   {inv.externalId ?? "—"}
@@ -110,7 +105,7 @@ export default async function DealerInvoicesPage() {
                       href={`/bayi/siparisler/${inv.order.id}/fatura`}
                       className="text-xs text-gray-600 hover:text-brand-black hover:underline"
                     >
-                      Goruntule
+                      Görüntüle
                     </Link>
                     <a
                       href={`/api/orders/${inv.order.id}/pdf`}

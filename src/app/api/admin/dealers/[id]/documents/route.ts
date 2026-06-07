@@ -20,11 +20,11 @@ export async function POST(
   const gate = await requireRole("ADMIN");
   if (!gate.ok) return gate.response;
 
-  // Admin belge yukleme limiti — kotu niyetli veya hatali betik korunmasi.
+  // Admin belge yükleme limiti — kotu niyetli veya hatali betik korunmasi.
   const rl = rateLimit(`admin-doc-upload:${gate.session.user.id}`, 100, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: "Admin belge yukleme limiti asildi." },
+      { error: "Admin belge yükleme limiti asildi." },
       { status: 429 }
     );
   }
@@ -55,11 +55,11 @@ export async function POST(
     const msg = err instanceof Error ? err.message : "UPLOAD_FAILED";
     const message =
       msg === "UNSUPPORTED_MIME"
-        ? "PDF, JPG, PNG veya WEBP yukleyin."
+        ? "PDF, JPG, PNG veya WEBP yükleyin."
         : msg === "FILE_TOO_LARGE"
           ? "Dosya 8MB sinirini asiyor."
           : msg === "MIME_MISMATCH"
-            ? "Dosya icerigi uzanti ile uyumsuz. Lutfen gercek bir PDF/resim yukleyin."
+            ? "Dosya icerigi uzanti ile uyumsuz. Lütfen gercek bir PDF/resim yükleyin."
             : "Dosya kaydedilemedi.";
     return NextResponse.json({ error: message }, { status: 400 });
   }

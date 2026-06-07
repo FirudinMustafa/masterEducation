@@ -4,9 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { ArrowRightIcon, BuildingStorefrontIcon } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
-  title: "Yayinevleri",
+  title: "Yayınevleri",
   description:
-    "Master Education'in calistigi tum yayinevleri — Cambridge, Pearson, Collins, Klett ve daha fazlasi.",
+    "Master Education'in calistigi tüm yayınevleri — Cambridge, Pearson, Collins, Klett ve daha fazlasi.",
 };
 
 export default async function PublishersIndexPage() {
@@ -36,16 +36,16 @@ export default async function PublishersIndexPage() {
             <span>Calistigimiz Markalar</span>
           </div>
           <h1 className="font-display text-4xl font-black leading-[1.05] tracking-[-0.03em] text-neutral-950 sm:text-5xl md:text-6xl">
-            Yayinevleri
+            Yayınevleri
           </h1>
           <p className="mt-4 max-w-2xl text-base text-neutral-600 sm:text-lg">
             Dunyanin onde gelen{" "}
             <span className="font-semibold text-neutral-900">{withProducts.length}</span>{" "}
-            yayinevi ve toplam{" "}
+            yayınevi ve toplam{" "}
             <span className="font-semibold text-neutral-900">
               {totalProducts.toLocaleString("tr-TR")}
             </span>{" "}
-            urun ile egitim materyallerinin tek adresi.
+            ürün ile eğitim materyallerinin tek adresi.
           </p>
         </div>
       </section>
@@ -56,7 +56,7 @@ export default async function PublishersIndexPage() {
           <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
             <BuildingStorefrontIcon className="mx-auto h-12 w-12 text-neutral-300" />
             <p className="mt-4 text-sm text-neutral-500">
-              Henuz aktif yayinevi bulunmuyor.
+              Henuz aktif yayınevi bulunmuyor.
             </p>
           </div>
         ) : (
@@ -79,7 +79,7 @@ export default async function PublishersIndexPage() {
                   </p>
                   <div className="mt-1.5 flex items-center justify-between">
                     <span className="text-xs text-neutral-500">
-                      {p._count.products.toLocaleString("tr-TR")} urun
+                      {p._count.products.toLocaleString("tr-TR")} ürün
                     </span>
                     <ArrowRightIcon className="h-3.5 w-3.5 text-neutral-400 transition-all group-hover:translate-x-0.5 group-hover:text-brand-gold-dark" />
                   </div>
@@ -92,17 +92,17 @@ export default async function PublishersIndexPage() {
         {/* Sidebar / katalog CTA */}
         <div className="mt-12 rounded-2xl border border-neutral-200 bg-white p-8 text-center">
           <p className="font-display text-2xl font-black text-neutral-950">
-            Tum koleksiyonu kesfet
+            Tüm koleksiyonu kesfet
           </p>
           <p className="mt-2 text-sm text-neutral-600">
-            Yayinevi filtreleyerek butun {totalProducts.toLocaleString("tr-TR")} urune
-            goz at.
+            Yayınevi filtreleyerek butun {totalProducts.toLocaleString("tr-TR")} ürüne
+            göz at.
           </p>
           <Link
             href="/urunler"
             className="mt-5 inline-flex items-center gap-2 rounded-full bg-neutral-950 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-gold hover:text-neutral-950"
           >
-            Tum Urunler
+            Tüm Ürünler
             <ArrowRightIcon className="h-3.5 w-3.5" />
           </Link>
         </div>

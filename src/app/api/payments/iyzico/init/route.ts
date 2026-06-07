@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { iyzicoAdapter, iyzicoConfigured } from "@/lib/adapters/iyzico";
 import { logAudit } from "@/lib/audit";
 import { flattenZodError } from "@/lib/validations";
+import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-client-ip";
 
 /**
  * Iyzico 3DS init — kullanıcı checkout'tan sonra "Ödeme yap"a basınca çağrılır.
@@ -24,12 +26,28 @@ const schema = z.object({
 export async function POST(req: NextRequest) {
   if (!iyzicoConfigured() && process.env.NODE_ENV === "production") {
     return NextResponse.json(
-      { error: "Odeme sistemi suan kullanilamiyor (config eksik)." },
+      { error: "Ödeme sistemi suan kullanilamiyor (config eksik)." },
       { status: 503 }
     );
   }
 
   const session = await auth();
+
+  // SECURITY (CR-001/002): per-IP+session rate-limit. Guest path can still be
+  // called by anyone with an order ID, so cap init attempts to stop both order-ID
+  // enumeration and Iyzico API spam.
+  const clientIp = getClientIp(req.headers);
+  const rlKey = session?.user?.id
+    ? `iyzico-init:user:${session.user.id}`
+    : `iyzico-init:ip:${clientIp}`;
+  const rl = rateLimit(rlKey, 10, 60_000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Cok sik odeme baslatma denemesi. Lutfen birkac saniye bekleyin." },
+      { status: 429 }
+    );
+  }
+
   const json = await req.json().catch(() => ({}));
   const parsed = schema.safeParse(json);
   if (!parsed.success) {
@@ -49,7 +67,7 @@ export async function POST(req: NextRequest) {
     },
   });
   if (!order) {
-    return NextResponse.json({ error: "Siparis bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Sipariş bulunamadi." }, { status: 404 });
   }
   // Misafir checkout'ta session yok ama orderId yeterli (path query token gibi);
   // üye ise userId eşleşmesi zorunlu.
@@ -58,15 +76,13 @@ export async function POST(req: NextRequest) {
   }
   if (order.paymentStatus === "PAID") {
     return NextResponse.json(
-      { error: "Bu siparis zaten odenmis." },
+      { error: "Bu sipariş zaten odenmis." },
       { status: 409 }
     );
   }
 
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "0.0.0.0";
+  // SECURITY: trusted-proxy last-hop via getClientIp (raw XFF bypass'a kapali).
+  const ip = clientIp;
 
   // PaymentSession.orderId @unique — bir siparişe iki paralel session olamaz.
   // Mock akışta zaten oluşturulduysa onu yeniden kullan; aksi halde yeni oluştur.
@@ -136,7 +152,7 @@ export async function POST(req: NextRequest) {
       },
     });
     return NextResponse.json(
-      { error: "Odeme baslatilamadi.", code: result.errorCode },
+      { error: "Ödeme baslatilamadi.", code: result.errorCode },
       { status: 502 }
     );
   }

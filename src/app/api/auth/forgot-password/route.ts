@@ -5,6 +5,7 @@ import { forgotPasswordSchema, flattenZodError } from "@/lib/validations";
 import { queueEmail, templatePasswordReset } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { hashToken } from "@/lib/token-hash";
+import { getClientIp } from "@/lib/get-client-ip";
 
 const TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -24,14 +25,13 @@ async function timingSafeNoop(): Promise<void> {
 }
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // SECURITY: trusted-proxy last-hop; raw XFF first-hop bypass'a aciktı
+  // (QA F-API-0002 — reset email spam).
+  const ip = getClientIp(req.headers);
   const rl = rateLimit(`forgot:${ip}`, 5, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: "Cok fazla istek. Daha sonra tekrar deneyin." },
+      { error: "Çok fazla istek. Daha sonra tekrar deneyin." },
       { status: 429 }
     );
   }

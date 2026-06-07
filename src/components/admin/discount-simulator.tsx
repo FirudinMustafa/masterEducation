@@ -33,11 +33,11 @@ interface SimResponse {
 }
 
 const SCOPE_LABELS: Record<DiscountScope, string> = {
-  PRODUCT: "Urun",
+  PRODUCT: "Ürün",
   CATEGORY: "Kategori",
-  DISCOUNT_GROUP: "Iskonto Grubu",
-  PUBLISHER: "Yayinevi",
-  GLOBAL: "Tum Urunler",
+  DISCOUNT_GROUP: "İskonto Grubu",
+  PUBLISHER: "Yayınevi",
+  GLOBAL: "Tüm Ürünler",
 };
 
 export function DiscountSimulator({
@@ -92,7 +92,7 @@ export function DiscountSimulator({
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Simulasyon basarisiz.");
+      setError(data.error ?? "Simulasyon başarısız.");
       return;
     }
     const data = (await res.json()) as SimResponse;
@@ -103,7 +103,7 @@ export function DiscountSimulator({
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <h3 className="font-semibold text-brand-black mb-1">Fiyat Simulatoru</h3>
       <p className="text-xs text-gray-500 mb-4">
-        <strong>{dealerName}</strong> bu urunu alirken kac TL oder, hangi kural uygulanir?
+        <strong>{dealerName}</strong> bu ürünu alirken kac TL oder, hangi kural uygulanir?
       </p>
 
       <div className="relative max-w-md">
@@ -135,7 +135,7 @@ export function DiscountSimulator({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Urun adi veya ISBN..."
+              placeholder="Ürün adi veya ISBN..."
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
               autoComplete="off"
             />
@@ -175,7 +175,7 @@ export function DiscountSimulator({
           <div className="grid grid-cols-3 gap-3">
             <Stat label="Liste Fiyati" value={`${sim.listPrice.toFixed(2)} TL`} />
             <Stat
-              label="Uygulanan Iskonto"
+              label="Uygulanan İskonto"
               value={sim.discountPct > 0 ? `%${sim.discountPct}` : "Yok"}
               tone={sim.discountPct > 0 ? "success" : "muted"}
             />
@@ -204,7 +204,7 @@ export function DiscountSimulator({
           {sim.applicableRules.length > 1 && (
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase mb-2">
-                Uygulanabilir tum kurallar
+                Uygulanabilir tüm kurallar
               </p>
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 <table className="w-full text-xs">
@@ -246,7 +246,7 @@ export function DiscountSimulator({
                 </table>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Oncelik sirasi: Urun &gt; Iskonto Grubu &gt; Yayinevi &gt; Tum Urunler. En spesifik kural kazanir.
+                Oncelik sirasi: Ürün &gt; İskonto Grubu &gt; Yayınevi &gt; Tüm Ürünler. En spesifik kural kazanir.
               </p>
             </div>
           )}

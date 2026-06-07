@@ -28,8 +28,8 @@ const FIELD_LABELS: Record<Field, string> = {
   vatRate: "KDV (%)",
   stockQuantity: "Stok",
   categoryId: "Kategori",
-  publisherId: "Yayinevi",
-  discountGroup: "Iskonto Grubu",
+  publisherId: "Yayınevi",
+  discountGroup: "İskonto Grubu",
 };
 
 interface Category {
@@ -110,10 +110,10 @@ export function ProductsBulkUpdateModal({
       >
         <div>
           <h2 className="text-lg font-display font-bold text-brand-black">
-            Toplu Guncelle
+            Toplu Güncelle
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            <strong>{count}</strong> urune ayni yeni deger uygulanir.
+            <strong>{count}</strong> ürüne ayni yeni deger uygulanir.
           </p>
         </div>
 
@@ -191,7 +191,7 @@ export function ProductsBulkUpdateModal({
         {!clearStr && field === "publisherId" && (
           <label className="block">
             <span className="block text-xs font-medium text-gray-500 mb-1">
-              Yeni yayinevi
+              Yeni yayınevi
             </span>
             <select
               value={strValue}
@@ -231,7 +231,7 @@ export function ProductsBulkUpdateModal({
             disabled={pending}
             className="px-4 py-2 text-sm text-gray-600 hover:text-brand-black cursor-pointer"
           >
-            Iptal
+            İptal
           </button>
           <button
             type="button"

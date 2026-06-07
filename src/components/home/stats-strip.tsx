@@ -2,7 +2,6 @@ import {
   BookOpenIcon,
   BuildingStorefrontIcon,
   AcademicCapIcon,
-  TruckIcon,
 } from "@/components/ui/icons";
 
 interface Props {
@@ -20,14 +19,14 @@ export function StatsStrip({ productCount, publisherCount }: Props) {
       Icon: BookOpenIcon,
       value: productCount.toLocaleString("tr-TR"),
       suffix: "+",
-      label: "Egitim materyali",
+      label: "Eğitim materyali",
       gradient: "from-brand-gold-dark to-amber-500",
     },
     {
       Icon: BuildingStorefrontIcon,
       value: publisherCount.toString(),
       suffix: "+",
-      label: "Yayinevi",
+      label: "Yayınevi",
       gradient: "from-rose-500 to-pink-500",
     },
     {
@@ -36,13 +35,6 @@ export function StatsStrip({ productCount, publisherCount }: Props) {
       suffix: "+",
       label: "Yil tecrube",
       gradient: "from-violet-500 to-fuchsia-500",
-    },
-    {
-      Icon: TruckIcon,
-      value: "1-3",
-      suffix: " gun",
-      label: "Hizli kargo",
-      gradient: "from-sky-500 to-cyan-500",
     },
   ];
 
@@ -53,7 +45,7 @@ export function StatsStrip({ productCount, publisherCount }: Props) {
       <div className="pointer-events-none absolute -right-20 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-rose-500/10 blur-3xl" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-4 md:gap-8">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 md:gap-8">
           {stats.map((s) => (
             <div key={s.label} className="text-center md:text-left">
               <div

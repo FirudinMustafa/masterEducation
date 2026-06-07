@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { MagnifyingGlassIcon, XMarkIcon } from "@/components/ui/icons";
-import { formatPrice, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface ProductHit {
   id: string;
@@ -102,7 +102,7 @@ export function SearchCombobox({ autoFocus = false }: { autoFocus?: boolean }) {
               setOpen(true);
             }}
             onFocus={() => setOpen(true)}
-            placeholder="Urun, yayinevi veya kategori ara..."
+            placeholder="Ürün, yayınevi veya kategori ara..."
             className="flex-1 bg-transparent px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
           />
           {query && (
@@ -154,7 +154,7 @@ export function SearchCombobox({ autoFocus = false }: { autoFocus?: boolean }) {
                     >
                       <span>{c.name}</span>
                       <span className="text-xs text-neutral-400">
-                        {c.count.toLocaleString("tr-TR")} urun
+                        {c.count.toLocaleString("tr-TR")} ürün
                       </span>
                     </Link>
                   ))}
@@ -163,7 +163,7 @@ export function SearchCombobox({ autoFocus = false }: { autoFocus?: boolean }) {
               {results!.publishers.length > 0 && (
                 <div className="border-b border-neutral-100 p-2">
                   <p className="px-2 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                    Yayinevleri
+                    Yayınevleri
                   </p>
                   {results!.publishers.map((p) => (
                     <Link
@@ -174,7 +174,7 @@ export function SearchCombobox({ autoFocus = false }: { autoFocus?: boolean }) {
                     >
                       <span>{p.name}</span>
                       <span className="text-xs text-neutral-400">
-                        {p.count.toLocaleString("tr-TR")} urun
+                        {p.count.toLocaleString("tr-TR")} ürün
                       </span>
                     </Link>
                   ))}
@@ -183,7 +183,7 @@ export function SearchCombobox({ autoFocus = false }: { autoFocus?: boolean }) {
               {results!.products.length > 0 && (
                 <div className="p-2">
                   <p className="px-2 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                    Urunler
+                    Ürünler
                   </p>
                   {results!.products.map((p) => (
                     <Link
@@ -211,9 +211,6 @@ export function SearchCombobox({ autoFocus = false }: { autoFocus?: boolean }) {
                           {p.publisherName ?? "—"}
                         </p>
                       </div>
-                      <span className="shrink-0 text-sm font-semibold text-neutral-900">
-                        {formatPrice(p.price)}
-                      </span>
                     </Link>
                   ))}
                 </div>
@@ -229,7 +226,7 @@ export function SearchCombobox({ autoFocus = false }: { autoFocus?: boolean }) {
                   "text-center text-xs font-semibold text-brand-gold-dark hover:bg-neutral-100 transition-colors cursor-pointer"
                 )}
               >
-                Tum sonuclari gor &rarr;
+                Tüm sonuclari gor &rarr;
               </button>
             </div>
           )}

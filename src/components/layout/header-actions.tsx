@@ -51,7 +51,7 @@ export function HeaderActions() {
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const compareCount = useCompareStore((s) => s.items.length);
 
-  // Mobilde yalnız sepet (drawer'da Favoriler/Karsilastir mevcut, çift gosterim
+  // Mobilde yalnız sepet (drawer'da Favoriler/Karsilastir mevcut, çift gösterim
   // header'da gereksiz yer kaplıyordu). Desktop'ta uçü de görünür.
   return (
     <div className="flex items-center gap-0.5 sm:gap-1">
@@ -66,7 +66,7 @@ export function HeaderActions() {
         />
         <IconBtn
           href="/karsilastir"
-          label="Karsilastir"
+          label="Karşılaştır"
           Icon={ScaleIcon}
           count={compareCount}
           accent="bg-sky-500 text-white"

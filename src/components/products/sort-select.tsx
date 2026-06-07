@@ -5,7 +5,7 @@ import { ChevronDownIcon } from "@/components/ui/icons";
 
 const OPTIONS = [
   { value: "yeni", label: "En Yeni" },
-  { value: "cok-satan", label: "Cok Satanlar" },
+  { value: "çok-satan", label: "Çok Satanlar" },
   { value: "fiyat-artan", label: "Fiyat: Dusukten Yuksege" },
   { value: "fiyat-azalan", label: "Fiyat: Yuksekten Dusuge" },
   { value: "isim", label: "Isim (A-Z)" },
@@ -29,6 +29,7 @@ export function SortSelect({ current }: { current: string }) {
   return (
     <div className="relative inline-flex items-center">
       <select
+        aria-label="Sıralama"
         value={current}
         onChange={onChange}
         className="appearance-none rounded-lg border border-neutral-200 bg-white py-2 pl-3 pr-9 text-sm font-medium text-neutral-700 focus:border-neutral-400 focus:outline-none cursor-pointer"

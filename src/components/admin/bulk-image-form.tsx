@@ -140,7 +140,7 @@ export function BulkImageForm() {
         />
         {files.length > 0 && (
           <p className="text-xs text-gray-500">
-            {files.length} dosya seçildi (
+            {files.length} dosya secildi (
             {formatBytes(files.reduce((s, f) => s + f.size, 0))} toplam)
           </p>
         )}

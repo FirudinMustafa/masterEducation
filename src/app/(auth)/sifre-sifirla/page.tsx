@@ -23,7 +23,7 @@ function ResetPasswordPageInner() {
     e.preventDefault();
     setError("");
     if (password !== confirm) {
-      setError("Sifreler eslesmiyor.");
+      setError("Şifreler eşleşmiyor.");
       return;
     }
     setLoading(true);
@@ -35,7 +35,7 @@ function ResetPasswordPageInner() {
     setLoading(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Sifirlama basarisiz.");
+      setError(data.error ?? "Sifirlama başarısız.");
       return;
     }
     setDone(true);
@@ -46,14 +46,14 @@ function ResetPasswordPageInner() {
     return (
       <AuthShell
         title="Gecersiz baglanti"
-        subtitle="Bu sifre sifirlama baglantisi eksik veya bozuk."
+        subtitle="Bu şifre sifirlama baglantisi eksik veya bozuk."
         footer={
           <p className="text-center text-sm text-neutral-500">
             <Link
               href="/giris"
               className="font-semibold text-neutral-900 underline-offset-4 hover:underline"
             >
-              Girise don
+              Girişe don
             </Link>
           </p>
         }
@@ -71,11 +71,11 @@ function ResetPasswordPageInner() {
 
   return (
     <AuthShell
-      title={done ? "Sifre guncellendi" : "Yeni sifre belirle"}
+      title={done ? "Şifre güncellendi" : "Yeni şifre belirle"}
       subtitle={
         done
-          ? "Yeni sifrenizle giris yapabilirsiniz."
-          : "Hesap guvenliginiz icin guclu bir sifre secin."
+          ? "Yeni şifrenizle giriş yapabilirsiniz."
+          : "Hesap guvenliginiz icin guclu bir şifre secin."
       }
       footer={
         !done && (
@@ -84,7 +84,7 @@ function ResetPasswordPageInner() {
               href="/giris"
               className="font-semibold text-neutral-900 underline-offset-4 hover:underline"
             >
-              Girise don
+              Girişe don
             </Link>
           </p>
         )
@@ -96,14 +96,14 @@ function ResetPasswordPageInner() {
             <CheckCircleIconSolid className="h-8 w-8" />
           </span>
           <p className="mt-5 text-sm text-neutral-600">
-            Giris sayfasina yonlendiriliyorsunuz...
+            Giriş sayfasina yonlendiriliyorsunuz...
           </p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <FloatingInput
             id="password"
-            label="Yeni sifre"
+            label="Yeni şifre"
             type="password"
             autoComplete="new-password"
             value={password}
@@ -114,7 +114,7 @@ function ResetPasswordPageInner() {
           />
           <FloatingInput
             id="confirm"
-            label="Sifre tekrar"
+            label="Şifre tekrar"
             type="password"
             autoComplete="new-password"
             value={confirm}
@@ -146,7 +146,7 @@ function ResetPasswordPageInner() {
             className="w-full bg-neutral-950 text-white hover:bg-neutral-800 rounded-2xl py-3.5 text-base"
             size="lg"
           >
-            Sifreyi Guncelle
+            Şifreyi Güncelle
             <ArrowRightIcon className="h-4 w-4" />
           </Button>
         </form>

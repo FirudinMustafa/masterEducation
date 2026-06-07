@@ -5,7 +5,7 @@ import { BRAND } from "@/lib/constants";
 export const metadata: Metadata = {
   title: "On Bilgilendirme Formu",
   description:
-    "Master Education on bilgilendirme formu — 6502 sayili Tuketicinin Korunmasi Hakkinda Kanun ve Mesafeli Sozlesmeler Yonetmeligi gereginceyle hazirlanmistir.",
+    "Master Education on bilgilendirme formu — 6502 sayıli Tuketicinin Korunmasi Hakkinda Kanun ve Mesafeli Sözleşmeler Yonetmeligi gereginceyle hazirlanmistir.",
 };
 
 export default function PreliminaryInfoFormPage() {
@@ -15,8 +15,8 @@ export default function PreliminaryInfoFormPage() {
         On Bilgilendirme Formu
       </h1>
       <p className="text-sm text-brand-muted mb-8">
-        Mesafeli Sozlesmeler Yonetmeligi&apos;nin 5. maddesi uyarinca, alicinin
-        siparis vermeden once bilgilendirilmesi gereken hususlari icermektedir.
+        Mesafeli Sözleşmeler Yonetmeligi&apos;nin 5. maddesi uyarınca, alicinin
+        sipariş vermeden once bilgilendirilmesi gereken hususlari icermektedir.
       </p>
 
       <div className="prose prose-sm max-w-none text-brand-black space-y-6">
@@ -52,35 +52,35 @@ export default function PreliminaryInfoFormPage() {
 
         <section>
           <h2 className="text-xl font-display font-semibold">
-            2. Sozlesme Konusu Mal/Hizmetin Temel Nitelikleri
+            2. Sözleşme Konusu Mal/Hizmetin Temel Nitelikleri
           </h2>
           <p>
-            Site&apos;de sergilenen urunlerin temel ozellikleri, marka,
-            yayinevi, dil bilgisi, baski yili gibi nitelikleri urun detay
-            sayfasinda yer almaktadir. Site&apos;de yer alan tum gorsel ve
-            metinler urunlerin tanitimi amaciyla hazirlanmistir; baski donemine
-            gore kucuk gorsel farkliliklar olusabilir.
+            Site&apos;de sergilenen ürünlerin temel özellikleri, marka,
+            yayınevi, dil bilgisi, baski yili gibi nitelikleri ürün detay
+            sayfasinda yer almaktadir. Site&apos;de yer alan tüm gorsel ve
+            metinler ürünlerin tanitimi amaciyla hazirlanmistir; baski donemine
+            göre kucuk gorsel farkliliklar oluşabilir.
           </p>
         </section>
 
         <section>
           <h2 className="text-xl font-display font-semibold">3. Satis Fiyati</h2>
           <p>
-            Site&apos;de gosterilen tutarlar perakende satis fiyatlaridir; KDV
-            dahildir. Bayi statusundeki musterilere uygulanan ozel iskontolar
-            bayi paneli ve sepet ekraninda ayrica gosterilir.
+            Site&apos;de gösterilen tutarlar perakende satis fiyatlaridir; KDV
+            dahildir. Bayi statusundeki musterilere uygulanan özel iskontolar
+            bayi paneli ve sepet ekraninda ayrica gösterilir.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-display font-semibold">4. Odeme Sekli</h2>
+          <h2 className="text-xl font-display font-semibold">4. Ödeme Sekli</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
               <strong>Kredi/Banka Karti</strong> — guvenli 3D Secure dogrulama
               ile.
             </li>
             <li>
-              <strong>Acik Hesap (Cari)</strong> — sadece onayli bayi
+              <strong>Acik Hesap (Cari)</strong> — sadece onaylı bayi
               statusundeki musteriler icin.
             </li>
           </ul>
@@ -92,31 +92,31 @@ export default function PreliminaryInfoFormPage() {
           </h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              Siparisleriniz, odemenin tamamlanmasi ve onaylanmasinin ardindan
-              en gec <strong>30 gun</strong> icinde Alici&apos;nin belirttigi
+              Siparişleriniz, ödemenin tamamlanmasi ve onaylanmasinin ardindan
+              en gec <strong>30 gün</strong> icinde Alici&apos;nin belirttigi
               teslimat adresine, anlasmali kargo firmamiz araciligiyla teslim
               edilir.
             </li>
             <li>
-              Teslimat bedeli (kargo bedeli) sepet/ozet ekraninda gosterilir.
-              500 TL ve uzeri siparislerde kargo ucretsizdir; bayi
-              siparislerinde kargo her zaman ucretsizdir.
+              Teslimat bedeli (kargo bedeli) sepet/ozet ekraninda gösterilir.
+              500 TL ve uzeri siparişlerde kargo ücretsizdir; bayi
+              siparişlerinde kargo her zaman ücretsizdir.
             </li>
             <li>
               Adresin yanlis veya eksik bildirilmesinden kaynakli teslim edilemeyen
-              siparislerden Satici sorumlu degildir.
+              siparişlerden Satici sorumlu degildir.
             </li>
           </ul>
         </section>
 
         <section>
           <h2 className="text-xl font-display font-semibold">
-            6. Cayma Hakki ve Iade Kosullari
+            6. Cayma Hakki ve İade Kosullari
           </h2>
           <p>
-            Alici, mali teslim aldigi veya sozlesmenin imzalandigi tarihten
-            itibaren <strong>14 gun</strong> icerisinde herhangi bir gerekce
-            gostermeksizin ve cezai sart odemeksizin mesafeli sozlesmeden cayma
+            Alici, mali teslim aldigi veya sözleşmenin imzalandigi tarihten
+            itibaren <strong>14 gün</strong> icerisinde herhangi bir gerekce
+            göstermeksizin ve cezai şart ödemeksizin mesafeli sözleşmeden cayma
             hakkina sahiptir.
           </p>
           <p>
@@ -128,18 +128,18 @@ export default function PreliminaryInfoFormPage() {
               {BRAND.email}
             </a>{" "}
             adresine yazili bildirim yapilmasi yeterlidir. Cayma halinde
-            urunun, ambalaji acilmamis, kullanilmamis ve yeniden satilabilir
+            ürünun, ambalaji acilmamis, kullanilmamis ve yeniden satilabilir
             durumda Satici&apos;ya iade edilmesi gerekir.
           </p>
           <p>
-            Cayma hakki bildiriminin Satici&apos;ya ulasmasindan itibaren 14 gun
-            icinde urun bedeli Alici&apos;ya iade edilir. Detayli iade akisi
+            Cayma hakki bildiriminin Satici&apos;ya ulasmasindan itibaren 14 gün
+            icinde ürün bedeli Alici&apos;ya iade edilir. Detayli iade akisi
             icin{" "}
             <Link
               href="/iade"
               className="text-brand-gold-dark font-medium hover:underline"
             >
-              Iade ve Degisim
+              İade ve Degisim
             </Link>{" "}
             sayfasini inceleyiniz.
           </p>
@@ -147,9 +147,9 @@ export default function PreliminaryInfoFormPage() {
             Cayma Hakkinin Kullanilamayacagi Haller
           </h3>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Ambalaji acilmis veya kullanilmaya baslanmis basili egitim materyalleri.</li>
-            <li>Dijital lisanslari aktive edilmis urunler.</li>
-            <li>Tuketicinin kisisel istekleri dogrultusunda hazirlanan urunler.</li>
+            <li>Ambalaji acilmis veya kullanilmaya baslanmis basili eğitim materyalleri.</li>
+            <li>Dijital lisanslari aktive edilmis ürünler.</li>
+            <li>Tuketicinin kisisel istekleri dogrultusunda hazirlanan ürünler.</li>
           </ul>
         </section>
 
@@ -168,9 +168,9 @@ export default function PreliminaryInfoFormPage() {
 
         <section className="border-t border-gray-200 pt-6 text-sm text-brand-muted">
           <p>
-            Bu form, siparis onaylanmadan once tarafiniza okutturulur ve
-            siparis tamamlandiginda email yoluyla bir kopyasi tarafiniza
-            iletilir. Mesafeli Satis Sozlesmesi&apos;nin tam metnine{" "}
+            Bu form, sipariş onaylanmadan once tarafiniza okutturulur ve
+            sipariş tamamlandiginda email yoluyla bir kopyasi tarafiniza
+            iletilir. Mesafeli Satis Sözleşmesi&apos;nin tam metnine{" "}
             <Link
               href="/mesafeli-satis-sozlesmesi"
               className="text-brand-gold-dark font-medium hover:underline"

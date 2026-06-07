@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DealerStatus, DealerPaymentTerms } from "@prisma/client";
+import { useBusy } from "@/lib/hooks/use-busy";
 
 interface DealerActionsProps {
   dealerId: string;
@@ -22,7 +23,9 @@ export function DealerActions({
   rejectionReason,
 }: DealerActionsProps) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  // Tek useBusy: yaklasik-anlik approve+reject+suspend+delete butonlari paylasir,
+  // boylece in-flight bir aksiyon icindeyken digerleri tetiklenemez (race koruma).
+  const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
   const [limitInput, setLimitInput] = useState(String(creditLimit));
   const [termsInput, setTermsInput] = useState<DealerPaymentTerms>(paymentTerms);
@@ -38,69 +41,95 @@ export function DealerActions({
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Islem basarisiz.");
+      setError(data.error ?? "Islem başarısız.");
       return;
     }
-    startTransition(() => router.refresh());
+    router.refresh();
   }
 
+  // TR kullanicilarinin '100.000' yazmasi vs '100000' yazmasi durumlarinda
+  // veri kaybi olmasin: binlik nokta/bosluk/virgul karakterlerini temizleyip
+  // tek parse noktasi tanimliyoruz. '100.000,00' -> 100000, '100000' -> 100000.
+  const parseLimitInput = (raw: string): number => {
+    const trimmed = raw.trim();
+    if (!trimmed) return 0;
+    // Binlik ayiraci nokta veya bosluk olabilir; ondalik ayraci virgul.
+    const normalized = trimmed
+      .replace(/\s/g, "")
+      .replace(/\.(?=\d{3}(\D|$))/g, "") // binlik nokta sil (yalniz 3'lu gruplar)
+      .replace(",", ".");
+    const n = Number(normalized);
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return Math.round(n); // kurus girilse bile tam sayiya yuvarla (limit TL)
+  };
+
   const approve = () =>
-    call(`/api/admin/dealers/${dealerId}/approve`, {
-      paymentTerms: termsInput,
-      creditLimit: termsInput === "PREPAID" ? 0 : Number(limitInput) || 0,
-      notes: notesInput || undefined,
-    });
+    run(() =>
+      call(`/api/admin/dealers/${dealerId}/approve`, {
+        paymentTerms: termsInput,
+        creditLimit: termsInput === "PREPAID" ? 0 : parseLimitInput(limitInput),
+        notes: notesInput || undefined,
+      })
+    );
 
   const reject = () =>
-    call(`/api/admin/dealers/${dealerId}/reject`, {
-      rejectionReason: reasonInput || undefined,
-      notes: notesInput || undefined,
-    });
+    run(() =>
+      call(`/api/admin/dealers/${dealerId}/reject`, {
+        rejectionReason: reasonInput || undefined,
+        notes: notesInput || undefined,
+      })
+    );
 
   const suspend = () =>
-    call(`/api/admin/dealers/${dealerId}/suspend`, {
-      notes: notesInput || undefined,
-    });
+    run(() =>
+      call(`/api/admin/dealers/${dealerId}/suspend`, {
+        notes: notesInput || undefined,
+      })
+    );
 
   const saveDetails = () =>
-    call(`/api/admin/dealers/${dealerId}`, {
-      paymentTerms: termsInput,
-      creditLimit: termsInput === "PREPAID" ? 0 : Number(limitInput) || 0,
-      notes: notesInput || undefined,
-    });
+    run(() =>
+      call(`/api/admin/dealers/${dealerId}`, {
+        paymentTerms: termsInput,
+        creditLimit: termsInput === "PREPAID" ? 0 : parseLimitInput(limitInput),
+        notes: notesInput || undefined,
+      })
+    );
 
   async function deleteDealer() {
     if (
       !confirm(
         "Bayiyi tamamen sil?\n\n" +
           "Otomatik yapilacaklar:\n" +
-          "• Aktif siparisleri (Bekliyor/Onaylandi/Hazirlaniyor/Kargoda) IPTAL edilir, stok geri yuklenir.\n" +
-          "• Tamamlanmis (Teslim) ama tahsil edilmemis siparislerin paymentStatus 'Basarisiz' olur.\n" +
+          "• Aktif siparişleri (Bekliyor/Onaylandi/Hazirlaniyor/Kargoda) IPTAL edilir, stok geri yüklenir.\n" +
+          "• Tamamlanmis (Teslim) ama tahsil edilmemis siparişlerin paymentStatus 'Başarısız' olur.\n" +
           "• Cari hareketleri, iskontolari ve belgeleri silinir.\n" +
-          "• Kullanici 'Musteri' rolune dusurulur, gecmis siparisleri hesabinda kalir.\n\n" +
+          "• Kullanıcı 'Musteri' rolune dusurulur, gecmis siparişleri hesabinda kalir.\n\n" +
           "GERI DONUSU YOK. Devam edilsin mi?"
       )
     ) {
       return;
     }
-    const res = await fetch(`/api/admin/dealers/${dealerId}`, { method: "DELETE" });
-    const data = (await res.json().catch(() => ({}))) as {
-      ok?: boolean;
-      cancelledOrders?: number;
-      ledgerEntriesPurged?: number;
-      error?: string;
-    };
-    if (!res.ok || !data.ok) {
-      setError(data.error ?? "Silinemedi.");
-      return;
-    }
-    if (data.cancelledOrders && data.cancelledOrders > 0) {
-      alert(
-        `Bayi silindi. ${data.cancelledOrders} aktif siparis iptal edildi, ${data.ledgerEntriesPurged ?? 0} cari hareket temizlendi.`
-      );
-    }
-    router.push("/admin/bayiler");
-    router.refresh();
+    await run(async () => {
+      const res = await fetch(`/api/admin/dealers/${dealerId}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        cancelledOrders?: number;
+        ledgerEntriesPurged?: number;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        setError(data.error ?? "Silinemedi.");
+        return;
+      }
+      if (data.cancelledOrders && data.cancelledOrders > 0) {
+        alert(
+          `Bayi silindi. ${data.cancelledOrders} aktif sipariş iptal edildi, ${data.ledgerEntriesPurged ?? 0} cari hareket temizlendi.`
+        );
+      }
+      router.push("/admin/bayiler");
+      router.refresh();
+    });
   }
 
   return (
@@ -113,7 +142,7 @@ export function DealerActions({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block">
-          <span className="block text-xs font-medium text-gray-500 mb-1">Odeme Modu</span>
+          <span className="block text-xs font-medium text-gray-500 mb-1">Ödeme Modu</span>
           <select
             value={termsInput}
             onChange={(e) => {
@@ -128,23 +157,28 @@ export function DealerActions({
           </select>
           <span className="block text-[11px] text-gray-400 mt-1">
             {termsInput === "PREPAID"
-              ? "Bayi her siparis icin kredi karti veya havale ile oder."
-              : "Bayi siparis verir, asagidaki limitten dusulur — sonradan oder."}
+              ? "Bayi her sipariş icin kredi karti veya havale ile oder."
+              : "Bayi sipariş verir, asagidaki limitten dusulur — sonradan oder."}
           </span>
         </label>
         <label className="block">
           <span className="block text-xs font-medium text-gray-500 mb-1">Kredi Limiti (TL)</span>
           <input
-            type="number"
-            min={0}
+            type="text"
+            inputMode="decimal"
             value={limitInput}
             onChange={(e) => setLimitInput(e.target.value)}
             disabled={termsInput === "PREPAID"}
+            placeholder="Ornek: 100000"
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white disabled:bg-gray-50 disabled:text-gray-400 focus:outline-none focus:border-brand-gold"
           />
-          {termsInput === "PREPAID" && (
+          {termsInput === "PREPAID" ? (
             <span className="block text-[11px] text-gray-400 mt-1">
               Pesin modunda gerekli degil.
+            </span>
+          ) : (
+            <span className="block text-[11px] text-gray-500 mt-1">
+              Kaydedilecek: <strong>{parseLimitInput(limitInput).toLocaleString("tr-TR")} ₺</strong>
             </span>
           )}
         </label>
@@ -173,7 +207,7 @@ export function DealerActions({
         {status !== "APPROVED" && (
           <button
             onClick={approve}
-            disabled={pending}
+            disabled={busy}
             className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 cursor-pointer"
           >
             Onayla
@@ -182,7 +216,7 @@ export function DealerActions({
         {status !== "REJECTED" && status !== "APPROVED" && (
           <button
             onClick={reject}
-            disabled={pending}
+            disabled={busy}
             className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 cursor-pointer"
           >
             Reddet
@@ -191,7 +225,7 @@ export function DealerActions({
         {status === "APPROVED" && (
           <button
             onClick={suspend}
-            disabled={pending}
+            disabled={busy}
             className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
           >
             Askiya Al
@@ -199,14 +233,14 @@ export function DealerActions({
         )}
         <button
           onClick={saveDetails}
-          disabled={pending}
+          disabled={busy}
           className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
         >
           Bilgileri Kaydet
         </button>
         <button
           onClick={deleteDealer}
-          disabled={pending}
+          disabled={busy}
           className="ml-auto px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 cursor-pointer"
         >
           Bayiyi Sil

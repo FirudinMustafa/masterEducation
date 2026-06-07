@@ -7,11 +7,13 @@ import {
   queueEmail,
   templateOrderStatusChanged,
   templateOrderCancelled,
+  templateInvoiceCancelledAccountingNotice,
 } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 import { writeLedgerEntry } from "@/lib/ledger";
 import { shippingAdapter } from "@/lib/adapters/shipping";
 import { ensureInvoiceForOrder, sendPendingInvoice } from "@/lib/invoice-service";
+import { env } from "@/lib/env";
 
 const STATUS_TO_EVENT: Record<OrderStatus, OrderEventType> = {
   PENDING: "CREATED",
@@ -26,9 +28,11 @@ const STATUS_TO_EVENT: Record<OrderStatus, OrderEventType> = {
  * Order status state machine — Faz 19 Decision 1A: ardışık geçiş whitelist.
  * PENDING→APPROVED→PROCESSING→SHIPPED→DELIVERED, her aşamadan CANCELLED.
  * Atlamalı geçiş (PENDING→DELIVERED, APPROVED→SHIPPED vb.) reddedilir.
- * CANCELLED ve DELIVERED final state'leridir. Aynı state'e PATCH (sadece
- * tracking/note güncelleme) izinlidir — `statusChanged` guard'ı ile kontrol.
- * Bu kural bulk-status route ile birebir aynı.
+ * DELIVERED final state'tir. CANCELLED yalnız PENDING'e geri alınabilir
+ * (yanlışlıkla iptal edilen sipariş için "reaktivasyon" — iptal yan etkileri
+ * tersine çevrilir). Aynı state'e PATCH (sadece tracking/note güncelleme)
+ * izinlidir — `statusChanged` guard'ı ile kontrol. Bu kural bulk-status route
+ * ile birebir aynı.
  */
 const ALLOWED_NEXT: Record<OrderStatus, readonly OrderStatus[]> = {
   PENDING: ["APPROVED", "CANCELLED"],
@@ -36,7 +40,7 @@ const ALLOWED_NEXT: Record<OrderStatus, readonly OrderStatus[]> = {
   PROCESSING: ["SHIPPED", "CANCELLED"],
   SHIPPED: ["DELIVERED", "CANCELLED"],
   DELIVERED: [],
-  CANCELLED: [],
+  CANCELLED: ["PENDING"],
 };
 
 export async function POST(
@@ -77,7 +81,7 @@ export async function POST(
     },
   });
   if (!order) {
-    return NextResponse.json({ error: "Siparis bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Sipariş bulunamadi." }, { status: 404 });
   }
 
   const {
@@ -90,21 +94,14 @@ export async function POST(
   } = parsed.data;
   const isCancellingNow = status === "CANCELLED" && order.status !== "CANCELLED";
   const wasCancelled = order.status === "CANCELLED";
+  // Reaktivasyon: yanlışlıkla iptal edilen sipariş PENDING'e geri alınır.
+  // İptal sırasında yapılan stok iadesi + kredi iadesi tersine çevrilir.
+  const isReactivating = wasCancelled && status === "PENDING";
   const isShippingNow =
     status === "SHIPPED" && order.status !== "SHIPPED";
   const isDeliveringNow =
     status === "DELIVERED" && order.status !== "DELIVERED";
   const statusChanged = status !== order.status;
-
-  if (wasCancelled && status !== "CANCELLED") {
-    return NextResponse.json(
-      {
-        error:
-          "Iptal edilmis bir siparis tekrar aktif edilemez. Yeni bir siparis olusturun.",
-      },
-      { status: 400 }
-    );
-  }
 
   // State machine: yalnız izin verilen sonraki state'lere geçiş kabul.
   // Aynı state'e PATCH (sadece tracking/note güncelleme) izinli.
@@ -149,7 +146,12 @@ export async function POST(
         : null
       : undefined;
 
-  const updated = await prisma.$transaction(async (tx) => {
+  let updated: Awaited<ReturnType<typeof prisma.order.update>>;
+  // İptal edilen siparişin KolayBi'de zaten kesilmiş (SENT) fatura belge no'su —
+  // doluysa muhasebeye "panelden iptal et" bildirimi gider (after()).
+  let cancelledKolaybiDoc: string | null = null;
+  try {
+    updated = await prisma.$transaction(async (tx) => {
     if (isCancellingNow) {
       const items = await tx.orderItem.findMany({
         where: { orderId: id },
@@ -173,11 +175,87 @@ export async function POST(
             kind: "ORDER_CANCEL_CREDIT",
             amount: -Number(order.total),
             orderId: order.id,
-            note: `Iptal: ${order.orderNumber}`,
+            note: `İptal: ${order.orderNumber}`,
             createdBy: gate.session.user.id,
           });
         }
       }
+
+      // F-1001: iptal halinde kupon kullanim sayısi geri verilmeli.
+      const redemption = await tx.couponRedemption.findUnique({
+        where: { orderId: id },
+      });
+      if (redemption) {
+        await tx.coupon.update({
+          where: { id: redemption.couponId },
+          data: { usedCount: { decrement: 1 } },
+        });
+        await tx.couponRedemption.delete({ where: { orderId: id } });
+      }
+
+      // Fatura kaydı: iptalde PENDING/FAILED retry'ı durdur (iptal siparişe
+      // fatura aktarılmasın), SENT ise KolayBi'de kayıt zaten oluşmuş →
+      // muhasebe panelden elle iptal etmeli (after() bildirimi).
+      const inv = await tx.invoice.findUnique({
+        where: { orderId: id },
+        select: { status: true, externalId: true },
+      });
+      if (inv && inv.status !== "CANCELLED") {
+        await tx.invoice.update({
+          where: { orderId: id },
+          data: {
+            status: "CANCELLED",
+            errorMessage: `Sipariş iptal edildi: ${order.orderNumber}`,
+          },
+        });
+        if (inv.status === "SENT" && inv.externalId) {
+          cancelledKolaybiDoc = inv.externalId;
+        }
+      }
+    }
+
+    // Reaktivasyon (CANCELLED → PENDING): iptaldeki yan etkileri tersine çevir.
+    // Stok tekrar düşülür, açık hesapta kredi tekrar borçlandırılır.
+    // NOT: kupon couponRedemption iptalde silindiği için yeniden uygulanmaz
+    // (couponId kaybolur) — gerekirse admin elle kupon işler.
+    if (isReactivating) {
+      const items = await tx.orderItem.findMany({
+        where: { orderId: id },
+        select: { productId: true, quantity: true },
+      });
+      for (const item of items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: { decrement: item.quantity } },
+        });
+      }
+
+      if (order.paymentMethod === "OPEN_ACCOUNT") {
+        const dealer = await tx.dealer.findUnique({
+          where: { userId: order.userId },
+          select: { id: true },
+        });
+        if (dealer) {
+          // Kredi limiti aşılırsa CREDIT_LIMIT_EXCEEDED fırlatır → 400 dönülür.
+          await writeLedgerEntry(tx, {
+            dealerId: dealer.id,
+            kind: "ORDER_DEBIT",
+            amount: Number(order.total),
+            orderId: order.id,
+            note: `Reaktivasyon: ${order.orderNumber}`,
+            createdBy: gate.session.user.id,
+            enforceCreditLimit: true,
+          });
+        }
+      }
+
+      // İptalde CANCELLED'a çekilen ama KolayBi'de kaydı OLMAYAN faturayı
+      // tekrar gönderilebilir yap (PENDING). KolayBi kaydı olan (externalId)
+      // dokunulmaz — mükerrer kayıt olmasın, gerekirse panelden elle yönetilir.
+      await tx.invoice.updateMany({
+        where: { orderId: id, status: "CANCELLED", externalId: null },
+        data: { status: "PENDING", errorMessage: null },
+      });
     }
 
     const updatedOrder = await tx.order.update({
@@ -196,12 +274,14 @@ export async function POST(
             ? "PAID"
             : status === "CANCELLED" && order.paymentStatus === "PAID"
               ? "REFUNDED"
-              : undefined,
+              : isReactivating && order.paymentStatus === "REFUNDED"
+                ? "PAID"
+                : undefined,
       },
     });
 
     // Statu degistiyse OrderEvent kaydi at. adminNote varsa event'e
-    // eklenir (timeline'da gozukur).
+    // eklenir (timeline'da gözukur).
     if (statusChanged) {
       await tx.orderEvent.create({
         data: {
@@ -224,7 +304,14 @@ export async function POST(
     }
 
     return updatedOrder;
-  });
+    });
+  } catch (e) {
+    const msg =
+      e instanceof Error && e.message === "CREDIT_LIMIT_EXCEEDED"
+        ? "Sipariş yeniden aktifleştirilemedi: bayinin kredi limiti yetersiz."
+        : "Güncelleme başarısız.";
+    return NextResponse.json({ error: msg }, { status: 400 });
+  }
 
   if (updated && statusChanged) {
     logAudit({
@@ -239,7 +326,7 @@ export async function POST(
       },
     });
     after(() => {
-      // E11 — CANCELLED jenerik mesaj yerine ozel "iptal edildi" mesaji
+      // E11 — CANCELLED jenerik mesaj yerine özel "iptal edildi" mesaji
       // (iptal sebebi + iade bilgisi). Diger durumlarda mevcut akis.
       const tpl =
         status === "CANCELLED"
@@ -269,14 +356,45 @@ export async function POST(
       const orderId = updated.id;
       after(async () => {
         try {
+          // Sipariş oluşturulurken zaten aktarılmış olabilir; ensure idempotent.
+          // sendPendingInvoice de SENT'te no-op — bu çağrı FAILED kalmış kaydı
+          // teslimde tekrar denemek için güvenlik ağı.
           const r = await ensureInvoiceForOrder(orderId);
-          if (r.created) {
+          if (r.invoiceId) {
             await sendPendingInvoice(r.invoiceId).catch((err) => {
               console.error("[invoice] send failed", orderId, err);
             });
           }
         } catch (err) {
           console.error("[invoice] ensure failed", orderId, err);
+        }
+      });
+    }
+
+    // İptal edilen siparişin KolayBi'de zaten oluşmuş faturası varsa →
+    // muhasebeye "panelden iptal et" bildirimi (fire-and-forget).
+    if (cancelledKolaybiDoc) {
+      const docId = cancelledKolaybiDoc;
+      const { userId, orderNumber } = order;
+      after(async () => {
+        try {
+          const accountingTo = env.ACCOUNTING_EMAIL;
+          if (!accountingTo) return;
+          const dealer = await prisma.dealer.findUnique({
+            where: { userId },
+            select: { companyName: true },
+          });
+          const base =
+            process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+          const tpl = templateInvoiceCancelledAccountingNotice({
+            orderNumber,
+            dealerCompany: dealer?.companyName ?? "—",
+            documentId: docId,
+            panelUrl: `${base}/admin/faturalar`,
+          });
+          queueEmail({ ...tpl, to: accountingTo });
+        } catch (err) {
+          console.error("[invoice] cancel notice failed", orderNumber, err);
         }
       });
     }

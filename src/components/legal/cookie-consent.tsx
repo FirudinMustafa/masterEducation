@@ -4,17 +4,17 @@ import { useEffect, useState, useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 
 /**
- * Cerez tercihleri — granular (zorunlu/analitik/pazarlama).
+ * Çerez tercihleri — granular (zorunlu/analitik/pazarlama).
  *
  * Saklama: localStorage["me_cookie_consent"] = JSON.stringify({
  *   essential: true,        // her zaman true (zorunlu)
  *   analytics: boolean,
  *   marketing: boolean,
- *   version: 1,             // policy degisirse +1, banner tekrar gorunur
+ *   version: 1,             // policy degisirse +1, banner tekrar görünur
  *   ts: ISO date string
  * })
  *
- * Yenileme: 12 ay sonra (KVKK acik riza tazeliği) veya version bump'ta tekrar gorunur.
+ * Yenileme: 12 ay sonra (KVKK acik riza tazeliği) veya version bump'ta tekrar görünur.
  */
 
 const STORAGE_KEY = "me_cookie_consent";
@@ -99,7 +99,7 @@ function getServerConsentSnapshot(): null {
 }
 
 // Mount detection — SSR'de false, client'ta true. Hydration mismatch'i
-// engellemek icin banner sadece mount sonrasi gorunur. useSyncExternalStore
+// engellemek icin banner sadece mount sonrasi görünur. useSyncExternalStore
 // kullaniliyor cunku useEffect+setState ile (React 19 lint kurali).
 function subscribeMounted() {
   return () => {};
@@ -112,7 +112,7 @@ function getServerMountedSnapshot() {
 }
 
 export function CookieConsentBanner() {
-  // Persistent consent — null = hic onay verilmemis (banner gorunmeli).
+  // Persistent consent — null = hic onay verilmemis (banner görünmeli).
   // Cache'lenmis snapshot ile React'in infinite-loop tespitini geciyoruz.
   const consent = useSyncExternalStore(
     subscribeConsent,
@@ -121,7 +121,7 @@ export function CookieConsentBanner() {
   );
 
   // Hydration mismatch'i engellemek icin SSR + ilk client render'da banner
-  // ASLA gorunmez. Mount sonrasi banner consent durumuna gore gorunur.
+  // ASLA görünmez. Mount sonrasi banner consent durumuna göre görünur.
   const mounted = useSyncExternalStore(
     subscribeMounted,
     getMountedSnapshot,
@@ -132,7 +132,7 @@ export function CookieConsentBanner() {
   const [analytics, setAnalytics] = useState(consent?.analytics ?? false);
   const [marketing, setMarketing] = useState(consent?.marketing ?? false);
 
-  // "Cerez Tercihleri" footer linki banner'i tekrar acmak icin event yayinlar.
+  // "Çerez Tercihleri" footer linki banner'i tekrar acmak icin event yayinlar.
   useEffect(() => {
     const handler = () => {
       const cur = readConsent();
@@ -184,20 +184,20 @@ export function CookieConsentBanner() {
               id="cookie-consent-title"
               className="text-base font-semibold text-neutral-900 sm:text-lg"
             >
-              Cerez Tercihleri
+              Çerez Tercihleri
             </h2>
             <p
               id="cookie-consent-desc"
               className="mt-1 text-xs leading-relaxed text-neutral-600 sm:text-sm"
             >
-              Site deneyiminizi iyilestirmek icin cerezler kullaniyoruz. Zorunlu
-              cerezler her zaman acik; diger cerezler icin tercihinizi
+              Site deneyiminizi iyilestirmek icin çerezler kullaniyoruz. Zorunlu
+              çerezler her zaman acik; diger çerezler icin tercihinizi
               belirleyebilirsiniz.{" "}
               <Link
                 href="/cerez-politikasi"
                 className="font-medium text-neutral-900 underline underline-offset-2 hover:text-brand-gold-dark"
               >
-                Cerez Politikasi
+                Çerez Politikasi
               </Link>
             </p>
           </div>
@@ -207,21 +207,21 @@ export function CookieConsentBanner() {
         {showSettings && (
           <div className="space-y-2.5 border-b border-neutral-100 bg-neutral-50/50 px-5 py-4 sm:px-6">
             <ConsentRow
-              title="Zorunlu cerezler"
+              title="Zorunlu çerezler"
               desc="Oturum, sepet, guvenlik. Kapatilamaz."
               checked={true}
               disabled
               onChange={() => {}}
             />
             <ConsentRow
-              title="Analitik cerezler"
-              desc="Site kullanim istatistiklerini olcer (anonim)."
+              title="Analitik çerezler"
+              desc="Site kullanim istatistiklerini ölçer (anonim)."
               checked={analytics}
               onChange={setAnalytics}
             />
             <ConsentRow
-              title="Pazarlama cerezleri"
-              desc="Ilgi alaninza gore icerik / kampanya gosterir."
+              title="Pazarlama çerezleri"
+              desc="Ilgi alaninza göre icerik / kampanya gösterir."
               checked={marketing}
               onChange={setMarketing}
             />
@@ -235,7 +235,7 @@ export function CookieConsentBanner() {
             onClick={() => setShowSettings((v) => !v)}
             className="text-xs font-medium text-neutral-600 underline underline-offset-2 hover:text-neutral-900 sm:text-sm"
           >
-            {showSettings ? "Tercihleri gizle" : "Tercihleri ozellestir"}
+            {showSettings ? "Tercihleri gizle" : "Tercihleri özellestir"}
           </button>
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
             <button
@@ -259,7 +259,7 @@ export function CookieConsentBanner() {
                 onClick={acceptAll}
                 className="rounded-xl bg-brand-gold px-4 py-2.5 text-sm font-bold text-neutral-900 shadow-sm transition-colors hover:bg-brand-gold-dark cursor-pointer"
               >
-                Tumunu kabul et
+                Tümunu kabul et
               </button>
             )}
           </div>
@@ -315,8 +315,8 @@ function ConsentRow({
 }
 
 /**
- * Footer/baska yerden tekrar acma — kullanici "Cerez Tercihleri" linkine
- * tikladiginda banner tekrar gorunsun. Custom event dispatch.
+ * Footer/baska yerden tekrar acma — kullanıcı "Çerez Tercihleri" linkine
+ * tikladiginda banner tekrar görünsun. Custom event dispatch.
  */
 export function ReopenCookieConsent({
   className,
@@ -336,7 +336,7 @@ export function ReopenCookieConsent({
         "text-sm text-neutral-600 transition-colors hover:text-neutral-900 cursor-pointer"
       }
     >
-      {children ?? "Cerez Tercihleri"}
+      {children ?? "Çerez Tercihleri"}
     </button>
   );
 }

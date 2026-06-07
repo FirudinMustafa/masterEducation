@@ -227,6 +227,34 @@ async function main() {
   let imageSkipped = 0;
   const productsWithImages = new Set<string>();
 
+  // Normalize DisplayOrder: NopCommerce export'u her resmi DisplayOrder=0 ile
+  // gönderiyor — aynı ürünün birden fazla "primary" image'ı olur. Bu durumda
+  // storefront query'sindeki `orderBy displayOrder asc + take:1` deterministic
+  // değildir (tie-break yok). Çözüm: per-product pictureId sırasına göre
+  // 0, 1, 2, ... renumber et. Bu, CSV-yan tutarsızlığını veri-yükleme
+  // aşamasında giderir; idempotent (her seed çağrısında aynı sonuç).
+  const byProduct = new Map<string, Array<(typeof mappingRows)[number]>>();
+  for (const r of mappingRows) {
+    const pid = r["ProductId"];
+    if (!pid) continue;
+    if (!byProduct.has(pid)) byProduct.set(pid, []);
+    byProduct.get(pid)!.push(r);
+  }
+  let renumberedProducts = 0;
+  for (const list of byProduct.values()) {
+    list.sort((a, b) => parseInt(a["PictureId"]) - parseInt(b["PictureId"]));
+    let changed = false;
+    list.forEach((r, i) => {
+      const newOrder = String(i);
+      if (r["DisplayOrder"] !== newOrder) {
+        r["DisplayOrder"] = newOrder;
+        changed = true;
+      }
+    });
+    if (changed) renumberedProducts++;
+  }
+  console.log(`Mapping normalize: ${renumberedProducts} urunde DisplayOrder yeniden numaralandirildi (pictureId-asc compact 0,1,2,...)`);
+
   for (const row of mappingRows) {
     const productId = parseInt(row["ProductId"]);
     const pictureId = parseInt(row["PictureId"]);

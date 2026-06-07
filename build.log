@@ -1,0 +1,227 @@
+﻿
+> master-education@0.1.0 build
+> prisma generate && next build
+
+node.exe : Loaded Prisma config from prisma.config.ts.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node
+_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : NotSpecified: (Loaded Prisma c...isma 
+   .config.ts.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+Prisma schema loaded from prisma\schema.prisma.
+
+✔ Generated Prisma Client (v7.8.0) to .\node_modules\@prisma\client in 214ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be c
+orrect.
+ We detected multiple lockfiles and selected the directory of C:\Use
+rs\DELL\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js confi
+g, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-
+js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\DELL\OneDrive\Desktop\work\masterEducation\master-educ
+ation\package-lock.json
+
+▲ Next.js 16.2.3 (Turbopack)
+- Environments: .env.local, .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.5s
+  Running TypeScript ...
+  Finished TypeScript in 17.6s ...
+  Collecting page data using 19 workers ...
+  Generating static pages using 19 workers (0/124) ...
+  Generating static pages using 19 workers (31/124) 
+  Generating static pages using 19 workers (62/124) 
+  Generating static pages using 19 workers (93/124) 
+✓ Generating static pages using 19 workers (124/124) in 5.0s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ƒ /admin/analytics
+├ ƒ /admin/bayiler
+├ ƒ /admin/bayiler/[id]
+├ ƒ /admin/email-log
+├ ƒ /admin/email-tools
+├ ƒ /admin/error-log
+├ ƒ /admin/faturalar
+├ ƒ /admin/iskontolar
+├ ƒ /admin/kategoriler
+├ ƒ /admin/kullanicilar
+├ ƒ /admin/kullanicilar/[id]
+├ ƒ /admin/kuponlar
+├ ƒ /admin/muhasebe
+├ ƒ /admin/siparisler
+├ ƒ /admin/siparisler/[id]
+├ ƒ /admin/siparisler/[id]/fatura
+├ ƒ /admin/siparisler/[id]/irsaliye
+├ ƒ /admin/urunler
+├ ƒ /admin/urunler/[id]
+├ ƒ /admin/urunler/toplu-fiyat
+├ ƒ /admin/urunler/toplu-gorsel
+├ ƒ /admin/urunler/toplu-yukleme
+├ ƒ /admin/urunler/yeni
+├ ƒ /admin/yayinevleri
+├ ƒ /admin/yorumlar
+├ ƒ /api/account/addresses
+├ ƒ /api/account/addresses/[id]
+├ ƒ /api/account/change-password
+├ ƒ /api/account/delete
+├ ƒ /api/account/profile
+├ ƒ /api/admin/accounting/export
+├ ƒ /api/admin/categories
+├ ƒ /api/admin/categories/[id]
+├ ƒ /api/admin/coupons
+├ ƒ /api/admin/coupons/[id]
+├ ƒ /api/admin/coupons/bulk-create
+├ ƒ /api/admin/dealers/[id]
+├ ƒ /api/admin/dealers/[id]/adjustments
+├ ƒ /api/admin/dealers/[id]/approve
+├ ƒ /api/admin/dealers/[id]/documents
+├ ƒ /api/admin/dealers/[id]/documents/[docId]
+├ ƒ /api/admin/dealers/[id]/payments
+├ ƒ /api/admin/dealers/[id]/reject
+├ ƒ /api/admin/dealers/[id]/suspend
+├ ƒ /api/admin/dealers/bulk-adjust-credit
+├ ƒ /api/admin/dealers/bulk-approve
+├ ƒ /api/admin/discounts
+├ ƒ /api/admin/discounts/[id]
+├ ƒ /api/admin/discounts/bulk
+├ ƒ /api/admin/discounts/copy
+├ ƒ /api/admin/discounts/simulate
+├ ƒ /api/admin/discounts/template
+├ ƒ /api/admin/discounts/upload
+├ ƒ /api/admin/invoices/[id]
+├ ƒ /api/admin/orders/[id]/status
+├ ƒ /api/admin/orders/bulk-status
+├ ƒ /api/admin/products
+├ ƒ /api/admin/products/[id]
+├ ƒ /api/admin/products/[id]/images
+├ ƒ /api/admin/products/[id]/images/[imageId]
+├ ƒ /api/admin/products/[id]/images/reorder
+├ ƒ /api/admin/products/bulk-delete
+├ ƒ /api/admin/products/bulk-import
+├ ƒ /api/admin/products/bulk-price
+├ ƒ /api/admin/products/bulk-update
+├ ƒ /api/admin/products/bulk-upload-images
+├ ƒ /api/admin/products/search
+├ ƒ /api/admin/products/template
+├ ƒ /api/admin/publishers
+├ ƒ /api/admin/publishers/[id]
+├ ƒ /api/admin/reviews/[id]
+├ ƒ /api/admin/reviews/bulk-status
+├ ƒ /api/admin/users/[id]
+├ ƒ /api/admin/users/[id]/role
+├ ƒ /api/admin/users/bulk-delete
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/forgot-password
+├ ƒ /api/auth/register
+├ ƒ /api/auth/resend-verification
+├ ƒ /api/auth/reset-password
+├ ƒ /api/auth/verify-email
+├ ƒ /api/cart/refresh
+├ ƒ /api/client-error
+├ ƒ /api/contact
+├ ƒ /api/coupons/validate
+├ ƒ /api/cron/cleanup-audit-logs
+├ ƒ /api/cron/cleanup-payment-sessions
+├ ƒ /api/cron/cleanup-reset-tokens
+├ ƒ /api/cron/low-stock-alert
+├ ƒ /api/cron/retry-invoices
+├ ƒ /api/cron/sync-shipping-tracking
+├ ƒ /api/dealer/apply
+├ ƒ /api/dealer/bulk-order/parse
+├ ƒ /api/dealer/bulk-order/submit
+├ ƒ /api/dealer/bulk-order/template
+├ ƒ /api/dealer/documents
+├ ƒ /api/dealer/documents/[id]
+├ ƒ /api/dealer/documents/[id]/download
+├ ƒ /api/dealer/me
+├ ƒ /api/dealer/statement
+├ ƒ /api/dev-test/reset-rate-limit
+├ ƒ /api/health
+├ ƒ /api/kvkk-basvuru
+├ ƒ /api/orders
+├ ƒ /api/orders/[id]/pdf
+├ ƒ /api/pageview
+├ ƒ /api/payments/iyzico/callback
+├ ƒ /api/payments/iyzico/init
+├ ƒ /api/payments/iyzico/webhook
+├ ƒ /api/payments/mock/confirm
+├ ƒ /api/products/[id]
+├ ƒ /api/reviews
+├ ƒ /api/reviews/[id]
+├ ƒ /api/search
+├ ƒ /api/webhooks/shipping
+├ ○ /apple-icon.png
+├ ƒ /bayi
+├ ƒ /bayi-basvuru
+├ ƒ /bayi/belgeler
+├ ƒ /bayi/ekstre
+├ ƒ /bayi/faturalar
+├ ƒ /bayi/iskontolar
+├ ƒ /bayi/siparisler
+├ ƒ /bayi/siparisler/[id]/fatura
+├ ƒ /bayi/toplu-siparis
+├ ƒ /cerez-politikasi
+├ ƒ /email-dogrula
+├ ƒ /favoriler
+├ ○ /giris
+├ ƒ /hakkimizda
+├ ƒ /hesabim
+├ ƒ /hesabim/adresler
+├ ƒ /hesabim/hesabi-sil
+├ ƒ /hesabim/profil
+├ ƒ /hesabim/sifre-degistir
+├ ƒ /hesabim/siparislerim
+├ ƒ /hesabim/siparislerim/[id]/fatura
+├ ƒ /hesabim/yorumlarim
+├ ƒ /iade
+├ ○ /icon.png
+├ ƒ /iletisim
+├ ƒ /kargo-takip/[no]
+├ ƒ /karsilastir
+├ ƒ /kategoriler
+├ ƒ /kategoriler/[slug]
+├ ○ /kayit
+├ ƒ /kvkk
+├ ƒ /kvkk-basvuru
+├ ƒ /mesafeli-satis-sozlesmesi
+├ ƒ /odeme
+├ ƒ /odeme/3d/[token]
+├ ƒ /odeme/basarili
+├ ƒ /odeme/basarisiz
+├ ƒ /on-bilgilendirme-formu
+├ ○ /robots.txt
+├ ƒ /sepet
+├ ○ /sifre-sifirla
+├ ○ /sifremi-unuttum
+├ ƒ /siparis-takip
+├ ○ /sitemap.xml
+├ ƒ /sss
+├ ƒ /urunler
+├ ƒ /urunler/[slug]
+├ ƒ /uyelik-sozlesmesi
+├ ƒ /yayinevleri
+├ ƒ /yayinevleri/[slug]
+└ ○ /yonetim
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

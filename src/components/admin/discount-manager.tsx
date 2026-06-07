@@ -6,6 +6,7 @@ import type { DiscountScope } from "@prisma/client";
 import { toast } from "@/stores/toast-store";
 import { DiscountBulkPicker } from "./discount-bulk-picker";
 import { DiscountSimulator } from "./discount-simulator";
+import { useBusy } from "@/lib/hooks/use-busy";
 
 interface Rule {
   id: string;
@@ -56,11 +57,11 @@ interface DiscountManagerProps {
 }
 
 const SCOPE_LABELS: Record<DiscountScope, string> = {
-  PRODUCT: "Urun",
+  PRODUCT: "Ürün",
   CATEGORY: "Kategori",
-  DISCOUNT_GROUP: "Iskonto Grubu",
-  PUBLISHER: "Yayinevi",
-  GLOBAL: "Tum Urunler",
+  DISCOUNT_GROUP: "İskonto Grubu",
+  PUBLISHER: "Yayınevi",
+  GLOBAL: "Tüm Ürünler",
 };
 
 const SCOPE_BADGE: Record<DiscountScope, string> = {
@@ -93,7 +94,7 @@ export function DiscountManager({
           Kurallar ({rules.length})
         </TabButton>
         <TabButton active={tab === "bulk"} onClick={() => setTab("bulk")}>
-          Toplu Urun Iskontosu
+          Toplu Ürün İskontosu
         </TabButton>
         <TabButton active={tab === "sim"} onClick={() => setTab("sim")}>
           Fiyat Simulatoru
@@ -185,6 +186,9 @@ function RulesTab({
   pending: boolean;
   onRefresh: () => void;
 }) {
+  // Tek useBusy: kural ekle + tek sil + toplu sil ortak guard. Bir aksiyon
+  // in-flight iken digerleri tetiklenemez (yarisma korunmasi).
+  const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
   const [scope, setScope] = useState<DiscountScope>("GLOBAL");
   const [pct, setPct] = useState("");
@@ -235,66 +239,72 @@ function RulesTab({
     };
   }, [productQuery, scope]);
 
-  async function addRule() {
-    setError(null);
-    const payload = {
-      dealerId,
-      scope,
-      discountPct: Number(pct),
-      productId: scope === "PRODUCT" ? productId : null,
-      categoryId: scope === "CATEGORY" ? categoryId : null,
-      publisherId: scope === "PUBLISHER" ? publisherId : null,
-      discountGroup: scope === "DISCOUNT_GROUP" ? discountGroup : null,
-    };
-    const res = await fetch("/api/admin/discounts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+  function addRule() {
+    return run(async () => {
+      setError(null);
+      const payload = {
+        dealerId,
+        scope,
+        discountPct: Number(pct),
+        productId: scope === "PRODUCT" ? productId : null,
+        categoryId: scope === "CATEGORY" ? categoryId : null,
+        publisherId: scope === "PUBLISHER" ? publisherId : null,
+        discountGroup: scope === "DISCOUNT_GROUP" ? discountGroup : null,
+      };
+      const res = await fetch("/api/admin/discounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Kayıt başarısız.");
+        return;
+      }
+      setPct("");
+      setProductId("");
+      setProductQuery("");
+      setSelectedProduct(null);
+      setProductResults([]);
+      setCategoryId("");
+      setPublisherId("");
+      setDiscountGroup("");
+      toast.success("Kural eklendi");
+      onRefresh();
     });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Kayit basarisiz.");
-      return;
-    }
-    setPct("");
-    setProductId("");
-    setProductQuery("");
-    setSelectedProduct(null);
-    setProductResults([]);
-    setCategoryId("");
-    setPublisherId("");
-    setDiscountGroup("");
-    toast.success("Kural eklendi");
-    onRefresh();
   }
 
   async function deleteOne(id: string) {
     if (!confirm("Silinsin mi?")) return;
-    const res = await fetch(`/api/admin/discounts/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      toast.error("Silme basarisiz");
-      return;
-    }
-    toast.info("Silindi");
-    onRefresh();
+    await run(async () => {
+      const res = await fetch(`/api/admin/discounts/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        toast.error("Silme başarısız");
+        return;
+      }
+      toast.info("Silindi");
+      onRefresh();
+    });
   }
 
   async function deleteBulk() {
     if (selected.size === 0) return;
     if (!confirm(`${selected.size} kural silinsin mi?`)) return;
-    const res = await fetch("/api/admin/discounts", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [...selected] }),
+    await run(async () => {
+      const res = await fetch("/api/admin/discounts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [...selected] }),
+      });
+      if (!res.ok) {
+        toast.error("Silme başarısız");
+        return;
+      }
+      const data = (await res.json()) as { deleted: number };
+      setSelected(new Set());
+      toast.info(`${data.deleted} kural silindi`);
+      onRefresh();
     });
-    if (!res.ok) {
-      toast.error("Silme basarisiz");
-      return;
-    }
-    const data = (await res.json()) as { deleted: number };
-    setSelected(new Set());
-    toast.info(`${data.deleted} kural silindi`);
-    onRefresh();
   }
 
   function toggleAll() {
@@ -322,7 +332,7 @@ function RulesTab({
       return p?.name ?? r.publisherId;
     }
     if (r.discountGroup) return r.discountGroup;
-    return "Tum urunler";
+    return "Tüm ürünler";
   }
 
   return (
@@ -354,7 +364,7 @@ function RulesTab({
           {scope === "PRODUCT" && (
             <div className="block md:col-span-2 relative">
               <span className="block text-xs font-medium text-gray-500 mb-1">
-                Urun ara (ad veya ISBN)
+                Ürün ara (ad veya ISBN)
               </span>
               {selectedProduct ? (
                 <div className="flex items-center justify-between gap-3 border border-gray-200 rounded-lg px-3 py-2 bg-gray-50">
@@ -442,7 +452,7 @@ function RulesTab({
 
           {scope === "PUBLISHER" && (
             <label className="block md:col-span-2">
-              <span className="block text-xs font-medium text-gray-500 mb-1">Yayinevi</span>
+              <span className="block text-xs font-medium text-gray-500 mb-1">Yayınevi</span>
               <select
                 value={publisherId}
                 onChange={(e) => setPublisherId(e.target.value)}
@@ -479,7 +489,7 @@ function RulesTab({
           {scope === "GLOBAL" && <div className="md:col-span-2" />}
 
           <label className="block">
-            <span className="block text-xs font-medium text-gray-500 mb-1">Iskonto %</span>
+            <span className="block text-xs font-medium text-gray-500 mb-1">İskonto %</span>
             <input
               type="number"
               min={0}
@@ -493,7 +503,7 @@ function RulesTab({
         </div>
         <button
           onClick={addRule}
-          disabled={pending || !pct}
+          disabled={pending || busy || !pct}
           className="mt-3 px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
         >
           Kaydet
@@ -512,7 +522,7 @@ function RulesTab({
               onChange={(e) => setScopeFilter(e.target.value as DiscountScope | "")}
               className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white"
             >
-              <option value="">Tum kapsam</option>
+              <option value="">Tüm kapsam</option>
               {(Object.keys(SCOPE_LABELS) as DiscountScope[]).map((s) => (
                 <option key={s} value={s}>
                   {SCOPE_LABELS[s]}
@@ -522,9 +532,10 @@ function RulesTab({
             {selected.size > 0 && (
               <button
                 onClick={deleteBulk}
-                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 cursor-pointer"
+                disabled={busy}
+                className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 cursor-pointer"
               >
-                Seçileni sil ({selected.size})
+                Secileni sil ({selected.size})
               </button>
             )}
           </div>
@@ -579,7 +590,8 @@ function RulesTab({
                   <td className="p-3 text-right">
                     <button
                       onClick={() => deleteOne(r.id)}
-                      className="text-red-600 text-xs hover:underline cursor-pointer"
+                      disabled={busy}
+                      className="text-red-600 text-xs hover:underline cursor-pointer disabled:opacity-50"
                     >
                       Sil
                     </button>
@@ -601,39 +613,39 @@ function ExcelTab({ dealerId, onDone }: { dealerId: string; onDone: () => void }
   const [replaceAll, setReplaceAll] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useBusy();
 
   async function upload() {
     if (!file) return;
-    setBusy(true);
-    setMsg(null);
-    setError(null);
-    const fd = new FormData();
-    fd.append("dealerId", dealerId);
-    fd.append("file", file);
-    if (replaceAll) fd.append("replace", "true");
-    const res = await fetch("/api/admin/discounts/upload", {
-      method: "POST",
-      body: fd,
+    await run(async () => {
+      setMsg(null);
+      setError(null);
+      const fd = new FormData();
+      fd.append("dealerId", dealerId);
+      fd.append("file", file);
+      if (replaceAll) fd.append("replace", "true");
+      const res = await fetch("/api/admin/discounts/upload", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "Yükleme başarısız.");
+        if (data.errors?.length) setMsg(data.errors.join("\n"));
+        return;
+      }
+      setMsg(
+        `${data.upserted} kural islendi.` +
+          (data.errors?.length ? ` (${data.errors.length} uyarı)\n${data.errors.join("\n")}` : ""),
+      );
+      setFile(null);
+      onDone();
     });
-    const data = await res.json().catch(() => ({}));
-    setBusy(false);
-    if (!res.ok) {
-      setError(data.error ?? "Yukleme basarisiz.");
-      if (data.errors?.length) setMsg(data.errors.join("\n"));
-      return;
-    }
-    setMsg(
-      `${data.upserted} kural islendi.` +
-        (data.errors?.length ? ` (${data.errors.length} uyari)\n${data.errors.join("\n")}` : ""),
-    );
-    setFile(null);
-    onDone();
   }
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <h3 className="font-semibold text-brand-black mb-3">Excel ile Toplu Yukle</h3>
+      <h3 className="font-semibold text-brand-black mb-3">Excel ile Toplu Yükle</h3>
       <p className="text-xs text-gray-500 mb-4">
         Sablon icinde <code>productSku</code> veya <code>publisherSlug</code> kullanabilirsiniz — ID ezberlemek zorunda degilsiniz.
       </p>
@@ -642,7 +654,7 @@ function ExcelTab({ dealerId, onDone }: { dealerId: string; onDone: () => void }
           href={`/api/admin/discounts/template?dealerId=${dealerId}`}
           className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50"
         >
-          Sablon / Mevcut Kurallar Indir
+          Sablon / Mevcut Kurallar İndir
         </a>
         <input
           type="file"
@@ -663,7 +675,7 @@ function ExcelTab({ dealerId, onDone }: { dealerId: string; onDone: () => void }
           disabled={!file || busy}
           className="px-3 py-2 bg-brand-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
         >
-          {busy ? "Yukleniyor..." : "Yukle"}
+          {busy ? "Yükleniyor..." : "Yükle"}
         </button>
       </div>
       {error && (
@@ -693,37 +705,37 @@ function CopyTab({
 }) {
   const [fromId, setFromId] = useState("");
   const [replace, setReplace] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
 
   async function copy() {
     if (!fromId) return;
     const from = otherDealers.find((d) => d.id === fromId);
     if (!confirm(`${from?.companyName} bayisinin ${from?.ruleCount} kurali kopyalansin mi?`)) return;
-    setBusy(true);
-    setError(null);
-    const res = await fetch("/api/admin/discounts/copy", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fromDealerId: fromId, toDealerId: dealerId, replace }),
+    await run(async () => {
+      setError(null);
+      const res = await fetch("/api/admin/discounts/copy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromDealerId: fromId, toDealerId: dealerId, replace }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Kopyalama başarısız.");
+        return;
+      }
+      const data = (await res.json()) as { copied: number };
+      toast.success(`${data.copied} kural kopyalandi`);
+      setFromId("");
+      onDone();
     });
-    setBusy(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Kopyalama basarisiz.");
-      return;
-    }
-    const data = (await res.json()) as { copied: number };
-    toast.success(`${data.copied} kural kopyalandi`);
-    setFromId("");
-    onDone();
   }
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <h3 className="font-semibold text-brand-black mb-3">Baska Bayiden Kurallari Kopyala</h3>
       <p className="text-xs text-gray-500 mb-4">
-        Kaynak bayinin tum kurallari bu bayiye upsert edilir. Ayni (kapsam + hedef) varsa yuzde guncellenir.
+        Kaynak bayinin tüm kurallari bu bayiye upsert edilir. Ayni (kapsam + hedef) varsa yuzde güncellenir.
       </p>
       <div className="flex flex-wrap gap-3 items-end">
         <label className="block flex-1 min-w-[250px]">

@@ -98,7 +98,7 @@ export async function DELETE(
   if (orderCount > 0) {
     return NextResponse.json(
       {
-        error: `Bu adres ${orderCount} siparisde kullanildigi icin silinemez. Yerine yeni bir adres ekleyip varsayilan yapabilirsiniz.`,
+        error: `Bu adres ${orderCount} siparişde kullanildigi icin silinemez. Yerine yeni bir adres ekleyip varsayilan yapabilirsiniz.`,
       },
       { status: 409 }
     );

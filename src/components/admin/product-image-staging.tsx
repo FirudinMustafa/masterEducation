@@ -4,7 +4,7 @@ import { useEffect, useMemo } from "react";
 
 /**
  * Yeni ürün create akışı için "staging" görsel listesi.
- * Kullanıcı dosya seçer → blob preview gösterir → state'te File[] tutulur.
+ * Kullanıcı dosya secer → blob preview gösterir → state'te File[] tutulur.
  * Submit edildiğinde parent (ProductForm) ürünü oluşturup ardından
  * /api/admin/products/{id}/images endpoint'ine her birini POST eder.
  *
@@ -51,7 +51,7 @@ export function ProductImageStaging({ files, onChange, disabled }: ProductImageS
         <div>
           <h2 className="font-semibold text-brand-black">Görseller</h2>
           <p className="text-xs text-gray-500 mt-0.5">
-            Ürün oluşturulduktan sonra seçilen görseller otomatik yüklenir.
+            Ürün oluşturulduktan sonra secilen görseller otomatik yüklenir.
           </p>
         </div>
         <label className="px-3 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark cursor-pointer">
@@ -70,7 +70,7 @@ export function ProductImageStaging({ files, onChange, disabled }: ProductImageS
         </label>
       </div>
       {files.length === 0 ? (
-        <p className="text-sm text-gray-500">Henüz görsel seçilmedi.</p>
+        <p className="text-sm text-gray-500">Henüz görsel secilmedi.</p>
       ) : (
         <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {files.map((f, i) => (

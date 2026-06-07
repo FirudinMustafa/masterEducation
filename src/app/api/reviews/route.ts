@@ -11,16 +11,16 @@ import { BRAND } from "@/lib/constants";
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.json({ error: "Yorum yazmak icin giris yapin." }, {
+    return NextResponse.json({ error: "Yorum yazmak icin giriş yapin." }, {
       status: 401,
     });
   }
 
-  // Spam koruma: kullanici basina saatte 10 yorum.
+  // Spam koruma: kullanıcı basina saatte 10 yorum.
   const rl = rateLimit(`review:${session.user.id}`, 10, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: "Cok sik yorum gonderimi. Bir saat sonra tekrar deneyin." },
+      { error: "Çok sik yorum gonderimi. Bir saat sonra tekrar deneyin." },
       { status: 429 }
     );
   }
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     select: { id: true, isPublished: true, name: true },
   });
   if (!product || !product.isPublished) {
-    return NextResponse.json({ error: "Urun bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Ürün bulunamadi." }, { status: 404 });
   }
 
   // Reject duplicate review by same user for the same product (unique constraint
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   });
   if (existing) {
     return NextResponse.json(
-      { error: "Bu urun icin yorumunuz zaten kayitli." },
+      { error: "Bu ürün icin yorumunuz zaten kayıtli." },
       { status: 409 }
     );
   }

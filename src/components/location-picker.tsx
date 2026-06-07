@@ -10,7 +10,7 @@ interface LocationPickerProps {
   onDistrictChange: (district: string) => void;
   required?: boolean;
   disabled?: boolean;
-  /** Field label override; defaults: "Il *" / "Ilce *" */
+  /** Field label override; defaults: "Il *" / "İlçe *" */
   provinceLabel?: string;
   districtLabel?: string;
   /** Form layout: side-by-side ("row") veya stacked ("col"). Default "row". */
@@ -21,8 +21,8 @@ const SELECT_CLASSES =
   "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white disabled:bg-gray-50 disabled:text-gray-400";
 
 /**
- * Türkiye il + ilçe seçici. İl seçilince ilçeler otomatik filtrelenir.
- * Bilinmeyen il girilirse (eski kayıtlar) o değer "(eski) X" diye seçili
+ * Türkiye il + ilçe secici. İl secilince ilçeler otomatik filtrelenir.
+ * Bilinmeyen il girilirse (eski kayıtlar) o değer "(eski) X" diye secili
  * tutulur ki form sıfırlanmasın.
  */
 export function LocationPicker({
@@ -33,7 +33,7 @@ export function LocationPicker({
   required = false,
   disabled = false,
   provinceLabel = required ? "Il *" : "Il",
-  districtLabel = required ? "Ilce *" : "Ilce",
+  districtLabel = required ? "İlçe *" : "İlçe",
   layout = "row",
 }: LocationPickerProps) {
   const provinces = useMemo(() => getProvinces(), []);

@@ -3,20 +3,20 @@ import Link from "next/link";
 import { BRAND } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "KVKK Aydinlatma Metni",
+  title: "KVKK Aydınlatma Metni",
   description:
-    "Master Education kisisel verilerin korunmasi kanunu (KVKK) aydinlatma metni — veri sorumlusu, isleme amaclari, aktarim ve haklariniz.",
+    "Master Education kisisel verilerin korunmasi kanunu (KVKK) aydınlatma metni — veri sorumlusu, isleme amaclari, aktarim ve haklariniz.",
 };
 
 export default function KvkkPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
       <h1 className="text-3xl font-display font-bold text-brand-black mb-2">
-        KVKK Aydinlatma Metni
+        KVKK Aydınlatma Metni
       </h1>
       <p className="text-sm text-brand-muted mb-8">
-        6698 sayili Kisisel Verilerin Korunmasi Kanunu kapsaminda hazirlanmistir.{" "}
-        Son guncelleme:{" "}
+        6698 sayıli Kisisel Verilerin Korunmasi Kanunu kapsaminda hazirlanmistir.{" "}
+        Son güncelleme:{" "}
         {new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
       </p>
 
@@ -24,10 +24,10 @@ export default function KvkkPage() {
         <section>
           <h2 className="text-xl font-display font-semibold">1. Veri Sorumlusu</h2>
           <p>
-            <strong>{BRAND.name}</strong> (&quot;Sirket&quot;), 6698 sayili
+            <strong>{BRAND.name}</strong> (&quot;Sirket&quot;), 6698 sayıli
             Kisisel Verilerin Korunmasi Kanunu (&quot;KVKK&quot;) kapsaminda{" "}
             <strong>veri sorumlusu</strong> sifatiyla hareket etmektedir.
-            Iletisim bilgileri:
+            İletişim bilgileri:
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>
@@ -61,12 +61,12 @@ export default function KvkkPage() {
               (yalnizca fatura/bayi basvurusunda istendiginde).
             </li>
             <li>
-              <strong>Iletisim bilgileri</strong>: e-posta adresi, telefon
+              <strong>İletişim bilgileri</strong>: e-posta adresi, telefon
               numarasi, posta adresi, il/ilce.
             </li>
             <li>
-              <strong>Musteri islem bilgileri</strong>: siparis gecmisi, sepet
-              icerigi, fatura bilgileri, urun degerlendirmeleri.
+              <strong>Musteri islem bilgileri</strong>: sipariş gecmisi, sepet
+              icerigi, fatura bilgileri, ürün degerlendirmeleri.
             </li>
             <li>
               <strong>Bayilik bilgileri</strong>: firma unvani, vergi dairesi,
@@ -74,12 +74,12 @@ export default function KvkkPage() {
               levhasi gibi belgeler.
             </li>
             <li>
-              <strong>Odeme bilgileri</strong>: kart sahibi adi, kartin son 4
+              <strong>Ödeme bilgileri</strong>: kart sahibi adi, kartin son 4
               hanesi, marka (kart numarasinin tamami saklanmaz).
             </li>
             <li>
               <strong>Islem guvenligi bilgileri</strong>: IP adresi, oturum
-              kayitlari, tarayici/cihaz bilgisi, log kayitlari.
+              kayıtlari, tarayici/cihaz bilgisi, log kayıtlari.
             </li>
             <li>
               <strong>Pazarlama bilgileri</strong>: izin verdiginiz takdirde
@@ -93,9 +93,9 @@ export default function KvkkPage() {
             3. Kisisel Verilerin Islenme Amaclari
           </h2>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Uyelik sureclerinin yurutulmesi ve hesap guvenliginin saglanmasi.</li>
+            <li>Üyelik sureclerinin yurutulmesi ve hesap guvenliginin saglanmasi.</li>
             <li>
-              Siparis ve odeme sureclerinin yonetilmesi, urunun teslim edilmesi.
+              Sipariş ve ödeme sureclerinin yonetilmesi, ürünun teslim edilmesi.
             </li>
             <li>Bayi basvurularinin degerlendirilmesi ve bayilik iliskisinin yurutulmesi.</li>
             <li>
@@ -127,14 +127,14 @@ export default function KvkkPage() {
             4. Kisisel Verilerin Toplanma Yontemleri ve Hukuki Sebep
           </h2>
           <p>
-            Kisisel verileriniz; Site uyelik formu, siparis formlari, bayi
-            basvuru formu, iletisim formu, e-posta, telefon ve cerezler/log
-            kayitlari gibi kanallar uzerinden, asagidaki hukuki sebeplere
+            Kisisel verileriniz; Site üyelik formu, sipariş formlari, bayi
+            basvuru formu, iletişim formu, e-posta, telefon ve çerezler/log
+            kayıtlari gibi kanallar uzerinden, asagidaki hukuki sebeplere
             dayanilarak elektronik ortamda otomatik yollarla islenmektedir:
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              Bir sozlesmenin kurulmasi veya ifasiyla dogrudan ilgili olmasi
+              Bir sözleşmenin kurulmasi veya ifasiyla dogrudan ilgili olmasi
               (KVKK m.5/2-c).
             </li>
             <li>Veri sorumlusunun hukuki yukumlulugu (KVKK m.5/2-c).</li>
@@ -144,7 +144,7 @@ export default function KvkkPage() {
               kaydiyla (KVKK m.5/2-f).
             </li>
             <li>
-              Acik rizaniz (ticari elektronik ileti, opsiyonel cerezler — KVKK
+              Acik rizaniz (ticari elektronik ileti, opsiyonel çerezler — KVKK
               m.5/1).
             </li>
           </ul>
@@ -164,12 +164,12 @@ export default function KvkkPage() {
               teslimat icin ad, adres ve telefon.
             </li>
             <li>
-              <strong>Odeme/banka kuruluslari</strong> ve 3D Secure saglayicilari
-              — odemenin tahsilati icin.
+              <strong>Ödeme/banka kuruluslari</strong> ve 3D Secure saglayicilari
+              — ödemenin tahsilati icin.
             </li>
             <li>
               <strong>e-Fatura/e-Arsiv saglayicisi</strong> (KolayBi) — fatura
-              kesimi icin musteri ve siparis bilgileri.
+              kesimi icin musteri ve sipariş bilgileri.
             </li>
             <li>
               <strong>Eposta servis saglayicisi</strong> (Resend) — bilgilendirme
@@ -199,20 +199,20 @@ export default function KvkkPage() {
           </h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              <strong>Uyelik bilgileri</strong>: hesap silinene veya 3 yil
+              <strong>Üyelik bilgileri</strong>: hesap silinene veya 3 yil
               hareketsizlik sonuna kadar.
             </li>
             <li>
-              <strong>Siparis ve fatura kayitlari</strong>: 213 sayili Vergi
-              Usul Kanunu ve 6102 sayili Turk Ticaret Kanunu uyarinca{" "}
+              <strong>Sipariş ve fatura kayıtlari</strong>: 213 sayıli Vergi
+              Usul Kanunu ve 6102 sayıli Turk Ticaret Kanunu uyarınca{" "}
               <strong>10 yil</strong>.
             </li>
             <li>
-              <strong>Log kayitlari</strong>: 5651 sayili Internet Kanunu ve
-              ilgili mevzuat uyarinca <strong>2 yil</strong>.
+              <strong>Log kayıtlari</strong>: 5651 sayıli Internet Kanunu ve
+              ilgili mevzuat uyarınca <strong>2 yil</strong>.
             </li>
             <li>
-              <strong>Pazarlama izni</strong>: izin geri cekilene kadar.
+              <strong>Pazarlama izni</strong>: izin geri çekilene kadar.
             </li>
           </ul>
         </section>
@@ -240,7 +240,7 @@ export default function KvkkPage() {
               Eksik veya yanlis islenmis ise duzeltilmesini isteme.
             </li>
             <li>
-              KVKK 7. madde sartlari cercevesinde silinmesini veya yok
+              KVKK 7. madde şartlari cercevesinde silinmesini veya yok
               edilmesini isteme.
             </li>
             <li>
@@ -257,8 +257,8 @@ export default function KvkkPage() {
         <section>
           <h2 className="text-xl font-display font-semibold">8. Basvuru Yontemi</h2>
           <p>
-            KVKK m.13 uyarinca veri sahibi basvurusu yazili olarak veya guvenli
-            elektronik posta yoluyla yapilabilir. En hizli yol icin{" "}
+            KVKK m.13 uyarınca veri sahibi basvurusu yazili olarak veya guvenli
+            elektronik posta yoluyla yapilabilir. En hızlı yol icin{" "}
             <Link
               href="/kvkk-basvuru"
               className="text-brand-gold-dark font-medium hover:underline"
@@ -273,20 +273,20 @@ export default function KvkkPage() {
               {BRAND.email}
             </a>{" "}
             adresine kimliginizi tevsik edici belgelerle birlikte yazabilirsiniz.
-            Talebiniz en gec <strong>30 gun</strong> icinde sonuclandirilir.
+            Talebiniz en gec <strong>30 gün</strong> icinde sonuclandirilir.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-display font-semibold">9. Cerezler</h2>
+          <h2 className="text-xl font-display font-semibold">9. Çerezler</h2>
           <p>
-            Site&apos;de kullanilan cerezlere ve bunlari yonetme yontemlerine
+            Site&apos;de kullanilan çerezlere ve bunlari yonetme yontemlerine
             iliskin detayli bilgi icin{" "}
             <Link
               href="/cerez-politikasi"
               className="text-brand-gold-dark font-medium hover:underline"
             >
-              Cerez Politikasi
+              Çerez Politikasi
             </Link>
             &apos;ni inceleyebilirsiniz.
           </p>

@@ -9,7 +9,6 @@
  *   - DATABASE_URL https/postgresql formatinda mi?
  *   - NEXTAUTH_URL bos mu? localhost mu?
  *   - SMTP credentials (Resend) tam mi?
- *   - KOLAYBI_MOCK production'da false mi?
  *   - ENABLE_MOCK_PAYMENTS production'da false mi?
  *   - CRON_SECRET set mi (cron endpoint'leri korur)?
  *
@@ -94,9 +93,6 @@ if (cronSec && cronSec.length < 32) {
 // ─── Mock flag'ler kapali olmali ──────────────────
 if (process.env.ENABLE_MOCK_PAYMENTS === "true") {
   err("ENABLE_MOCK_PAYMENTS", "Production'da kapali olmali (mock 3D Secure aktif).");
-}
-if (process.env.KOLAYBI_MOCK === "true" || process.env.KOLAYBI_MOCK === "1") {
-  err("KOLAYBI_MOCK", "Production'da kapali olmali (synthetic fatura ID'leri).");
 }
 
 // ─── KolayBi credentials (varsa hepsi tam olmali) ─

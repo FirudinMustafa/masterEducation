@@ -33,7 +33,7 @@ export async function PATCH(
   const bad = parsed.data.order.find((id) => !validIds.has(id));
   if (bad) {
     return NextResponse.json(
-      { error: `Gorsel bu urune ait degil: ${bad}` },
+      { error: `Gorsel bu ürüne ait degil: ${bad}` },
       { status: 400 }
     );
   }

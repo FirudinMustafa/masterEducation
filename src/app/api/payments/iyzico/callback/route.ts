@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // E3 — odeme basarili maili (musteri + admin).
+    // E3 — ödeme başarıli maili (musteri + admin).
     after(() => {
       const customerEmail = paymentSession.order.user?.email;
       const customerName =
@@ -123,9 +123,37 @@ export async function POST(req: NextRequest) {
   }
 
   // failure / callback_thr
-  await prisma.paymentSession.updateMany({
-    where: { id: paymentSession.id, status: "PENDING" },
-    data: { status: "FAILED", processedAt: new Date() },
+  // F-1000: 3DS başarısız oldugunda stok geri yüklenmeli ve sipariş CANCELLED'a alinmali,
+  // aksi takdirde rezerve edilmis stok kilitli kalir.
+  await prisma.$transaction(async (tx) => {
+    const claim = await tx.paymentSession.updateMany({
+      where: { id: paymentSession.id, status: "PENDING" },
+      data: { status: "FAILED", processedAt: new Date() },
+    });
+    // Sadece bu islemde claim eden cagiri stok restore + cancel yapsin (race-safe).
+    if (claim.count === 0) return;
+
+    const orderItems = await tx.orderItem.findMany({
+      where: { orderId: paymentSession.orderId },
+      select: { productId: true, quantity: true },
+    });
+    for (const item of orderItems) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stockQuantity: { increment: item.quantity } },
+      });
+    }
+    await tx.order.update({
+      where: { id: paymentSession.orderId },
+      data: { status: "CANCELLED", paymentStatus: "FAILED" },
+    });
+    await tx.orderEvent.create({
+      data: {
+        orderId: paymentSession.orderId,
+        type: "CANCELLED",
+        note: `Iyzico 3DS başarısız — stok geri yüklendi (paymentId=${paymentId}, status=${status})`,
+      },
+    });
   });
   logAudit({
     actorId: paymentSession.order.userId,
@@ -135,7 +163,7 @@ export async function POST(req: NextRequest) {
     metadata: { provider: "iyzico", paymentId, status, stage: "callback" },
   });
 
-  // E4 — odeme basarisiz maili (musteri).
+  // E4 — ödeme başarısız maili (musteri).
   after(() => {
     const customerEmail = paymentSession.order.user?.email;
     const customerName =

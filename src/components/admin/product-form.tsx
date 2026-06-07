@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ProductImageStaging } from "./product-image-staging";
+import { PRODUCT_LANGUAGES } from "@/lib/constants";
 
 interface Option {
   id: string;
@@ -11,7 +12,6 @@ interface Option {
 
 export interface ProductFormValues {
   name: string;
-  nameEn: string;
   sku: string;
   price: string;
   oldPrice: string;
@@ -72,22 +72,41 @@ export function ProductForm({
 
     const price = toNumber(form.price);
     if (price === null || price < 0) {
-      setError("Fiyat gecerli bir sayi olmalidir.");
+      setError("Fiyat gecerli bir sayı olmalidir.");
       return;
     }
-    const stock = toNumber(form.stockQuantity, 0) ?? 0;
-    if (stock < 0 || !Number.isInteger(stock)) {
-      setError("Stok negatif olmayan bir tam sayi olmalidir.");
+    const stock = toNumber(form.stockQuantity);
+    if (stock === null || stock < 0 || !Number.isInteger(stock)) {
+      setError("Stok negatif olmayan bir tam sayı olmalidir.");
+      return;
+    }
+    const vat = toNumber(form.vatRate);
+    if (vat === null || vat < 0 || vat > 100) {
+      setError("KDV oranı 0–100 arası bir sayı olmalidir.");
+      return;
+    }
+
+    // Zorunlu sınıflandırma alanları (2026-06-08 talebi).
+    const requiredFields: Array<[string, string]> = [
+      [form.publisherId, "Yayınevi"],
+      [form.categoryId, "Kategori"],
+      [form.anaTur.trim(), "Ana Tür"],
+      [form.detayTur.trim(), "Detay Tür"],
+      [form.language.trim(), "Dil"],
+      [form.productType.trim(), "Ürün Tipi"],
+    ];
+    const missing = requiredFields.find(([v]) => !v);
+    if (missing) {
+      setError(`${missing[1]} alanı zorunludur.`);
       return;
     }
 
     const body = {
       name: form.name.trim(),
-      nameEn: form.nameEn.trim() || null,
       sku: form.sku.trim(),
       price,
       oldPrice: toNumber(form.oldPrice),
-      vatRate: toNumber(form.vatRate, 0) ?? 0,
+      vatRate: vat,
       stockQuantity: stock,
       publisherId: form.publisherId || null,
       categoryId: form.categoryId || null,
@@ -159,7 +178,7 @@ export function ProductForm({
     if (!productId) return;
     if (
       !confirm(
-        "Bu urunu silmek istediginize emin misiniz? Siparislerde gecmis varsa pasiflestirilir."
+        "Bu ürünu silmek istediginize emin misiniz? Siparişlerde gecmis varsa pasiflestirilir."
       )
     ) {
       return;
@@ -177,7 +196,7 @@ export function ProductForm({
       return;
     }
     if (data.mode === "soft") {
-      setSuccess("Urun pasiflestirildi (siparis gecmisi nedeniyle).");
+      setSuccess("Ürün pasiflestirildi (sipariş gecmisi nedeniyle).");
       startTransition(() => router.refresh());
     } else {
       startTransition(() => router.push("/admin/urunler"));
@@ -205,18 +224,11 @@ export function ProductForm({
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
         <h2 className="font-semibold text-brand-black">Temel Bilgiler</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Urun Adi *" required>
+          <Field label="Ürün Adi *" required>
             <input
               value={form.name}
               onChange={(e) => update("name", e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-            />
-          </Field>
-          <Field label="Urun Adi (EN)">
-            <input
-              value={form.nameEn}
-              onChange={(e) => update("nameEn", e.target.value)}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
@@ -262,7 +274,7 @@ export function ProductForm({
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
-          <Field label="KDV %">
+          <Field label="KDV % *" required>
             <input
               type="number"
               step="0.01"
@@ -270,20 +282,22 @@ export function ProductForm({
               max={100}
               value={form.vatRate}
               onChange={(e) => update("vatRate", e.target.value)}
+              required
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
-          <Field label="Stok Adedi">
+          <Field label="Stok Adedi *" required>
             <input
               type="number"
               step="1"
               min={0}
               value={form.stockQuantity}
               onChange={(e) => update("stockQuantity", e.target.value)}
+              required
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
-          <Field label="Iskonto Grubu">
+          <Field label="İskonto Grubu">
             <input
               value={form.discountGroup}
               onChange={(e) => update("discountGroup", e.target.value)}
@@ -296,13 +310,14 @@ export function ProductForm({
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
         <h2 className="font-semibold text-brand-black">Siniflandirma</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Yayinevi">
+          <Field label="Yayınevi *" required>
             <select
               value={form.publisherId}
               onChange={(e) => update("publisherId", e.target.value)}
+              required
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
             >
-              <option value="">-- Sec --</option>
+              <option value="">-- Seç --</option>
               {publishers.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -310,13 +325,14 @@ export function ProductForm({
               ))}
             </select>
           </Field>
-          <Field label="Kategori">
+          <Field label="Kategori *" required>
             <select
               value={form.categoryId}
               onChange={(e) => update("categoryId", e.target.value)}
+              required
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
             >
-              <option value="">-- Sec --</option>
+              <option value="">-- Seç --</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -324,31 +340,42 @@ export function ProductForm({
               ))}
             </select>
           </Field>
-          <Field label="Ana Tur">
+          <Field label="Ana Tur *" required>
             <input
               value={form.anaTur}
               onChange={(e) => update("anaTur", e.target.value)}
+              required
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
-          <Field label="Detay Tur">
+          <Field label="Detay Tur *" required>
             <input
               value={form.detayTur}
               onChange={(e) => update("detayTur", e.target.value)}
+              required
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
-          <Field label="Dil">
-            <input
+          <Field label="Dil *" required>
+            <select
               value={form.language}
               onChange={(e) => update("language", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-            />
+              required
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+            >
+              <option value="">-- Seç --</option>
+              {PRODUCT_LANGUAGES.map((lang) => (
+                <option key={lang} value={lang}>
+                  {lang}
+                </option>
+              ))}
+            </select>
           </Field>
-          <Field label="Urun Tipi">
+          <Field label="Ürün Tipi *" required>
             <input
               value={form.productType}
               onChange={(e) => update("productType", e.target.value)}
+              required
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
@@ -372,7 +399,7 @@ export function ProductForm({
             className="w-4 h-4"
           />
           <span className="text-sm font-medium text-brand-black">
-            Urun yayinda (magazada gorunur)
+            Ürün yayinda (magazada görünur)
           </span>
         </label>
       </div>
@@ -383,7 +410,7 @@ export function ProductForm({
           disabled={pending}
           className="px-5 py-2.5 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
         >
-          {mode === "create" ? "Urunu Olustur" : "Degisiklikleri Kaydet"}
+          {mode === "create" ? "Ürünu Oluştur" : "Degisiklikleri Kaydet"}
         </button>
         {mode === "edit" && (
           <button
@@ -392,7 +419,7 @@ export function ProductForm({
             disabled={pending}
             className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
           >
-            Urunu Sil
+            Ürünu Sil
           </button>
         )}
       </div>

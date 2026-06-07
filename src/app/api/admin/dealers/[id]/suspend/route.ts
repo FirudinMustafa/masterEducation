@@ -2,8 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { dealerStatusUpdateSchema, flattenZodError } from "@/lib/validations";
-import { queueEmail } from "@/lib/email";
-import { BRAND } from "@/lib/constants";
+import { queueEmail, templateDealerSuspended } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 
 export async function POST(
@@ -48,11 +47,11 @@ export async function POST(
   });
 
   after(() => {
-    queueEmail({
-      to: dealer.user.email,
-      subject: "Bayi hesabiniz askiya alindi",
-      html: `<p>${dealer.companyName} adina tanimli bayi hesabiniz askiya alinmistir. Detay icin ${BRAND.email} adresinden bize ulasin.</p>`,
-    });
+    const tpl = templateDealerSuspended(
+      dealer.companyName,
+      parsed.data.notes ?? null
+    );
+    queueEmail({ ...tpl, to: dealer.user.email });
   });
 
   return NextResponse.json({ id: updated.id, status: updated.status });

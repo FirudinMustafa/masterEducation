@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-client-ip";
 
 const schema = z.object({
   path: z.string().min(1).max(500),
@@ -20,10 +21,8 @@ const IGNORE_PREFIXES = [
 ];
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali).
+  const ip = getClientIp(req.headers);
   // Cheap protection against tracking spam. Real systems use a proper
   // analytics sink with sampling.
   const rl = rateLimit(`pageview:${ip}`, 240, 60_000);

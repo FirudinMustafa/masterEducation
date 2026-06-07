@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import crypto from "crypto";
-import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -8,6 +7,7 @@ import { generateOrderNumber } from "@/lib/utils";
 import { orderCreateSchema, flattenZodError } from "@/lib/validations";
 import { calculateDealerPrice, getDealerDiscountRules } from "@/lib/pricing";
 import { queueEmail, templateOrderCreated, templateOrderCreatedAdminNotice } from "@/lib/email";
+import { ensureInvoiceForOrder, sendPendingInvoice } from "@/lib/invoice-service";
 import { writeLedgerEntry } from "@/lib/ledger";
 import { detectBrand, lastFour, luhnValid, normalizeCard, validExpiry } from "@/lib/card";
 import { evaluateCoupon } from "@/lib/coupons";
@@ -15,6 +15,7 @@ import { logAudit } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
 import { env } from "@/lib/env";
 import { BRAND } from "@/lib/constants";
+import { getClientIp } from "@/lib/get-client-ip";
 
 const PAYMENT_SESSION_TTL_MS = 15 * 60 * 1000;
 
@@ -23,16 +24,18 @@ const SHIPPING_COST = 29.9;
 
 export async function POST(req: NextRequest) {
   try {
-    // Spam koruma: saatte 20 siparis/kullanici veya guest icin IP. Gercek
-    // kullanici bu limiti asmaz, ama scripted spam'i keser.
+    // Spam koruma: saatte 20 sipariş/kullanici veya guest icin IP. Gercek
+    // kullanıcı bu limiti asmaz, ama scripted spam'i keser.
     const session = await auth();
+    // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali, QA 2026-05-18)
+    const rlIp = getClientIp(req.headers);
     const rlKey = session?.user?.id
       ? `order-create:user:${session.user.id}`
-      : `order-create:ip:${req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown"}`;
+      : `order-create:ip:${rlIp}`;
     const rl = rateLimit(rlKey, 20, 60 * 60 * 1000);
     if (!rl.allowed) {
       return NextResponse.json(
-        { error: "Cok sik siparis olusturma denemesi. Lutfen bir sure bekleyin." },
+        { error: "Çok sik sipariş oluşturma denemesi. Lütfen bir sure bekleyin." },
         { status: 429 }
       );
     }
@@ -46,11 +49,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { items, shipping, paymentMethod, note, card, couponCode } = parsed.data;
-    const clientIp =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      "unknown";
+    const { items, shipping, paymentMethod, note, card, couponCode, schoolName } = parsed.data;
+    const clientIp = rlIp;
     const contractsAcceptedAt = new Date();
 
     const isDealer = session?.user?.role === "DEALER";
@@ -58,10 +58,27 @@ export async function POST(req: NextRequest) {
     const dealerStatus = session?.user?.dealerStatus ?? null;
     const dealerPaymentTerms = session?.user?.dealerPaymentTerms ?? null;
 
+    // Bayi-only sistem: sipariş yalnız giriş yapmış bayiler tarafından verilebilir.
+    // Misafir (girişsiz) ve müşteri siparişi kabul edilmez.
+    if (!session?.user || !isDealer || !dealerId) {
+      return NextResponse.json(
+        { error: "Sipariş vermek için bayi girişi yapmalısınız." },
+        { status: 401 }
+      );
+    }
+
+    // Okul adı bayi siparişlerinde zorunlu — siparişin hangi okul için verildiği.
+    if (!schoolName) {
+      return NextResponse.json(
+        { error: "schoolName: Okul adı zorunludur." },
+        { status: 400 }
+      );
+    }
+
     if (paymentMethod === "OPEN_ACCOUNT") {
       if (!isDealer || !dealerId) {
         return NextResponse.json(
-          { error: "Cari hesap odemesi yalnizca bayilere acik." },
+          { error: "Cari hesap ödemesi yalnizca bayilere acik." },
           { status: 403 }
         );
       }
@@ -75,7 +92,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "Hesabiniz pesin (kredi karti / havale) olarak tanimli. Cari hesap odemesi kullanamazsiniz.",
+              "Hesabiniz pesin (kredi karti / havale) olarak tanimli. Cari hesap ödemesi kullanamazsiniz.",
             code: "PREPAID_DEALER_OPEN_ACCOUNT_FORBIDDEN",
           },
           { status: 403 }
@@ -134,7 +151,7 @@ export async function POST(req: NextRequest) {
 
     if (products.length !== productIds.length) {
       return NextResponse.json(
-        { error: "Bazi urunler bulunamadi." },
+        { error: "Bazi ürünler bulunamadi." },
         { status: 400 }
       );
     }
@@ -150,7 +167,7 @@ export async function POST(req: NextRequest) {
       const product = products.find((p) => p.id === item.productId);
       if (!product) {
         return NextResponse.json(
-          { error: "Bazi urunler bulunamadi." },
+          { error: "Bazi ürünler bulunamadi." },
           { status: 400 }
         );
       }
@@ -159,7 +176,7 @@ export async function POST(req: NextRequest) {
       // Admin yanlış fiyat girmiş olabilir; net hata mesajı dönelim.
       if (Number(product.price) <= 0) {
         return NextResponse.json(
-          { error: `${product.name} fiyati gecersiz. Lutfen daha sonra tekrar deneyin.` },
+          { error: `${product.name} fiyati gecersiz. Lütfen daha sonra tekrar deneyin.` },
           { status: 400 }
         );
       }
@@ -242,30 +259,8 @@ export async function POST(req: NextRequest) {
 
     const total = Math.round((netSubtotal - couponDiscount + shippingCost) * 100) / 100;
 
-    let userId: string;
-
-    if (session?.user) {
-      userId = session.user.id;
-    } else {
-      let user = await prisma.user.findUnique({
-        where: { email: shipping.email },
-      });
-      if (!user) {
-        const randomPassword =
-          Math.random().toString(36).slice(2) + Date.now().toString(36);
-        const passwordHash = await bcrypt.hash(randomPassword, 10);
-        user = await prisma.user.create({
-          data: {
-            email: shipping.email,
-            name: shipping.fullName,
-            phone: shipping.phone,
-            passwordHash,
-            role: "CUSTOMER",
-          },
-        });
-      }
-      userId = user.id;
-    }
+    // Bayi-only: oturum guard yukarıda yapıldı; sipariş giriş yapan bayiye yazılır.
+    const userId: string = session.user.id;
 
     // Credit-limit check happens atomically inside the transaction — see
     // writeLedgerEntry with enforceCreditLimit. Checking it here as well would
@@ -274,7 +269,7 @@ export async function POST(req: NextRequest) {
     const result = await prisma.$transaction(async (tx) => {
       // Defensive re-check: session'daki dealerStatus JWT'den gelir ve biraz
       // stale olabilir. OPEN_ACCOUNT icin canli DB'den dogrulaariz —
-      // APPROVED'dan cikmis bir bayi siparis veremez.
+      // APPROVED'dan cikmis bir bayi sipariş veremez.
       if (paymentMethod === "OPEN_ACCOUNT" && dealerId) {
         const live = await tx.dealer.findUnique({
           where: { id: dealerId },
@@ -341,6 +336,7 @@ export async function POST(req: NextRequest) {
           shippingCost,
           total,
           note,
+          schoolName,
           shippingName: shipping.fullName,
           shippingCity: shipping.city,
           shippingAddress: shipping.address,
@@ -357,7 +353,7 @@ export async function POST(req: NextRequest) {
               {
                 type: "CONTRACTS_ACCEPTED",
                 actorId: userId,
-                note: `Mesafeli Satis Sozlesmesi + On Bilgilendirme Formu onaylandi. IP: ${clientIp.slice(0, 64)}`,
+                note: `Mesafeli Satis Sözleşmesi + On Bilgilendirme Formu onaylandi. IP: ${clientIp.slice(0, 64)}`,
               },
             ],
           },
@@ -393,7 +389,7 @@ export async function POST(req: NextRequest) {
           kind: "ORDER_DEBIT",
           amount: total,
           orderId: created.id,
-          note: `Siparis ${created.orderNumber}`,
+          note: `Sipariş ${created.orderNumber}`,
           enforceCreditLimit: true,
         });
       }
@@ -433,7 +429,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Sozlesme onayi audit (yasal kanit izi).
+    // Sözleşme onayi audit (yasal kanit izi).
     logAudit({
       actorId: session?.user?.id ?? null,
       action: "ORDER_CONTRACTS_ACCEPTED",
@@ -461,7 +457,7 @@ export async function POST(req: NextRequest) {
       );
       queueEmail({ ...orderEmail, to: shipping.email });
 
-      // E1 — Admin'e yeni siparis bildirimi. isB2B/isHighValue bayraklari
+      // E1 — Admin'e yeni sipariş bildirimi. isB2B/isHighValue bayraklari
       // ayri mail uretmez; tek sablonun icinde rozet/banner ile vurgulanir
       // (E7+E21 birleştirildi, gurultuyu azaltır).
       const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
@@ -483,6 +479,25 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    // Sipariş verilir verilmez KolayBi'ye taslak fatura kaydı aktarılır
+    // (muhasebe panelde elle düzenleyip e-faturayı keser). Fire-and-forget:
+    // KolayBi hatası siparişi ETKİLEMEZ. Env yoksa (DRYRUN) Invoice PENDING
+    // kalır, cron sonra dener. Müşteri siparişlerinde invoiceId boş döner →
+    // atlanır (bayi-only sistemde zaten hep bayi).
+    const newOrderId = order.id;
+    after(async () => {
+      try {
+        const r = await ensureInvoiceForOrder(newOrderId);
+        if (r.invoiceId) {
+          await sendPendingInvoice(r.invoiceId).catch((err) =>
+            console.error("[invoice] create-push send failed", newOrderId, err),
+          );
+        }
+      } catch (err) {
+        console.error("[invoice] create-push ensure failed", newOrderId, err);
+      }
+    });
+
     return NextResponse.json({
       success: true,
       orderNumber: order.orderNumber,
@@ -493,7 +508,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof Error && error.message === "STOCK_CONFLICT") {
       return NextResponse.json(
-        { error: "Siparis olusturulurken stok yetersiz kaldi." },
+        { error: "Sipariş oluşturulurken stok yetersiz kaldi." },
         { status: 409 }
       );
     }
@@ -517,7 +532,7 @@ export async function POST(req: NextRequest) {
     }
     console.error("Order creation error:", error);
     return NextResponse.json(
-      { error: "Siparis olusturulurken bir hata olustu." },
+      { error: "Sipariş oluşturulurken bir hata oluştu." },
       { status: 500 }
     );
   }

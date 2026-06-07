@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { AdminSearchBar } from "@/components/admin/search-bar";
 import { OrdersTable, type OrderRow } from "@/components/admin/orders-table";
 
-export const metadata: Metadata = { title: "Siparisler - Admin" };
+export const metadata: Metadata = { title: "Siparişler - Admin" };
 
 interface PageProps {
   searchParams: Promise<{ sayfa?: string; durum?: string; ara?: string; tip?: string }>;
@@ -24,7 +24,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     where.status = status;
   }
   if (tip === "bayi") {
-    // Bayisi olan siparisler — user.dealer relation'i mevcut olanlar
+    // Bayisi olan siparişler — user.dealer relation'i mevcut olanlar
     where.user = { dealer: { isNot: null } };
   } else if (tip === "musteri") {
     where.user = { dealer: null };
@@ -53,7 +53,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
     if (userFilter) delete where.user;
   }
 
-  // Tip toggle icin sayilari ayri hesapla — UI'da rozet gostermek icin
+  // Tip toggle icin sayılari ayri hesapla — UI'da rozet göstermek icin
   const baseTypeWhere: Record<string, unknown> = { ...where };
   delete baseTypeWhere.user;
   delete baseTypeWhere.OR;
@@ -85,32 +85,32 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
   const totalPages = Math.ceil(total / perPage);
 
   const statusFilters = [
-    { value: "", label: "Tumu" },
+    { value: "", label: "Tümu" },
     { value: "PENDING", label: "Bekleyen" },
     { value: "APPROVED", label: "Onaylanan" },
     { value: "PROCESSING", label: "Hazirlanan" },
     { value: "SHIPPED", label: "Kargoda" },
     { value: "DELIVERED", label: "Teslim" },
-    { value: "CANCELLED", label: "Iptal" },
+    { value: "CANCELLED", label: "İptal" },
   ];
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-display font-bold text-brand-black">Siparisler</h1>
+          <h1 className="text-2xl font-display font-bold text-brand-black">Siparişler</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {total} siparis
+            {total} sipariş
             {tip === "bayi" && " (yalniz bayiler)"}
             {tip === "musteri" && " (yalniz musteriler)"}
           </p>
         </div>
       </div>
 
-      {/* Tip toggle — Musteri / Bayi siparislerini ayir */}
+      {/* Tip toggle — Musteri / Bayi siparişlerini ayir */}
       <div className="mb-4 inline-flex rounded-lg border border-gray-200 bg-white p-1">
         {[
-          { key: "", label: "Tumu", count: customerCount + dealerCount, color: "bg-neutral-900 text-white" },
+          { key: "", label: "Tümu", count: customerCount + dealerCount, color: "bg-neutral-900 text-white" },
           { key: "musteri", label: "Musteri", count: customerCount, color: "bg-sky-600 text-white" },
           { key: "bayi", label: "Bayi", count: dealerCount, color: "bg-emerald-600 text-white" },
         ].map((t) => {
@@ -138,7 +138,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
 
       <AdminSearchBar
         defaultValue={search}
-        placeholder="Siparis no, isim, email, kargo no..."
+        placeholder="Sipariş no, isim, email, kargo no..."
         hiddenParams={{ durum: status, tip }}
       />
 
@@ -171,6 +171,8 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
           orderNumber: o.orderNumber,
           customerName: o.user.name,
           customerEmail: o.user.email,
+          dealerCompanyName: o.user.dealer?.companyName ?? null,
+          schoolName: o.schoolName,
           itemCount: o.items.length,
           paymentMethod: o.paymentMethod,
           status: o.status,
@@ -188,7 +190,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
                 href={`/admin/siparisler?sayfa=${page - 1}${status ? `&durum=${status}` : ""}${search ? `&ara=${encodeURIComponent(search)}` : ""}${tip ? `&tip=${tip}` : ""}`}
                 className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
               >
-                Onceki
+                Önceki
               </Link>
             )}
             {page < totalPages && (

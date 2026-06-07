@@ -6,9 +6,16 @@ import { formatPrice } from "@/lib/utils";
 import { ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/constants";
 import { carrierLabel } from "@/lib/cargo-carriers";
 import { OrderStatusForm } from "@/components/admin/order-status-form";
-import { InvoiceRetryButton } from "@/components/admin/invoice-retry-button";
+import { OrderInvoiceButton } from "@/components/admin/order-invoice-button";
 
 export const metadata: Metadata = { title: "Sipariş Detayi - Admin" };
+
+const INVOICE_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Bekliyor",
+  SENT: "Aktarıldı (taslak)",
+  FAILED: "Başarısız",
+  CANCELLED: "İptal",
+};
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -144,73 +151,85 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {order.invoice && (
+      {order.user.dealer && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-start justify-between flex-wrap gap-3">
             <div>
-              <h2 className="font-semibold text-brand-black">KolayBi e-Fatura</h2>
+              <h2 className="font-semibold text-brand-black">KolayBi Fatura Kaydı</h2>
               <p className="text-xs text-gray-500 mt-1">
-                Sipariş DELIVERED&apos;a geçince otomatik tetiklenir.
+                KolayBi&apos;ye <strong>taslak</strong> olarak aktarılır; resmi e-fatura
+                KolayBi panelinden elle kesilir. DELIVERED&apos;da otomatik tetiklenir.
               </p>
             </div>
-            <span
-              className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${
-                order.invoice.status === "SENT"
-                  ? "bg-emerald-100 text-emerald-700"
-                  : order.invoice.status === "FAILED"
-                    ? "bg-red-100 text-red-700"
-                    : order.invoice.status === "CANCELLED"
-                      ? "bg-gray-100 text-gray-600"
-                      : "bg-amber-100 text-amber-700"
-              }`}
-            >
-              {order.invoice.status}
-            </span>
+            {order.invoice && (
+              <span
+                className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${
+                  order.invoice.status === "SENT"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : order.invoice.status === "FAILED"
+                      ? "bg-red-100 text-red-700"
+                      : order.invoice.status === "CANCELLED"
+                        ? "bg-gray-100 text-gray-600"
+                        : "bg-amber-100 text-amber-700"
+                }`}
+              >
+                {INVOICE_STATUS_LABELS[order.invoice.status] ?? order.invoice.status}
+              </span>
+            )}
           </div>
-          <dl className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-            <div>
-              <dt className="text-gray-500">Belge No</dt>
-              <dd className="font-mono text-brand-black mt-0.5">
-                {order.invoice.externalId ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Tutar</dt>
-              <dd className="text-brand-black mt-0.5">
-                {formatPrice(Number(order.invoice.totalAmount))} {order.invoice.currency}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Deneme</dt>
-              <dd className="text-brand-black mt-0.5">{order.invoice.attemptCount}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-500">Gönderim</dt>
-              <dd className="text-brand-black mt-0.5">
-                {order.invoice.syncedAt
-                  ? new Date(order.invoice.syncedAt).toLocaleString("tr-TR")
-                  : "—"}
-              </dd>
-            </div>
-          </dl>
-          {order.invoice.errorMessage && (
-            <p className="mt-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">
-              {order.invoice.errorMessage}
+          {order.invoice ? (
+            <>
+              <dl className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <dt className="text-gray-500">KolayBi Belge No</dt>
+                  <dd className="font-mono text-brand-black mt-0.5">
+                    {order.invoice.externalId ?? "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Tutar</dt>
+                  <dd className="text-brand-black mt-0.5">
+                    {formatPrice(Number(order.invoice.totalAmount))} {order.invoice.currency}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Deneme</dt>
+                  <dd className="text-brand-black mt-0.5">{order.invoice.attemptCount}</dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Aktarım</dt>
+                  <dd className="text-brand-black mt-0.5">
+                    {order.invoice.syncedAt
+                      ? new Date(order.invoice.syncedAt).toLocaleString("tr-TR")
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+              {order.invoice.errorMessage && (
+                <p className="mt-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                  {order.invoice.errorMessage}
+                </p>
+              )}
+              {order.invoice.pdfUrl && (
+                <a
+                  href={order.invoice.pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-3 text-sm text-brand-gold-dark hover:underline"
+                >
+                  PDF indir &rarr;
+                </a>
+              )}
+            </>
+          ) : (
+            <p className="mt-3 text-xs text-gray-500">
+              Henüz KolayBi&apos;ye aktarılmadı.
             </p>
           )}
-          {order.invoice.pdfUrl && (
-            <a
-              href={order.invoice.pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block mt-3 text-sm text-brand-gold-dark hover:underline"
-            >
-              PDF indir &rarr;
-            </a>
-          )}
-          <InvoiceRetryButton
-            invoiceId={order.invoice.id}
-            status={order.invoice.status}
+          <OrderInvoiceButton
+            orderId={order.id}
+            orderStatus={order.status}
+            invoiceStatus={order.invoice?.status ?? null}
           />
         </div>
       )}

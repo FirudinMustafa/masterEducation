@@ -120,7 +120,7 @@ export default function AdminLoginPage() {
           <Image
             src="/me-logo-v2.png"
             alt="Master Education"
-            width={160}
+            width={244}
             height={87}
             className="object-contain"
             priority
@@ -202,12 +202,11 @@ export default function AdminLoginPage() {
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-neutral-500">
-          Musteri misiniz?{" "}
           <Link
             href="/giris"
             className="font-medium text-neutral-300 underline-offset-2 hover:text-white hover:underline"
           >
-            Musteri girisi
+            Bayi girişi
           </Link>
           {" · "}
           <Link

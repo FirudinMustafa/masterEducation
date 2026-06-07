@@ -11,7 +11,7 @@ import { CategoryBento } from "@/components/home/category-bento";
 import { ProductCarousel } from "@/components/home/product-carousel";
 import { SpotlightFeature } from "@/components/home/spotlight-feature";
 import { StatsStrip } from "@/components/home/stats-strip";
-import { TrustFeatures } from "@/components/home/trust-features";
+import { DealerCTA } from "@/components/home/dealer-cta";
 import { productImageUrl } from "@/lib/images";
 
 async function mapWithPricing(
@@ -71,7 +71,7 @@ async function mapWithPricing(
 async function getData(ctx: SessionPricingContext) {
   const baseInclude = {
     publisher: { select: { name: true } },
-    images: { orderBy: { displayOrder: "asc" as const }, take: 1 },
+    images: { orderBy: [{ displayOrder: "asc" as const }, { pictureId: "asc" as const }], take: 1 },
   };
   const [newArrivals, topSellers, categories, publishers, productCount, publisherCount] =
     await Promise.all([
@@ -127,7 +127,7 @@ export default async function HomePage() {
   const pricingCtx = await getSessionPricingContext();
   const data = await getData(pricingCtx);
 
-  // Hero showcase: gercek gorselli ilk 4 yeni urun — yoksa hero zarif fallback
+  // Hero showcase: gercek gorselli ilk 4 yeni ürün — yoksa hero zarif fallback
   const showcase = data.newArrivals
     .filter((p) => p.imageSrc)
     .slice(0, 4)
@@ -161,9 +161,9 @@ export default async function HomePage() {
       <ProductCarousel
         products={data.topSellers}
         eyebrow="Editor Sectimi"
-        title="Cok satan klasikler"
-        subtitle="Bu hafta en cok tercih edilen kitaplar"
-        link="/urunler?siralama=cok-satan"
+        title="Çok satan klasikler"
+        subtitle="Bu hafta en çok tercih edilen kitaplar"
+        link="/urunler?siralama=çok-satan"
       />
 
       <StatsStrip
@@ -171,7 +171,7 @@ export default async function HomePage() {
         publisherCount={data.publisherCount}
       />
 
-      <TrustFeatures />
+      <DealerCTA />
     </div>
   );
 }

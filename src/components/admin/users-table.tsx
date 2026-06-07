@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { UserRole, DealerStatus } from "@prisma/client";
+import { useBusy } from "@/lib/hooks/use-busy";
 
 export interface UserRow {
   id: string;
@@ -35,10 +36,12 @@ interface Props {
 
 export function UsersTable({ users, currentUserId }: Props) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  // F-0715/F-0712: cifte tiklama / hızlı tekrar tetiklemeyi onlemek icin
+  // ortak useBusy() helper. Tüm bulk butonlar tek state'i paylasir.
+  const { busy, run } = useBusy();
 
   // Self-id ve admin'leri otomatik atla — checkbox bile gösterilmez.
   const eligible = useMemo(
@@ -78,32 +81,34 @@ export function UsersTable({ users, currentUserId }: Props) {
       return;
     setError(null);
     setInfo(null);
-    const res = await fetch("/api/admin/users/bulk-delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userIds: [...selected], mode }),
+    await run(async () => {
+      const res = await fetch("/api/admin/users/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds: [...selected], mode }),
+      });
+      const d = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        hardDeleted?: number;
+        anonymized?: number;
+        skipped?: number;
+        dealersCleanedUp?: number;
+        cancelledOrdersTotal?: number;
+      };
+      if (!res.ok) {
+        setError(d.error ?? "Toplu silme başarısız.");
+        return;
+      }
+      const dealerNote =
+        d.dealersCleanedUp && d.dealersCleanedUp > 0
+          ? ` · ${d.dealersCleanedUp} bayi temizlendi (${d.cancelledOrdersTotal ?? 0} aktif sipariş iptal)`
+          : "";
+      setInfo(
+        `${d.hardDeleted ?? 0} silindi, ${d.anonymized ?? 0} anonimleştirildi, ${d.skipped ?? 0} atlandı${dealerNote}.`
+      );
+      setSelected(new Set());
+      router.refresh();
     });
-    const d = (await res.json().catch(() => ({}))) as {
-      error?: string;
-      hardDeleted?: number;
-      anonymized?: number;
-      skipped?: number;
-      dealersCleanedUp?: number;
-      cancelledOrdersTotal?: number;
-    };
-    if (!res.ok) {
-      setError(d.error ?? "Toplu silme başarısız.");
-      return;
-    }
-    const dealerNote =
-      d.dealersCleanedUp && d.dealersCleanedUp > 0
-        ? ` · ${d.dealersCleanedUp} bayi temizlendi (${d.cancelledOrdersTotal ?? 0} aktif sipariş iptal)`
-        : "";
-    setInfo(
-      `${d.hardDeleted ?? 0} silindi, ${d.anonymized ?? 0} anonimleştirildi, ${d.skipped ?? 0} atlandı${dealerNote}.`
-    );
-    setSelected(new Set());
-    startTransition(() => router.refresh());
   }
 
   return (
@@ -129,7 +134,7 @@ export function UsersTable({ users, currentUserId }: Props) {
                     type="checkbox"
                     checked={allChecked}
                     onChange={toggleAll}
-                    aria-label="Tumunu sec"
+                    aria-label="Tümunu seç"
                     className="h-4 w-4 cursor-pointer"
                     disabled={eligible.length === 0}
                   />
@@ -138,15 +143,15 @@ export function UsersTable({ users, currentUserId }: Props) {
                 <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Email</th>
                 <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Rol</th>
                 <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Firma</th>
-                <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Siparis</th>
-                <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Kayit</th>
+                <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Sipariş</th>
+                <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Kayıt</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 && (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-gray-500">
-                    Kullanici bulunamadi.
+                    Kullanıcı bulunamadi.
                   </td>
                 </tr>
               )}
@@ -168,7 +173,7 @@ export function UsersTable({ users, currentUserId }: Props) {
                           checked={selected.has(u.id)}
                           onChange={() => toggleOne(u.id)}
                           className="h-4 w-4 cursor-pointer"
-                          aria-label={`${u.name} sec`}
+                          aria-label={`${u.name} seç`}
                         />
                       ) : (
                         <span
@@ -176,7 +181,7 @@ export function UsersTable({ users, currentUserId }: Props) {
                           title={
                             isSelf
                               ? "Kendi hesabınız"
-                              : "Admin hesabı seçilemez"
+                              : "Admin hesabı secilemez"
                           }
                         />
                       )}
@@ -234,7 +239,7 @@ export function UsersTable({ users, currentUserId }: Props) {
           <div className="px-4 py-3 flex flex-wrap items-center gap-2 justify-between">
             <div className="flex items-center gap-3 text-sm">
               <span className="font-semibold text-brand-black">
-                {selected.size} kullanici secildi
+                {selected.size} kullanıcı secildi
               </span>
               <button
                 onClick={() => setSelected(new Set())}
@@ -246,7 +251,7 @@ export function UsersTable({ users, currentUserId }: Props) {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => bulkDelete("auto")}
-                disabled={pending}
+                disabled={busy}
                 className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
                 title="Siparişi olanları anonimleştirir, siparişsizleri kalıcı siler"
               >
@@ -254,7 +259,7 @@ export function UsersTable({ users, currentUserId }: Props) {
               </button>
               <button
                 onClick={() => bulkDelete("anonymize_all")}
-                disabled={pending}
+                disabled={busy}
                 className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 cursor-pointer"
                 title="Hepsini anonimleştir (KVKK)"
               >
@@ -262,9 +267,9 @@ export function UsersTable({ users, currentUserId }: Props) {
               </button>
               <button
                 onClick={() => bulkDelete("hard_only")}
-                disabled={pending}
+                disabled={busy}
                 className="px-3 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 cursor-pointer"
-                title="Yalnız siparişsiz kullanicilari kalici siler"
+                title="Yalnız siparişsiz kullanıcılari kalici siler"
               >
                 Kalıcı Sil
               </button>

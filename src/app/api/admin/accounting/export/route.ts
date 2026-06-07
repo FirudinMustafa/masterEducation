@@ -10,6 +10,7 @@ import {
 } from "@/lib/excel-branding";
 
 export async function GET(req: NextRequest) {
+  try {
   const gate = await requireRole("ADMIN");
   if (!gate.ok) return gate.response;
 
@@ -57,11 +58,16 @@ export async function GET(req: NextRequest) {
   });
 
   const stamp = new Date().toISOString().slice(0, 10);
-  const kindLabel = type === "items" ? "siparis-satirlari" : "siparisler";
+  // HTTP header'lar Latin-1 olmali — Turk karakterleri (ş, ğ, ı, ö, c, u)
+  // ByteString'e cevrilemez ve Response constructor throw eder. Bu sebeple
+  // filename'i ASCII-safe versiyona indirgiyoruz. RFC 5987 ile UTF-8 fallback
+  // ekleyerek modern tarayicilar gercek Turkce ismi gosterebilir.
+  const kindLabel = type === "items" ? "sipariş-satirlari" : "siparişler";
+  const asciiKindLabel = type === "items" ? "siparis-satirlari" : "siparisler";
 
   if (format === "xlsx") {
     const wb = createBrandedWorkbook();
-    const range = from || to ? `${from ?? "-"} → ${to ?? "-"}` : "Tum tarihler";
+    const range = from || to ? `${from ?? "-"} → ${to ?? "-"}` : "Tüm tarihler";
 
     if (type === "items") {
       const rows = orders.flatMap((o) =>
@@ -78,17 +84,17 @@ export async function GET(req: NextRequest) {
           lineTotal: Number(item.lineTotal),
         })),
       );
-      buildBrandedSheet(wb, "Siparis Satirlari", {
-        title: "Siparis Satirlari Raporu",
+      buildBrandedSheet(wb, "Sipariş Satirlari", {
+        title: "Sipariş Satirlari Raporu",
         subtitle: `Tarih araligi: ${range}  ·  ${rows.length} satir`,
         columns: [
-          { header: "Siparis No", key: "orderNumber", width: 18 },
+          { header: "Sipariş No", key: "orderNumber", width: 18 },
           { header: "Tarih", key: "date", width: 14 },
           { header: "ISBN", key: "sku", width: 18 },
-          { header: "Urun", key: "product", width: 40 },
+          { header: "Ürün", key: "product", width: 40 },
           { header: "Adet", key: "quantity", width: 8, numFmt: "0" },
           { header: "Birim Fiyat", key: "unitPrice", width: 14, numFmt: "#,##0.00" },
-          { header: "Iskonto %", key: "discountPct", width: 12, numFmt: "0.00" },
+          { header: "İskonto %", key: "discountPct", width: 12, numFmt: "0.00" },
           { header: "KDV %", key: "vatRate", width: 10, numFmt: "0.00" },
           { header: "KDV Tutar", key: "vatAmount", width: 14, numFmt: "#,##0.00" },
           { header: "Satir Toplam", key: "lineTotal", width: 16, numFmt: "#,##0.00" },
@@ -121,20 +127,20 @@ export async function GET(req: NextRequest) {
         };
       });
       const totalCiro = rows.reduce((s, r) => s + r.total, 0);
-      buildBrandedSheet(wb, "Siparisler", {
-        title: "Siparis Ozeti",
-        subtitle: `Tarih araligi: ${range}  ·  ${rows.length} siparis  ·  Ciro: ${totalCiro.toFixed(2)} TL`,
+      buildBrandedSheet(wb, "Siparişler", {
+        title: "Sipariş Ozeti",
+        subtitle: `Tarih araligi: ${range}  ·  ${rows.length} sipariş  ·  Ciro: ${totalCiro.toFixed(2)} TL`,
         columns: [
-          { header: "Siparis No", key: "orderNumber", width: 18 },
+          { header: "Sipariş No", key: "orderNumber", width: 18 },
           { header: "Tarih", key: "date", width: 14 },
           { header: "Musteri", key: "customer", width: 24 },
           { header: "Email", key: "email", width: 30 },
           { header: "Bayi", key: "dealer", width: 24 },
           { header: "Vergi No", key: "taxNumber", width: 14 },
-          { header: "Odeme", key: "payment", width: 14 },
+          { header: "Ödeme", key: "payment", width: 14 },
           { header: "Durum", key: "status", width: 14 },
           { header: "Ara Toplam", key: "subtotal", width: 14, numFmt: "#,##0.00" },
-          { header: "Iskonto", key: "discount", width: 12, numFmt: "#,##0.00" },
+          { header: "İskonto", key: "discount", width: 12, numFmt: "#,##0.00" },
           { header: "KDV", key: "vat", width: 12, numFmt: "#,##0.00" },
           { header: "Net (KDV Haric)", key: "netExVat", width: 16, numFmt: "#,##0.00" },
           { header: "Kargo", key: "shipping", width: 10, numFmt: "#,##0.00" },
@@ -145,17 +151,29 @@ export async function GET(req: NextRequest) {
     }
 
     const buffer = await wb.xlsx.writeBuffer();
-    return excelResponse(buffer as ArrayBuffer, `${kindLabel}-${stamp}.xlsx`);
+    return excelResponse(buffer as ArrayBuffer, `${asciiKindLabel}-${stamp}.xlsx`, `${kindLabel}-${stamp}.xlsx`);
   }
 
   // CSV (legacy)
   const csv = type === "items" ? orderItemsToCsv(orders) : ordersToCsv(orders);
-  const filename = `${kindLabel}-${stamp}.csv`;
+  const asciiFilename = `${asciiKindLabel}-${stamp}.csv`;
+  const utf8Filename = `${kindLabel}-${stamp}.csv`;
 
   return new NextResponse("﻿" + csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      // RFC 5987: filename= (ASCII fallback) + filename*= (UTF-8) ile Turkce
+      // karakterler modern tarayicilarda korunur, eski tarayicilar ASCII gorur.
+      "Content-Disposition": `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(utf8Filename)}`,
     },
   });
+  } catch (err) {
+    // Bos response yerine acik bir hata kodu doner. Detay sunucu log'una;
+    // production'da kullaniciya stack trace sizdirmiyoruz.
+    console.error("[accounting/export] ERROR:", err);
+    return NextResponse.json(
+      { error: "Rapor olusturulamadi. Lütfen tekrar deneyin." },
+      { status: 500 },
+    );
+  }
 }

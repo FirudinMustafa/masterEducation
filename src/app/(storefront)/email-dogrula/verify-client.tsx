@@ -27,7 +27,7 @@ export function VerifyClient({ token }: Props) {
         if (res.ok && data.ok) {
           setState("success");
         } else {
-          setError(data.error ?? "Dogrulama basarisiz.");
+          setError(data.error ?? "Dogrulama başarısız.");
           setState("failed");
         }
       })
@@ -63,13 +63,13 @@ export function VerifyClient({ token }: Props) {
             Email adresiniz dogrulandi
           </h1>
           <p className="text-sm text-gray-600 mb-6">
-            Artik tum hesap ozellikleri aktif.
+            Artik tüm hesap özellikleri aktif.
           </p>
           <Link
             href="/hesabim"
             className="inline-flex px-5 py-2.5 bg-brand-gold text-brand-black font-semibold rounded-lg hover:bg-brand-gold-dark"
           >
-            Hesabima git
+            Hesabıma git
           </Link>
         </>
       )}
@@ -82,14 +82,14 @@ export function VerifyClient({ token }: Props) {
             </svg>
           </div>
           <h1 className="text-2xl font-display font-bold text-brand-black mb-2">
-            Dogrulama basarisiz
+            Dogrulama başarısız
           </h1>
           <p className="text-sm text-red-700 mb-6">{error}</p>
           <Link
             href="/hesabim"
             className="inline-flex px-5 py-2.5 bg-brand-gold text-brand-black font-semibold rounded-lg hover:bg-brand-gold-dark"
           >
-            Hesabima git
+            Hesabıma git
           </Link>
           <p className="text-xs text-gray-500 mt-3">
             Hesabinizdan yeni bir dogrulama maili isteyebilirsiniz.

@@ -23,7 +23,7 @@ export default async function ProfileEditPage() {
         href="/hesabim"
         className="text-sm text-gray-500 hover:text-brand-black"
       >
-        &larr; Hesabim
+        &larr; Hesabım
       </Link>
       <h1 className="text-2xl font-display font-bold text-brand-black mt-4 mb-6">
         Profil Bilgileri

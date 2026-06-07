@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useBusy } from "@/lib/hooks/use-busy";
 
 export interface TaxonomyItem {
   id: string;
@@ -25,18 +26,19 @@ const LABELS = {
     fkLabel: "kategori",
   },
   publisher: {
-    singular: "Yayinevi",
-    plural: "Yayinevleri",
+    singular: "Yayınevi",
+    plural: "Yayınevleri",
     basePath: "/api/admin/publishers",
-    storefrontParam: "yayinevi",
-    fkLabel: "yayinevi",
+    storefrontParam: "yayınevi",
+    fkLabel: "yayınevi",
   },
 };
 
 export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
   const router = useRouter();
   const labels = LABELS[kind];
-  const [pending, startTransition] = useTransition();
+  // Tek useBusy: oluştur + duzenle kaydet + sil paylasir; race koruma.
+  const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"ana" | "detay">("ana");
@@ -45,7 +47,7 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
   const [editType, setEditType] = useState<"ana" | "detay">("ana");
   const [filter, setFilter] = useState("");
 
-  // Liste kisaysa filtre gizli — 15+ kayit oldugunda kullanicinin ise yarar.
+  // Liste kisaysa filtre gizli — 15+ kayıt oldugunda kullanıcınin ise yarar.
   const showFilter = items.length > 15;
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -58,79 +60,87 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
 
   async function createItem(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    const body =
-      kind === "category"
-        ? { name: newName.trim(), type: newType }
-        : { name: newName.trim() };
-    const res = await fetch(labels.basePath, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+    await run(async () => {
+      setError(null);
+      const body =
+        kind === "category"
+          ? { name: newName.trim(), type: newType }
+          : { name: newName.trim() };
+      const res = await fetch(labels.basePath, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Kaydedilemedi.");
+        return;
+      }
+      setNewName("");
+      router.refresh();
     });
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Kaydedilemedi.");
-      return;
-    }
-    setNewName("");
-    startTransition(() => router.refresh());
   }
 
   async function saveEdit(id: string) {
-    setError(null);
-    const body =
-      kind === "category"
-        ? { name: editName.trim(), type: editType }
-        : { name: editName.trim() };
-    const res = await fetch(`${labels.basePath}/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+    await run(async () => {
+      setError(null);
+      const body =
+        kind === "category"
+          ? { name: editName.trim(), type: editType }
+          : { name: editName.trim() };
+      const res = await fetch(`${labels.basePath}/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Kaydedilemedi.");
+        return;
+      }
+      setEditing(null);
+      router.refresh();
     });
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Kaydedilemedi.");
-      return;
-    }
-    setEditing(null);
-    startTransition(() => router.refresh());
   }
 
   async function removeItem(id: string, name: string) {
     if (!confirm(`"${name}" silinsin mi?`)) return;
-    setError(null);
-    const res = await fetch(`${labels.basePath}/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      startTransition(() => router.refresh());
-      return;
-    }
-    const data = (await res.json().catch(() => ({}))) as {
-      error?: string;
-      productCount?: number;
-      discountCount?: number;
-    };
-    // Iliskili kayit varsa "zorla sil" secenegini sor.
-    if (res.status === 409 && (data.productCount || data.discountCount)) {
-      const parts: string[] = [];
-      if (data.productCount) parts.push(`${data.productCount} urunun ${labels.fkLabel} bilgisi temizlenecek`);
-      if (data.discountCount) parts.push(`${data.discountCount} iskonto kurali silinecek`);
-      const proceed = confirm(
-        `"${name}" silinemiyor:\n${data.error}\n\nYine de zorla silmek ister misiniz?\n- ${parts.join("\n- ")}\n\n(Islem geri alinamaz)`
-      );
-      if (!proceed) return;
-      const forceRes = await fetch(`${labels.basePath}/${id}?force=1`, {
-        method: "DELETE",
-      });
-      if (!forceRes.ok) {
-        const fd = (await forceRes.json().catch(() => ({}))) as { error?: string };
-        setError(fd.error ?? "Zorla silme basarisiz.");
+    // confirm()'in zorla-sil dali run() icinde ilerlemeli, ama ilk confirm
+    // disinda — boylece busy guard ikinci-tiklamayi yutar.
+    await run(async () => {
+      setError(null);
+      const res = await fetch(`${labels.basePath}/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        router.refresh();
         return;
       }
-      startTransition(() => router.refresh());
-      return;
-    }
-    setError(data.error ?? "Silinemedi.");
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        productCount?: number;
+        discountCount?: number;
+      };
+      // Iliskili kayıt varsa "zorla sil" secenegini sor.
+      if (res.status === 409 && (data.productCount || data.discountCount)) {
+        const parts: string[] = [];
+        if (data.productCount) parts.push(`${data.productCount} ürünun ${labels.fkLabel} bilgisi temizlenecek`);
+        if (data.discountCount) parts.push(`${data.discountCount} iskonto kurali silinecek`);
+        const proceed = confirm(
+          `"${name}" silinemiyor:\n${data.error}\n\nYine de zorla silmek ister misiniz?\n- ${parts.join("\n- ")}\n\n(Islem geri alinamaz)`
+        );
+        if (!proceed) return;
+        const forceRes = await fetch(`${labels.basePath}/${id}?force=1`, {
+          method: "DELETE",
+        });
+        if (!forceRes.ok) {
+          const fd = (await forceRes.json().catch(() => ({}))) as { error?: string };
+          setError(fd.error ?? "Zorla silme başarısız.");
+          return;
+        }
+        router.refresh();
+        return;
+      }
+      setError(data.error ?? "Silinemedi.");
+    });
   }
 
   return (
@@ -172,7 +182,7 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
         )}
         <button
           type="submit"
-          disabled={pending || !newName.trim()}
+          disabled={busy || !newName.trim()}
           className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
         >
           Ekle
@@ -205,7 +215,7 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
                 </th>
               )}
               <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">
-                Urun
+                Ürün
               </th>
               <th className="p-3" />
             </tr>
@@ -215,7 +225,7 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
               <tr>
                 <td colSpan={5} className="p-6 text-center text-gray-500">
                   {items.length === 0
-                    ? "Kayit yok."
+                    ? "Kayıt yok."
                     : `"${filter}" icin sonuc yok.`}
                 </td>
               </tr>
@@ -266,7 +276,7 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
                       <>
                         <button
                           onClick={() => saveEdit(item.id)}
-                          disabled={pending || !editName.trim()}
+                          disabled={busy || !editName.trim()}
                           className="text-xs text-emerald-600 hover:underline mr-3 cursor-pointer disabled:opacity-50"
                         >
                           Kaydet
@@ -275,7 +285,7 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
                           onClick={() => setEditing(null)}
                           className="text-xs text-gray-500 hover:underline cursor-pointer"
                         >
-                          Iptal
+                          İptal
                         </button>
                       </>
                     ) : (
@@ -292,7 +302,8 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
                         </button>
                         <button
                           onClick={() => removeItem(item.id, item.name)}
-                          className="text-xs text-red-600 hover:underline cursor-pointer"
+                          disabled={busy}
+                          className="text-xs text-red-600 hover:underline cursor-pointer disabled:opacity-50"
                         >
                           Sil
                         </button>

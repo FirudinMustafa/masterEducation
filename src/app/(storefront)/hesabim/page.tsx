@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { LogoutButton } from "@/components/ui/logout-button";
 import { EmailVerifyBanner } from "./email-verify-banner";
 
-export const metadata: Metadata = { title: "Hesabim" };
+export const metadata: Metadata = { title: "Hesabım" };
 
 export default async function AccountPage() {
   const session = await auth();
@@ -23,7 +23,7 @@ export default async function AccountPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-      <h1 className="text-2xl font-display font-bold text-brand-black mb-6">Hesabim</h1>
+      <h1 className="text-2xl font-display font-bold text-brand-black mb-6">Hesabım</h1>
 
       {!dbUser?.emailVerified && <EmailVerifyBanner />}
 
@@ -71,7 +71,7 @@ export default async function AccountPage() {
             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
             </svg>
-            <span className="font-medium text-brand-black">Sifre Degistir</span>
+            <span className="font-medium text-brand-black">Şifre Degistir</span>
           </div>
           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
@@ -86,7 +86,7 @@ export default async function AccountPage() {
             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
             </svg>
-            <span className="font-medium text-brand-black">Siparislerim</span>
+            <span className="font-medium text-brand-black">Siparişlerim</span>
           </div>
           <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
@@ -166,7 +166,7 @@ export default async function AccountPage() {
             href="/hesabim/hesabi-sil"
             className="block mt-6 text-center text-sm text-red-600 hover:text-red-800 hover:underline"
           >
-            Hesabimi sil (KVKK)
+            Hesabımi sil (KVKK)
           </Link>
         )}
       </div>

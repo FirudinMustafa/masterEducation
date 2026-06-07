@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Bayi bulunamadi." }, { status: 404 });
   }
 
-  // Geçerli urun ID'lerini dogrula (yanlis/eski ID'leri sessizce eleme, hata don).
+  // Geçerli ürün ID'lerini dogrula (yanlis/eski ID'leri sessizce eleme, hata don).
   const productIds = items.map((i) => i.productId);
   const found = await prisma.product.findMany({
     where: { id: { in: productIds } },
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     const missing = productIds.filter((id) => !foundSet.has(id));
     return NextResponse.json(
       {
-        error: `Gecersiz urun ID'si: ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? " ..." : ""}`,
+        error: `Gecersiz ürün ID'si: ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? " ..." : ""}`,
       },
       { status: 400 },
     );

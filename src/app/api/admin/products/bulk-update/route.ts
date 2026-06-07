@@ -7,9 +7,9 @@ import { logAudit } from "@/lib/audit";
 
 const MAX_IDS = 1000;
 
-// Sadece "guvenli" alanlar bulk ile guncellenebilir. name/sku/slug bulk'a uygun
+// Sadece "guvenli" alanlar bulk ile güncellenebilir. name/sku/slug bulk'a uygun
 // degil (tek tek hedefli düzenleme gerek). KDV/fiyat/stok/kategori/yayinevi
-// gibi tum ürün için aynı değer alabilen alanlar bu listede.
+// gibi tüm ürün için aynı değer alabilen alanlar bu listede.
 const patchSchema = z
   .object({
     price: z.number().min(0).max(9_999_999).optional(),
@@ -22,7 +22,7 @@ const patchSchema = z
     isPublished: z.boolean().optional(),
   })
   .refine((p) => Object.values(p).some((v) => v !== undefined), {
-    message: "En az bir alan guncellenmeli.",
+    message: "En az bir alan güncellenmeli.",
   });
 
 const bodySchema = z.object({
@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
   }
   const { productIds, patch } = parsed.data;
 
-  // FK validasyonu — kategoriId/publisherId verildiyse var olmasi sart
-  // (tek tek update'te Prisma FK constraint hatasi cirkin gozukurdu).
+  // FK validasyonu — kategoriId/publisherId verildiyse var olmasi şart
+  // (tek tek update'te Prisma FK constraint hatasi cirkin gözukurdu).
   if (patch.categoryId) {
     const c = await prisma.category.count({ where: { id: patch.categoryId } });
     if (c === 0) {
@@ -55,11 +55,11 @@ export async function POST(req: NextRequest) {
   if (patch.publisherId) {
     const p = await prisma.publisher.count({ where: { id: patch.publisherId } });
     if (p === 0) {
-      return NextResponse.json({ error: "Yayinevi bulunamadi." }, { status: 400 });
+      return NextResponse.json({ error: "Yayınevi bulunamadi." }, { status: 400 });
     }
   }
 
-  // Tek updateMany — partial-set semantics: tum verilen alanlar tum ID'lerde set
+  // Tek updateMany — partial-set semantics: tüm verilen alanlar tüm ID'lerde set
   // edilir. Bu basit/hizli ama tek transaction.
   const result = await prisma.product.updateMany({
     where: { id: { in: productIds } },

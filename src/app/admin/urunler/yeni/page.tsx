@@ -3,11 +3,10 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { ProductForm, type ProductFormValues } from "@/components/admin/product-form";
 
-export const metadata: Metadata = { title: "Yeni Urun - Admin" };
+export const metadata: Metadata = { title: "Yeni Ürün - Admin" };
 
 const EMPTY: ProductFormValues = {
   name: "",
-  nameEn: "",
   sku: "",
   price: "",
   oldPrice: "",
@@ -37,10 +36,10 @@ export default async function NewProductPage() {
           href="/admin/urunler"
           className="text-sm text-gray-500 hover:text-brand-black"
         >
-          &larr; Urunler
+          &larr; Ürünler
         </Link>
       </div>
-      <h1 className="text-2xl font-display font-bold text-brand-black">Yeni Urun</h1>
+      <h1 className="text-2xl font-display font-bold text-brand-black">Yeni Ürün</h1>
       <ProductForm
         mode="create"
         initial={EMPTY}

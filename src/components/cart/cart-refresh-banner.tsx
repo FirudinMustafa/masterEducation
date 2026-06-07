@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useCartStore, type CartDiff } from "@/stores/cart-store";
-import { formatPrice } from "@/lib/utils";
 
 export function CartRefreshBanner() {
   const refresh = useCartStore((s) => s.refreshFromServer);
@@ -30,13 +29,13 @@ export function CartRefreshBanner() {
   const messages = diffs.map((d) => {
     switch (d.kind) {
       case "removed":
-        return "Bir urun artik satilmadigi icin sepetten cikarildi.";
+        return "Bir ürün artik satilmadigi icin sepetten çıkarildi.";
       case "outOfStock":
-        return "Bir urun stokta kalmadigi icin sepetten cikarildi.";
+        return "Bir ürün stokta kalmadigi icin sepetten çıkarildi.";
       case "stockReduced":
-        return `Stok yetersiz — bir urunun miktari ${d.oldValue} yerine ${d.newValue} olarak guncellendi.`;
+        return `Stok yetersiz — bir ürünun miktari ${d.oldValue} yerine ${d.newValue} olarak güncellendi.`;
       case "priceChanged":
-        return `Bir urunun fiyati ${formatPrice(d.oldValue ?? 0)} → ${formatPrice(d.newValue ?? 0)} olarak guncellendi.`;
+        return "Bir ürünun bilgileri güncellendi.";
     }
   });
 
@@ -58,7 +57,7 @@ export function CartRefreshBanner() {
         </svg>
         <div className="flex-1">
           <p className="text-sm font-semibold text-amber-900 mb-1">
-            Sepetiniz guncellendi
+            Sepetiniz güncellendi
           </p>
           <ul className="text-xs text-amber-800 space-y-0.5 list-disc list-inside">
             {messages.map((m, i) => (

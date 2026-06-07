@@ -41,7 +41,7 @@ export function ProductCarousel({
   italicWord,
   subtitle,
   link,
-  linkLabel = "Tumunu Gor",
+  linkLabel = "Tümunu Gor",
 }: Props) {
   if (products.length === 0) return null;
 
@@ -83,7 +83,7 @@ export function ProductCarousel({
                 <ArrowRightIcon className="h-6 w-6" />
               </span>
               <p className="font-display text-lg font-black text-neutral-950">{linkLabel}</p>
-              <p className="text-xs text-neutral-500">Daha fazla urun kesfet</p>
+              <p className="text-xs text-neutral-500">Daha fazla ürün kesfet</p>
             </div>
           </Link>
         </div>

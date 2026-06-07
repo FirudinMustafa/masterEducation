@@ -19,7 +19,7 @@ export default async function DeleteAccountPage() {
         href="/hesabim"
         className="text-sm text-gray-500 hover:text-brand-black"
       >
-        &larr; Hesabim
+        &larr; Hesabım
       </Link>
 
       <h1 className="text-2xl font-display font-bold text-brand-black mt-4 mb-2">
@@ -34,17 +34,17 @@ export default async function DeleteAccountPage() {
         <p className="font-semibold">Ne olacak?</p>
         <ul className="list-disc list-inside space-y-1">
           <li>
-            <strong>Siparis gecmisiniz varsa:</strong> ad, email, telefon,
-            adres bilgileriniz anonimlestirilir. Fatura/muhasebe kayitlari
+            <strong>Sipariş gecmisiniz varsa:</strong> ad, email, telefon,
+            adres bilgileriniz anonimlestirilir. Fatura/muhasebe kayıtlari
             korunur ama size bagli olmaz.
           </li>
           <li>
-            <strong>Siparis gecmisiniz yoksa:</strong> hesabiniz tamamen silinir.
+            <strong>Sipariş gecmisiniz yoksa:</strong> hesabiniz tamamen silinir.
           </li>
-          <li>Favoriler, karsilastirma listesi ve sepet bilgisi cihazinizdan temizlenmez — tarayici verilerinizi silerek kaldirabilirsiniz.</li>
+          <li>Favoriler, karşılaştırma listesi ve sepet bilgisi cihazinizdan temizlenmez — tarayici verilerinizi silerek kaldirabilirsiniz.</li>
           <li>
-            Onayli bayi hesaplari bu akistan silinemez — cari kapatma icin
-            destek ile iletisime gecin.
+            Onaylı bayi hesaplari bu akistan silinemez — cari kapatma icin
+            destek ile iletişime gecin.
           </li>
         </ul>
       </div>

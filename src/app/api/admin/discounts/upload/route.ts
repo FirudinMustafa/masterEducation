@@ -42,14 +42,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Excel dosyasi okunamadi." }, { status: 400 });
   }
 
-  const sheet = wb.getWorksheet("Iskontolar") ?? wb.worksheets[0];
+  const sheet = wb.getWorksheet("İskontolar") ?? wb.worksheets[0];
   if (!sheet) {
     return NextResponse.json({ error: "Gecerli sayfa bulunamadi." }, { status: 400 });
   }
 
   // Branded template'de row 1 marka adidir, basliklar row 6 veya 7'de olabilir.
   // Ilk 15 satiri tarayip "scope" ve "discountPct" ikiliniyi bulan satiri
-  // baslik satiri sayiyoruz.
+  // baslik satiri sayıyoruz.
   let headerRowNum = -1;
   const headers: string[] = [];
   for (let r = 1; r <= Math.min(15, sheet.rowCount); r++) {

@@ -62,6 +62,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!passwordMatch) return null;
 
+        // Bayi-only sistem: yalnız DEALER ve ADMIN giriş yapabilir. Eski/normal
+        // müşteri (CUSTOMER) hesaplarıyla giriş engellenir.
+        if (user.role !== "DEALER" && user.role !== "ADMIN") {
+          throw new Error(
+            "Bu sistem yalnızca bayilere açıktır. Bayi başvurusu yapabilirsiniz."
+          );
+        }
+
         return {
           id: user.id,
           email: user.email,

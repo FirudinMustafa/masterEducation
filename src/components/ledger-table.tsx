@@ -1,10 +1,9 @@
 import Link from "next/link";
 import type { LedgerKind } from "@prisma/client";
-import { formatPrice } from "@/lib/utils";
 
 const KIND_LABELS: Record<LedgerKind, string> = {
-  ORDER_DEBIT: "Siparis",
-  ORDER_CANCEL_CREDIT: "Siparis Iptali",
+  ORDER_DEBIT: "Sipariş",
+  ORDER_CANCEL_CREDIT: "Sipariş İptali",
   PAYMENT_CREDIT: "Tahsilat",
   MANUAL_ADJUSTMENT: "Manuel Ayarlama",
 };
@@ -55,23 +54,12 @@ export function LedgerTable({ rows, orderLinkBase }: LedgerTableProps) {
                 Tur
               </th>
               <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
-                Aciklama
-              </th>
-              <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">
-                Borc
-              </th>
-              <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">
-                Alacak
-              </th>
-              <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">
-                Bakiye
+                Açıklama
               </th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => {
-              const debit = r.amount > 0 ? r.amount : 0;
-              const credit = r.amount < 0 ? -r.amount : 0;
               return (
                 <tr key={r.id} className="border-b border-gray-50">
                   <td className="p-3 text-xs text-gray-500 whitespace-nowrap">
@@ -107,27 +95,6 @@ export function LedgerTable({ rows, orderLinkBase }: LedgerTableProps) {
                         ref: {r.reference}
                       </p>
                     )}
-                  </td>
-                  <td className="p-3 text-right">
-                    {debit > 0 ? (
-                      <span className="font-medium text-amber-700">
-                        {formatPrice(debit)}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right">
-                    {credit > 0 ? (
-                      <span className="font-medium text-emerald-700">
-                        {formatPrice(credit)}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right font-semibold text-brand-black">
-                    {formatPrice(r.balanceAfter)}
                   </td>
                 </tr>
               );

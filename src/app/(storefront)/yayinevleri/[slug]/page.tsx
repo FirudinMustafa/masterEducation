@@ -30,11 +30,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     where: { slug },
     select: { name: true },
   });
-  if (!publisher) return { title: "Yayinevi bulunamadi" };
+  if (!publisher) return { title: "Yayınevi bulunamadi" };
   const baseUrl = process.env.NEXTAUTH_URL ?? "https://mastereducation.com.tr";
   return {
     title: `${publisher.name} Kitaplari`,
-    description: `${publisher.name} yayinevinin tum kitaplari Master Education'da.`,
+    description: `${publisher.name} yayınevinin tüm kitaplari Master Education'da.`,
     alternates: { canonical: `${baseUrl}/yayinevleri/${slug}` },
   };
 }
@@ -77,7 +77,7 @@ export default async function PublisherPage({ params, searchParams }: PageProps)
     case "isim":
       orderBy = { name: "asc" };
       break;
-    case "cok-satan":
+    case "çok-satan":
       orderBy = { orderItems: { _count: "desc" } };
       break;
     default:
@@ -99,7 +99,7 @@ export default async function PublisherPage({ params, searchParams }: PageProps)
     createdAt: true,
     publisher: { select: { name: true } },
     images: {
-      orderBy: { displayOrder: "asc" as const },
+      orderBy: [{ displayOrder: "asc" as const }, { pictureId: "asc" as const }],
       take: 1,
       select: { filename: true },
     },
@@ -171,12 +171,12 @@ export default async function PublisherPage({ params, searchParams }: PageProps)
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <nav className="flex items-center gap-2 text-sm text-brand-muted mb-6">
+      <nav aria-label="breadcrumb" className="flex items-center gap-2 text-sm text-brand-muted mb-6">
         <Link href="/" className="hover:text-brand-black">Anasayfa</Link>
-        <span>/</span>
-        <Link href="/urunler" className="hover:text-brand-black">Urunler</Link>
-        <span>/</span>
-        <span className="text-brand-black">{publisher.name}</span>
+        <span aria-hidden="true">/</span>
+        <Link href="/urunler" className="hover:text-brand-black">Ürünler</Link>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page" className="text-brand-black">{publisher.name}</span>
       </nav>
 
       <div className="mb-8">
@@ -184,7 +184,7 @@ export default async function PublisherPage({ params, searchParams }: PageProps)
           {publisher.name}
         </h1>
         <p className="text-brand-muted text-sm">
-          {totalCount.toLocaleString("tr-TR")} urun
+          {totalCount.toLocaleString("tr-TR")} ürün
         </p>
       </div>
 

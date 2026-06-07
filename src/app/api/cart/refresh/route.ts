@@ -6,6 +6,8 @@ import {
   getSessionPricingContext,
 } from "@/lib/session-pricing";
 import { productImageUrl } from "@/lib/images";
+import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-client-ip";
 
 const bodySchema = z.object({
   items: z
@@ -19,6 +21,19 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // F-0020: cart refresh, listeleme tarzi maliyetli bir endpoint — IP basina
+  // dakikada 60 cagri yeterli (UI cart degisikliklerinde toplu fetch yapsa
+  // bile sinir asilmaz).
+  // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali).
+  const ip = getClientIp(req.headers);
+  const rl = rateLimit(`cart-refresh:${ip}`, 60, 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Çok fazla istek. Lütfen bir dakika sonra tekrar deneyin." },
+      { status: 429 }
+    );
+  }
+
   const json = await req.json().catch(() => ({}));
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
@@ -45,7 +60,7 @@ export async function POST(req: NextRequest) {
       discountGroup: true,
       images: {
         select: { filename: true },
-        orderBy: { displayOrder: "asc" },
+        orderBy: [{ displayOrder: "asc" }, { pictureId: "asc" }],
         take: 1,
       },
     },

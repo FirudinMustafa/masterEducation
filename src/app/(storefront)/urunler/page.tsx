@@ -15,14 +15,14 @@ import { productImageUrl } from "@/lib/images";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Urunler",
+  title: "Ürünler",
 };
 
 interface PageProps {
   searchParams: Promise<{
     sayfa?: string;
     ara?: string;
-    yayinevi?: string;
+    yayınevi?: string;
     kategori?: string;
     dil?: string;
     tur?: string;
@@ -38,7 +38,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.sayfa || "1"));
   const search = params.ara || "";
-  const publisherSlug = params.yayinevi || "";
+  const publisherSlug = params.yayınevi || "";
   const categorySlug = params.kategori || "";
   const language = params.dil || "";
   const productType = params.tur || "";
@@ -54,8 +54,8 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   const idSources: string[][] = [];
 
   if (discountOnly) {
-    // Gercek indirim: oldPrice set edilmis VE guncel fiyattan yuksek.
-    // Prisma alan-alan karsilastirma yapamadigindan raw query ile ID cekiyoruz.
+    // Gercek indirim: oldPrice set edilmis VE güncel fiyattan yuksek.
+    // Prisma alan-alan karşılaştırma yapamadigindan raw query ile ID çekiyoruz.
     const rows = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM "products"
       WHERE "isPublished" = true
@@ -108,14 +108,14 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     case "isim":
       orderBy = { name: "asc" };
       break;
-    case "cok-satan":
+    case "çok-satan":
       orderBy = { orderItems: { _count: "desc" } };
       break;
     default:
       orderBy = { createdAt: "desc" };
   }
 
-  // Liste gorunumunde gosterilen alanlar — `select` ile sinirlarsak DB
+  // Liste görünumunde gösterilen alanlar — `select` ile sinirlarsak DB
   // daha az satir okur ve JSON seri hale getirme de hizlanir.
   const listSelect = {
     id: true,
@@ -132,7 +132,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     createdAt: true,
     publisher: { select: { name: true } },
     images: {
-      orderBy: { displayOrder: "asc" as const },
+      orderBy: [{ displayOrder: "asc" as const }, { pictureId: "asc" as const }],
       take: 1,
       select: { filename: true },
     },
@@ -234,7 +234,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
 
   const currentParams: Record<string, string> = {};
   if (search) currentParams.ara = search;
-  if (publisherSlug) currentParams.yayinevi = publisherSlug;
+  if (publisherSlug) currentParams.yayınevi = publisherSlug;
   if (categorySlug) currentParams.kategori = categorySlug;
   if (language) currentParams.dil = language;
   if (productType) currentParams.tur = productType;
@@ -252,7 +252,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   if (selectedCategory)
     chips.push({ key: "cat", label: selectedCategory.name, urlKey: "kategori" });
   if (selectedPublisher)
-    chips.push({ key: "pub", label: selectedPublisher.name, urlKey: "yayinevi" });
+    chips.push({ key: "pub", label: selectedPublisher.name, urlKey: "yayınevi" });
   if (language) chips.push({ key: "lang", label: language, urlKey: "dil" });
   if (productType) chips.push({ key: "type", label: productType, urlKey: "tur" });
   if (minPrice || maxPrice) {
@@ -265,7 +265,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   if (inStockOnly)
     chips.push({ key: "stock", label: "Stokta olan", urlKey: "stok" });
   if (discountOnly)
-    chips.push({ key: "discount", label: "Indirimli", urlKey: "indirim" });
+    chips.push({ key: "discount", label: "İndirimli", urlKey: "indirim" });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -273,10 +273,10 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       <div className="mb-6 flex flex-col gap-3 border-b border-neutral-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold text-neutral-900 sm:text-3xl">
-            {selectedCategory?.name ?? selectedPublisher?.name ?? "Tum Urunler"}
+            {selectedCategory?.name ?? selectedPublisher?.name ?? "Tüm Ürünler"}
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
-            {totalCount.toLocaleString("tr-TR")} urun bulundu
+            {totalCount.toLocaleString("tr-TR")} ürün bulundu
             {inStockCount > 0 && inStockCount !== totalCount && (
               <span className="ml-1 text-neutral-400">
                 ({inStockCount.toLocaleString("tr-TR")} stokta)

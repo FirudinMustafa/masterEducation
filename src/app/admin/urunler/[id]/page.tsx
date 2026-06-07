@@ -6,7 +6,7 @@ import { ProductForm, type ProductFormValues } from "@/components/admin/product-
 import { ProductImagesManager } from "@/components/admin/product-images-manager";
 import { formatPrice } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Urun Duzenle - Admin" };
+export const metadata: Metadata = { title: "Ürün Duzenle - Admin" };
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -20,7 +20,7 @@ export default async function EditProductPage({ params }: PageProps) {
       include: {
         images: {
           select: { id: true, filename: true, displayOrder: true },
-          orderBy: { displayOrder: "asc" },
+          orderBy: [{ displayOrder: "asc" }, { pictureId: "asc" }],
         },
       },
     }),
@@ -32,7 +32,6 @@ export default async function EditProductPage({ params }: PageProps) {
 
   const initial: ProductFormValues = {
     name: product.name,
-    nameEn: product.nameEn ?? "",
     sku: product.sku,
     price: String(Number(product.price)),
     oldPrice: product.oldPrice ? String(Number(product.oldPrice)) : "",
@@ -56,7 +55,7 @@ export default async function EditProductPage({ params }: PageProps) {
           href="/admin/urunler"
           className="text-sm text-gray-500 hover:text-brand-black"
         >
-          &larr; Urunler
+          &larr; Ürünler
         </Link>
       </div>
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -75,7 +74,7 @@ export default async function EditProductPage({ params }: PageProps) {
           rel="noopener noreferrer"
           className="text-sm text-brand-gold-dark hover:underline"
         >
-          Magazada goster &rarr;
+          Magazada göster &rarr;
         </Link>
       </div>
 

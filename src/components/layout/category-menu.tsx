@@ -52,7 +52,7 @@ export function CategoryMenu({ categories, publishers }: Props) {
         )}
       >
         <Bars3Icon className="h-4 w-4" />
-        Tum Kategoriler
+        Tüm Kategoriler
         <ChevronDownIcon className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
       </button>
       {open && (
@@ -89,14 +89,14 @@ export function CategoryMenu({ categories, publishers }: Props) {
           <div className="col-span-1 p-5 md:col-span-3">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                Yayinevleri
+                Yayınevleri
               </p>
               <Link
                 href="/urunler"
                 onClick={() => setOpen(false)}
                 className="text-xs font-semibold text-brand-gold-dark hover:underline"
               >
-                Tum urunler &rarr;
+                Tüm ürünler &rarr;
               </Link>
             </div>
             <div className="grid grid-cols-2 gap-1.5 md:grid-cols-3">

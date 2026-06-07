@@ -12,7 +12,7 @@ interface PageProps {
 export default async function AdminReviewsPage({ searchParams }: PageProps) {
   const { durum, ara } = await searchParams;
   // Yorumlar artik default APPROVED yayinlaniyor — admin panelinde varsayilan
-  // "yayinda olan" yorumlari goster ki silinebilsin.
+  // "yayinda olan" yorumlari göster ki silinebilsin.
   const statusFilter =
     durum === "PENDING" || durum === "REJECTED" ? durum : "APPROVED";
   const search = ara?.trim() ?? "";
@@ -42,7 +42,7 @@ export default async function AdminReviewsPage({ searchParams }: PageProps) {
     <div className="max-w-5xl space-y-4">
       <div>
         <h1 className="text-2xl font-display font-bold text-brand-black">
-          Yorum Yonetimi
+          Yorum Yönetimi
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {reviews.length} {statusFilter === "APPROVED" ? "yayinda" : statusFilter === "PENDING" ? "beklemede" : "gizli"} yorum
@@ -51,7 +51,7 @@ export default async function AdminReviewsPage({ searchParams }: PageProps) {
 
       <AdminSearchBar
         defaultValue={search}
-        placeholder="Yorum icerigi, urun, kullanici..."
+        placeholder="Yorum icerigi, ürün, kullanıcı..."
         hiddenParams={{ durum: statusFilter }}
       />
 

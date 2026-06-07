@@ -7,7 +7,7 @@ import { ArrowRightIcon, BookOpenIcon } from "@/components/ui/icons";
 export const metadata: Metadata = {
   title: "Kategoriler",
   description:
-    "Master Education kategorileri — ELT, DaF, MEB ve diger egitim materyali kategorilerine gozat.",
+    "Master Education kategorileri — ELT, DaF, MEB ve diger eğitim materyali kategorilerine gözat.",
 };
 
 export default async function CategoriesIndexPage() {
@@ -46,7 +46,7 @@ export default async function CategoriesIndexPage() {
             <span className="font-semibold text-neutral-900">
               {totalProducts.toLocaleString("tr-TR")}
             </span>{" "}
-            urun. Dilinize ve seviyenize uygun materyalleri bulun.
+            ürün. Dilinize ve seviyenize uygun materyalleri bulun.
           </p>
         </div>
       </section>
@@ -82,7 +82,7 @@ export default async function CategoriesIndexPage() {
                     </p>
                     <div className="mt-1.5 flex items-center justify-between">
                       <span className="text-xs text-neutral-500">
-                        {c._count.products.toLocaleString("tr-TR")} urun
+                        {c._count.products.toLocaleString("tr-TR")} ürün
                       </span>
                       <ArrowRightIcon className="h-3.5 w-3.5 text-neutral-400 transition-all group-hover:translate-x-0.5 group-hover:text-brand-gold-dark" />
                     </div>

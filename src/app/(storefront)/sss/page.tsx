@@ -2,18 +2,18 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Sikca Sorulan Sorular",
+  title: "Sıkça Sorulan Sorular",
   description:
-    "Master Education siparis, kargo, odeme, bayilik ve iade konularinda sikca sorulan sorular.",
+    "Master Education sipariş, kargo, ödeme, bayilik ve iade konularinda sıkça sorulan sorular.",
 };
 
 const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
   {
-    q: "Siparisim ne zaman kargoya verilir?",
+    q: "Siparişim ne zaman kargoya verilir?",
     a: (
       <>
-        Onaylanan siparisler genel olarak 1-2 is gunu icinde kargoya verilir.
-        Stokta bulunmayan ozel siparisler icin hazirlik suresi degisebilir.
+        Onaylanan siparişler genel olarak 1-2 is günu icinde kargoya verilir.
+        Stokta bulunmayan özel siparişler icin hazirlik suresi degisebilir.
       </>
     ),
   },
@@ -22,8 +22,8 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         Anlasmali oldugumuz kargo firmalari uzerinden gonderim yaparak teslimat
-        suresini kisa tutmaya calisiyoruz. Kargo takip numaraniz siparis
-        durumunuz guncellendiginde mail ile tarafiniza iletilir.
+        suresini kisa tutmaya calisiyoruz. Kargo takip numaraniz sipariş
+        durumunuz güncellendiginde mail ile tarafiniza iletilir.
       </>
     ),
   },
@@ -31,16 +31,16 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Kargo ucreti var mi?",
     a: (
       <>
-        500 TL ve uzeri siparislerde kargo ucretsizdir. Altinda kalan
-        siparisler icin sabit kargo bedeli uygulanir.
+        500 TL ve uzeri siparişlerde kargo ücretsizdir. Altinda kalan
+        siparişler icin sabit kargo bedeli uygulanir.
       </>
     ),
   },
   {
-    q: "Odeme secenekleri nelerdir?",
+    q: "Ödeme secenekleri nelerdir?",
     a: (
       <>
-        Kredi karti ile online odeme yapabilirsiniz. Onayli bayilerimiz icin
+        Kredi karti ile online ödeme yapabilirsiniz. Onaylı bayilerimiz icin
         acik hesap calisma imkani da bulunmaktadir.
       </>
     ),
@@ -49,14 +49,14 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Bayilik islemleri icin ne yapmaliyim?",
     a: (
       <>
-        Bayilik islemleri icin lutfen{" "}
+        Bayilik islemleri icin lütfen{" "}
         <Link
           href="/iletisim"
           className="text-brand-gold-dark font-medium hover:underline"
         >
-          iletisim sayfasi
+          iletişim sayfasi
         </Link>
-        {" "}uzerinden bizimle iletisime gecin. Ekibimiz size ozel fiyat ve
+        {" "}uzerinden bizimle iletişime gecin. Ekibimiz size özel fiyat ve
         acik hesap imkanlari hakkinda bilgi verecektir.
       </>
     ),
@@ -65,28 +65,28 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Bayi fiyatlarini nasil gorurum?",
     a: (
       <>
-        Onaylandiktan sonra hesabinizla giris yaptiginizda urun sayfalarinda
-        size ozel iskonto uygulanmis fiyatlari goreceksiniz.
+        Onaylandiktan sonra hesabinizla giriş yaptiginizda ürün sayfalarinda
+        size özel iskonto uygulanmis fiyatlari göreceksiniz.
       </>
     ),
   },
   {
-    q: "Sifremi unuttum, ne yapmaliyim?",
+    q: "Şifremi unuttum, ne yapmaliyim?",
     a: (
       <>
-        Giris ekranindaki{" "}
+        Giriş ekranindaki{" "}
         <Link
           href="/sifremi-unuttum"
           className="text-brand-gold-dark font-medium hover:underline"
         >
-          &quot;Sifremi Unuttum&quot;
+          &quot;Şifremi Unuttum&quot;
         </Link>{" "}
         baglantisini kullanarak email adresinize sifirlama linki alabilirsiniz.
       </>
     ),
   },
   {
-    q: "Urunu iade edebilir miyim?",
+    q: "Ürünu iade edebilir miyim?",
     a: (
       <>
         Evet. Ayrintilar icin{" "}
@@ -94,27 +94,27 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
           href="/iade"
           className="text-brand-gold-dark font-medium hover:underline"
         >
-          Iade ve Degisim
+          İade ve Degisim
         </Link>{" "}
         sayfamizi inceleyebilirsiniz.
       </>
     ),
   },
   {
-    q: "Iade suresi ne kadardir?",
+    q: "İade suresi ne kadardir?",
     a: (
       <>
-        Mesafeli Satis Sozlesmesi kapsamindaki urunlerde 14 gunluk cayma
-        hakkiniz vardir. Urun teslim alindigi tarihten itibaren gecerlidir ve
+        Mesafeli Satis Sözleşmesi kapsamindaki ürünlerde 14 günluk cayma
+        hakkiniz vardir. Ürün teslim alindigi tarihten itibaren gecerlidir ve
         orjinal ambalajinda, kullanilmamis olarak iade edilmelidir.
       </>
     ),
   },
   {
-    q: "Iade kargo ucretini kim karsilar?",
+    q: "İade kargo ucretini kim karsilar?",
     a: (
       <>
-        Urun hatali veya ayiplari ile gelirse kargo ucreti tarafimizdan
+        Ürün hatali veya ayiplari ile gelirse kargo ucreti tarafimizdan
         karsilanir. Musteri kaynakli cayma hakki kullanimi durumunda ise iade
         kargo ucreti alici tarafindandir.
       </>
@@ -124,9 +124,9 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Faturam ne zaman kesilir?",
     a: (
       <>
-        e-Arsiv fatura siparisin kargoya verilmesinden onceki gun icerisinde
+        e-Arsiv fatura siparişin kargoya verilmesinden önceki gün icerisinde
         kesilir ve email adresinize gonderilir. Kurumsal musterilerimiz icin
-        e-Fatura / e-Arsiv secenegi siparis asamasinda belirtilmelidir.
+        e-Fatura / e-Arsiv secenegi sipariş asamasinda belirtilmelidir.
       </>
     ),
   },
@@ -134,41 +134,41 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Kampanyalardan nasil haberdar olurum?",
     a: (
       <>
-        Hesabiniza tanimli email adresine donemsel kampanya ve yeni urun
+        Hesabiniza tanimli email adresine donemsel kampanya ve yeni ürün
         bildirimleri gonderilir. Ayrica anasayfadaki indirim etiketi olan
-        urunler icin{" "}
+        ürünler icin{" "}
         <Link
           href="/urunler?indirim=1"
           className="text-brand-gold-dark font-medium hover:underline"
         >
-          Indirimli Urunler
+          İndirimli Ürünler
         </Link>{" "}
         listesini takip edebilirsiniz.
       </>
     ),
   },
   {
-    q: "Okul/kurum icin toplu siparis verebilir miyim?",
+    q: "Okul/kurum icin toplu sipariş verebilir miyim?",
     a: (
       <>
-        Evet. Onayli bayi hesabiniz varsa{" "}
+        Evet. Onaylı bayi hesabiniz varsa{" "}
         <Link
           href="/bayi/toplu-siparis"
           className="text-brand-gold-dark font-medium hover:underline"
         >
-          Bayi Panelindeki Toplu Siparis
+          Bayi Panelindeki Toplu Sipariş
         </Link>{" "}
-        akisi ile Excel uzerinden toplu siparis verebilirsiniz. Bayi degilseniz
+        akisi ile Excel uzerinden toplu sipariş verebilirsiniz. Bayi degilseniz
         yuksek adetli talepleriniz icin dogrudan bize ulasin.
       </>
     ),
   },
   {
-    q: "Stokta olmayan bir urun icin ne yapabilirim?",
+    q: "Stokta olmayan bir ürün icin ne yapabilirim?",
     a: (
       <>
-        Stokta bulunmayan urunler icin urun sayfasinda yeniden stokta ikazi
-        talebi olusturabilirsiniz (yakinda). O zamana kadar bizimle iletisime
+        Stokta bulunmayan ürünler icin ürün sayfasinda yeniden stokta ikazi
+        talebi oluşturabilirsiniz (yakinda). O zamana kadar bizimle iletişime
         gecerek tedarik sureci hakkinda bilgi alabilirsiniz.
       </>
     ),
@@ -177,15 +177,15 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Ogretmen sertifikasi / etkinlik belgesi alabilir miyim?",
     a: (
       <>
-        Belirli yayinevlerinin ogretmen paketleri (ornek: Incredible, Smiles,
-        Happy Hearts) sertifika sunmaktadir. Katalogdaki urun aciklamalari
+        Belirli yayınevlerinin ogretmen paketleri (ornek: Incredible, Smiles,
+        Happy Hearts) sertifika sunmaktadir. Katalogdaki ürün açıklamalari
         icinde belirtilmis olan sertifika bilgisini kontrol edebilir veya bize
         ulasarak bilgi alabilirsiniz.
       </>
     ),
   },
   {
-    q: "Hesabimi nasil silerim (KVKK)?",
+    q: "Hesabımi nasil silerim (KVKK)?",
     a: (
       <>
         Hesap &rarr;{" "}
@@ -195,8 +195,8 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
         >
           Hesabi Sil
         </Link>{" "}
-        akisi ile hesabinizi kalici olarak kapatabilirsiniz. Siparis gecmisi
-        varsa kisisel bilgileriniz anonimize edilir, yasal muhasebe kayitlari
+        akisi ile hesabinizi kalici olarak kapatabilirsiniz. Sipariş gecmisi
+        varsa kisisel bilgileriniz anonimize edilir, yasal muhasebe kayıtlari
         korunur.
       </>
     ),
@@ -218,24 +218,24 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Siparisimi nasil takip ederim?",
+    q: "Siparişimi nasil takip ederim?",
     a: (
       <>
-        Uye kullanicilar{" "}
+        Üye kullanıcılar{" "}
         <Link
           href="/hesabim/siparislerim"
           className="text-brand-gold-dark font-medium hover:underline"
         >
-          Siparislerim
+          Siparişlerim
         </Link>{" "}
-        sayfasindan, misafir siparis verenler ise{" "}
+        sayfasindan, misafir sipariş verenler ise{" "}
         <Link
           href="/siparis-takip"
           className="text-brand-gold-dark font-medium hover:underline"
         >
-          Siparis Takip
+          Sipariş Takip
         </Link>{" "}
-        ekranindan email + siparis numarasi ile sorgulama yapabilir.
+        ekranindan email + sipariş numarasi ile sorgulama yapabilir.
       </>
     ),
   },
@@ -243,7 +243,7 @@ const FAQ_ITEMS: { q: string; a: React.ReactNode }[] = [
     q: "Kargo tutari KDV dahil mi?",
     a: (
       <>
-        Kargo bedeli KDV dahil olarak hesaplanip gosterilir. Faturada ayri bir
+        Kargo bedeli KDV dahil olarak hesaplanip gösterilir. Faturada ayri bir
         satir olarak yer alir.
       </>
     ),
@@ -254,10 +254,10 @@ export default function FaqPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
       <h1 className="text-3xl font-display font-bold text-brand-black mb-2">
-        Sikca Sorulan Sorular
+        Sıkça Sorulan Sorular
       </h1>
       <p className="text-brand-muted mb-8">
-        Siparis, kargo, odeme ve bayilik hakkinda en cok sorulan sorular.
+        Sipariş, kargo, ödeme ve bayilik hakkinda en çok sorulan sorular.
       </p>
 
       <div className="space-y-3">

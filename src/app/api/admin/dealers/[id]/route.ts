@@ -13,7 +13,7 @@ const dealerEditSchema = z.object({
   taxNumber: z.string().regex(/^\d{10,11}$/).optional(),
   tradeRegNo: z.string().max(50).nullable().optional(),
   contactPerson: z.string().max(100).nullable().optional(),
-  creditLimit: z.number().min(0).max(9_999_999).nullable().optional(),
+  creditLimit: z.number().min(0).max(20_000_000).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
   paymentTerms: z.enum(["OPEN_ACCOUNT", "PREPAID"]).optional(),
 }).refine(
@@ -95,7 +95,7 @@ export async function PATCH(
   });
 
   // E12 — Kredi limiti gercekten degistiyse bayiye bildirim. paymentTerms
-  // PREPAID'a gectiyse limit zorla 0 oldu — bu da degisiklik sayilir, mail gider.
+  // PREPAID'a gectiyse limit zorla 0 oldu — bu da degisiklik sayılir, mail gider.
   const oldLimitNum = Number(dealer.creditLimit);
   const newLimitNum = Number(updated.creditLimit);
   if (oldLimitNum !== newLimitNum) {
@@ -144,7 +144,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Bayi bulunamadi." }, { status: 404 });
   }
 
-  // Cleanup: aktif siparisleri iptal eder, stok geri yukler, ledger temizler,
+  // Cleanup: aktif siparişleri iptal eder, stok geri yükler, ledger temizler,
   // dealer'i siler. User KORUNUR. Detay: src/lib/dealer-cleanup.ts
   const result = await prisma.$transaction(async (tx) => {
     const cleanup = await cleanupDealerByUserId(dealer.userId, gate.session.user.id, tx);

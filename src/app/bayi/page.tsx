@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { formatPrice } from "@/lib/utils";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import Link from "next/link";
 
@@ -15,7 +14,7 @@ export default async function DealerDashboardPage() {
     prisma.dealer.findUnique({ where: { id: dealerId } }),
     prisma.order.findMany({
       where: { userId },
-      select: { total: true, status: true },
+      select: { status: true },
     }),
     prisma.order.findMany({
       where: { userId },
@@ -25,10 +24,8 @@ export default async function DealerDashboardPage() {
     }),
   ]);
 
-  // İptal edilen siparişler "harcama" değildir — ödenmemiş veya iade edilmiş.
-  // Toplam harcama hesabında CANCELLED'ı tamamen dışla.
+  // İptal edilen siparişler aktif sayıma dahil değildir.
   const activeOrders = orders.filter((o) => o.status !== "CANCELLED");
-  const totalSpent = activeOrders.reduce((sum, o) => sum + Number(o.total), 0);
 
   const pendingOrders = orders.filter((o) => o.status === "PENDING").length;
   const deliveredOrders = orders.filter((o) => o.status === "DELIVERED").length;
@@ -49,10 +46,10 @@ export default async function DealerDashboardPage() {
         </p>
       </div>
 
-      {/* Stats — CANCELLED siparisleri harcama hesabindan disladik */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Stats — CANCELLED siparişleri aktif sayimdan disladik */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-sm text-gray-500">Toplam Siparis</p>
+          <p className="text-sm text-gray-500">Toplam Sipariş</p>
           <p className="text-2xl font-bold text-brand-black mt-1">{activeOrders.length}</p>
           {cancelledOrders > 0 && (
             <p className="mt-1 text-[11px] text-rose-600">
@@ -72,11 +69,6 @@ export default async function DealerDashboardPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-sm text-gray-500">Teslim Edilen</p>
           <p className="text-2xl font-bold text-green-600 mt-1">{deliveredOrders}</p>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <p className="text-sm text-gray-500">Toplam Harcama</p>
-          <p className="text-2xl font-bold text-brand-black mt-1">{formatPrice(totalSpent)}</p>
-          <p className="mt-1 text-[11px] text-gray-400">Iptal edilenler haric</p>
         </div>
       </div>
 
@@ -99,38 +91,18 @@ export default async function DealerDashboardPage() {
                 <span className="font-medium font-mono">{dealer.taxNumber}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Odeme Modu</span>
+                <span className="text-gray-500">Ödeme Modu</span>
                 <span className="font-medium">
                   {dealer.paymentTerms === "PREPAID"
                     ? "Pesin (Kredi Karti / Havale)"
                     : "Cari Hesap"}
                 </span>
               </div>
-              {dealer.paymentTerms === "OPEN_ACCOUNT" && (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Kredi Limiti</span>
-                    <span className="font-medium">{formatPrice(Number(dealer.creditLimit))}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Cari Bakiye</span>
-                    <span className="font-medium">{formatPrice(Number(dealer.currentBalance))}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Kullanilabilir</span>
-                    <span className="font-medium text-green-700">
-                      {formatPrice(
-                        Number(dealer.creditLimit) - Number(dealer.currentBalance)
-                      )}
-                    </span>
-                  </div>
-                </>
-              )}
             </div>
           </div>
 
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="font-semibold text-brand-black mb-3">Hizli Islemler</h2>
+            <h2 className="font-semibold text-brand-black mb-3">Hızlı Islemler</h2>
             <div className="space-y-2">
               <Link
                 href="/urunler"
@@ -141,7 +113,7 @@ export default async function DealerDashboardPage() {
                 </svg>
                 <div>
                   <p className="text-sm font-medium text-brand-black">Alisveris Yap</p>
-                  <p className="text-xs text-gray-500">Bayi fiyatlariyla urunlere goz atin</p>
+                  <p className="text-xs text-gray-500">Bayi fiyatlariyla ürünlere göz atin</p>
                 </div>
               </Link>
               <Link
@@ -152,8 +124,8 @@ export default async function DealerDashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
                 </svg>
                 <div>
-                  <p className="text-sm font-medium text-brand-black">Siparislerimi Gor</p>
-                  <p className="text-xs text-gray-500">Tum siparislerinizi takip edin</p>
+                  <p className="text-sm font-medium text-brand-black">Siparişlerimi Gor</p>
+                  <p className="text-xs text-gray-500">Tüm siparişlerinizi takip edin</p>
                 </div>
               </Link>
             </div>
@@ -164,22 +136,21 @@ export default async function DealerDashboardPage() {
       {/* Recent Orders */}
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="font-semibold text-brand-black">Son Siparisler</h2>
+          <h2 className="font-semibold text-brand-black">Son Siparişler</h2>
           <Link href="/bayi/siparisler" className="text-sm text-brand-gold-dark hover:underline font-medium">
-            Tumu &rarr;
+            Tümu &rarr;
           </Link>
         </div>
         {recentOrders.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Henuz siparissiniz yok.</div>
+          <div className="p-8 text-center text-gray-500 text-sm">Henuz siparişsiniz yok.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Siparis No</th>
-                  <th className="text-center p-3 text-xs font-semibold text-gray-500 uppercase">Urun</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Sipariş No</th>
+                  <th className="text-center p-3 text-xs font-semibold text-gray-500 uppercase">Ürün</th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Durum</th>
-                  <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Tutar</th>
                   <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Tarih</th>
                 </tr>
               </thead>
@@ -197,7 +168,6 @@ export default async function DealerDashboardPage() {
                         {ORDER_STATUS_LABELS[order.status] || order.status}
                       </span>
                     </td>
-                    <td className="p-3 text-right font-medium">{formatPrice(Number(order.total))}</td>
                     <td className="p-3 text-right text-gray-500 text-xs">
                       {new Date(order.createdAt).toLocaleDateString("tr-TR")}
                     </td>

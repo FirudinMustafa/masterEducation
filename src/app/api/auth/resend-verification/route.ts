@@ -11,11 +11,11 @@ export async function POST() {
     return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
   }
 
-  // Spam koruma: kullanici basina 3 request / saat
+  // Spam koruma: kullanıcı basina 3 request / saat
   const rl = rateLimit(`verify-resend:${session.user.id}`, 3, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: "Cok sik istek. Bir saat sonra tekrar deneyin." },
+      { error: "Çok sik istek. Bir saat sonra tekrar deneyin." },
       { status: 429 }
     );
   }
@@ -25,7 +25,7 @@ export async function POST() {
     select: { name: true, email: true, emailVerified: true },
   });
   if (!user) {
-    return NextResponse.json({ error: "Kullanici bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Kullanıcı bulunamadi." }, { status: 404 });
   }
   if (user.emailVerified) {
     return NextResponse.json(

@@ -6,9 +6,9 @@ import { runCronJob } from "@/lib/cron-runner";
 export const dynamic = "force-dynamic";
 
 /**
- * Eski sifre sifirlama tokenlerini temizler:
+ * Eski şifre sifirlama tokenlerini temizler:
  *  - expiresAt < NOW
- *  - veya usedAt 7 gun once'sinden eski
+ *  - veya usedAt 7 gün once'sinden eski
  * Token'lar tek-kullanimlik oldugu icin tutmaya gerek yok.
  */
 export async function GET(req: NextRequest) {

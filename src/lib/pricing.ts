@@ -22,8 +22,8 @@ export type DealerPricing = {
 };
 
 // Hiyerarsi: en spesifik → en genel.
-// CATEGORY, urun-koleksiyonu bazli (orn. "ogretmen kitaplari") iskonto;
-// DISCOUNT_GROUP yayinevi-ici alt grup; PUBLISHER yayinevi geneli.
+// CATEGORY, ürün-koleksiyonu bazli (orn. "ogretmen kitaplari") iskonto;
+// DISCOUNT_GROUP yayınevi-ici alt grup; PUBLISHER yayınevi geneli.
 const SCOPE_PRIORITY: Record<DiscountScope, number> = {
   PRODUCT: 1,
   CATEGORY: 2,

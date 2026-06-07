@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useSession } from "next-auth/react";
 import { useCartStore } from "@/stores/cart-store";
 import { useWishlistStore } from "@/stores/wishlist-store";
 import { useCompareStore } from "@/stores/compare-store";
@@ -27,15 +26,22 @@ import {
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
+interface DrawerSessionUser {
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+}
+
 interface Props {
   categories: { slug: string; name: string; count: number }[];
   publishers: { slug: string; name: string; count: number }[];
+  user: DrawerSessionUser | null;
 }
 
-export function MobileDrawer({ categories, publishers }: Props) {
+export function MobileDrawer({ categories, publishers, user }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { data: session } = useSession();
+  const session = user ? { user } : null;
   const cartCount = useCartStore((s) => s.getItemCount());
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const compareCount = useCompareStore((s) => s.items.length);
@@ -84,7 +90,7 @@ export function MobileDrawer({ categories, publishers }: Props) {
 
             {/* ─ Scrollable body ───────────────────────────────────
                 pb-[env(safe-area-inset-bottom)+1rem]: iOS notch/home-indicator
-                + alt browser chrome guvenligi. Footer (cikis) yoksa son
+                + alt browser chrome guvenligi. Footer (çıkış) yoksa son
                 Section'in alt kismi clipped kalmasin diye 4rem ek tampon. */}
             <div
               className="flex-1 overflow-y-auto overscroll-contain"
@@ -104,14 +110,14 @@ export function MobileDrawer({ categories, publishers }: Props) {
                     onClick={close}
                     className="rounded-lg border border-neutral-300 py-2.5 text-center text-sm font-medium text-neutral-700 hover:bg-neutral-50"
                   >
-                    Giris
+                    Bayi Girişi
                   </Link>
                   <Link
-                    href="/kayit"
+                    href="/bayi-basvuru"
                     onClick={close}
                     className="rounded-lg bg-neutral-900 py-2.5 text-center text-sm font-semibold text-white hover:bg-neutral-700"
                   >
-                    Kayit Ol
+                    Bayi Başvuru
                   </Link>
                 </div>
               )}
@@ -127,10 +133,10 @@ export function MobileDrawer({ categories, publishers }: Props) {
                     <ShieldCheckIcon className="h-5 w-5" />
                     <div className="flex-1">
                       <p className="text-sm font-bold uppercase tracking-wide">
-                        Yonetim Paneli
+                        Yönetim Paneli
                       </p>
                       <p className="text-[11px] opacity-90">
-                        Siparis, urun, bayi yonetimi
+                        Sipariş, ürün, bayi yönetimi
                       </p>
                     </div>
                     <ArrowRightIcon className="h-4 w-4" />
@@ -150,7 +156,7 @@ export function MobileDrawer({ categories, publishers }: Props) {
                         Bayi Paneli
                       </p>
                       <p className="text-[11px] opacity-90">
-                        Siparislerim, ekstre, iskontolar
+                        Siparişlerim, ekstre, iskontolar
                       </p>
                     </div>
                     <ArrowRightIcon className="h-4 w-4" />
@@ -159,13 +165,13 @@ export function MobileDrawer({ categories, publishers }: Props) {
               )}
 
               {/* HIZLI ERIŞIM — Alışverişe başla + sepet/fav/kars */}
-              <Section title="Hizli Erisim">
+              <Section title="Hızlı Erisim">
                 <PrimaryLink
                   href="/urunler"
                   onClick={close}
                   Icon={BookOpenIcon}
-                  label="Tum Urunler"
-                  hint="4.687 urun"
+                  label="Tüm Ürünler"
+                  hint="4.687 ürün"
                   variant="gold"
                 />
                 <Row
@@ -188,15 +194,15 @@ export function MobileDrawer({ categories, publishers }: Props) {
                   href="/karsilastir"
                   onClick={close}
                   Icon={ScaleIcon}
-                  label="Karsilastir"
+                  label="Karşılaştır"
                   count={compareCount}
                   countTone="sky"
                 />
               </Section>
 
-              {/* HESABIM — yalniz login olmuş kullanicilar */}
+              {/* HESABIM — yalniz login olmuş kullanıcılar */}
               {session?.user && (
-                <Section title="Hesabim">
+                <Section title="Hesabım">
                   <Row
                     href="/hesabim"
                     onClick={close}
@@ -207,7 +213,7 @@ export function MobileDrawer({ categories, publishers }: Props) {
                     href="/hesabim/siparislerim"
                     onClick={close}
                     Icon={TagIcon}
-                    label="Siparislerim"
+                    label="Siparişlerim"
                   />
                   <Row
                     href="/hesabim/adresler"
@@ -228,11 +234,11 @@ export function MobileDrawer({ categories, publishers }: Props) {
                   label="Yeni Gelenler"
                 />
                 <Row
-                  href="/urunler?siralama=cok-satan"
+                  href="/urunler?siralama=çok-satan"
                   onClick={close}
                   Icon={FireIcon}
                   iconClass="text-rose-500"
-                  label="Cok Satanlar"
+                  label="Çok Satanlar"
                 />
               </Section>
 
@@ -255,7 +261,7 @@ export function MobileDrawer({ categories, publishers }: Props) {
                     onClick={close}
                     className="mt-1 flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-900 hover:bg-neutral-50"
                   >
-                    Tum kategoriler
+                    Tüm kategoriler
                     <ArrowRightIcon className="h-3 w-3" />
                   </Link>
                 </Section>
@@ -263,7 +269,7 @@ export function MobileDrawer({ categories, publishers }: Props) {
 
               {/* YAYINEVLERİ — yalnız ilk 8, "Tümü" link */}
               {publishers.length > 0 && (
-                <Section title="Yayinevleri">
+                <Section title="Yayınevleri">
                   <div className="grid grid-cols-2 gap-1 px-1">
                     {publishers.slice(0, 8).map((p) => (
                       <Link
@@ -281,7 +287,7 @@ export function MobileDrawer({ categories, publishers }: Props) {
                     onClick={close}
                     className="mt-2 flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-900 hover:bg-neutral-50"
                   >
-                    Tum yayinevleri
+                    Tüm yayınevleri
                     <ArrowRightIcon className="h-3 w-3" />
                   </Link>
                 </Section>
@@ -293,10 +299,10 @@ export function MobileDrawer({ categories, publishers }: Props) {
                   href="/siparis-takip"
                   onClick={close}
                   Icon={TruckIcon}
-                  label="Siparis Takip"
+                  label="Sipariş Takip"
                 />
-                <Row href="/iletisim" onClick={close} Icon={EnvelopeIcon} label="Iletisim" />
-                <Row href="/sss" onClick={close} Icon={QuestionMarkIcon} label="Sikca Sorulan" />
+                <Row href="/iletisim" onClick={close} Icon={EnvelopeIcon} label="İletişim" />
+                <Row href="/sss" onClick={close} Icon={QuestionMarkIcon} label="Sıkça Sorulan" />
                 {!session?.user && (
                   <Row
                     href="/bayi-basvuru"
@@ -323,7 +329,7 @@ export function MobileDrawer({ categories, publishers }: Props) {
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50 cursor-pointer"
                 >
                   <ArrowRightOnRectangleIcon className="h-4 w-4" />
-                  Cikis Yap
+                  Çıkış Yap
                 </button>
               </div>
             )}
@@ -361,7 +367,7 @@ function UserCard({
   const initial = (name ?? email ?? "?").charAt(0).toUpperCase();
   const roleBadge =
     role === "ADMIN"
-      ? { label: "Yonetici", cls: "bg-rose-100 text-rose-700" }
+      ? { label: "Yönetici", cls: "bg-rose-100 text-rose-700" }
       : role === "DEALER"
         ? { label: "Bayi", cls: "bg-emerald-100 text-emerald-700" }
         : { label: "Musteri", cls: "bg-sky-100 text-sky-700" };

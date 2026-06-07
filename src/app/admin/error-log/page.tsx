@@ -50,7 +50,7 @@ export default async function AdminErrorLogPage({ searchParams }: PageProps) {
   const totalPages = Math.ceil(total / perPage);
 
   const filters = [
-    { value: "", label: "Tumu" },
+    { value: "", label: "Tümu" },
     { value: "server", label: "Sunucu" },
     { value: "client", label: "Tarayici" },
     { value: "api", label: "API" },
@@ -145,7 +145,7 @@ export default async function AdminErrorLogPage({ searchParams }: PageProps) {
                   href={`/admin/error-log?sayfa=${page - 1}${sourceFilter ? `&kaynak=${sourceFilter}` : ""}${search ? `&ara=${encodeURIComponent(search)}` : ""}`}
                   className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
                 >
-                  Onceki
+                  Önceki
                 </Link>
               )}
               {page < totalPages && (

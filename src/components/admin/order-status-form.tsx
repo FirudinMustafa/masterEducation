@@ -7,6 +7,7 @@ import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import { CARGO_CARRIERS } from "@/lib/cargo-carriers";
 import { useBusy } from "@/lib/hooks/use-busy";
 import { toast } from "@/stores/toast-store";
+import { ConfirmDialog } from "./confirm-dialog";
 
 interface OrderStatusFormProps {
   orderId: string;
@@ -27,7 +28,8 @@ const ALLOWED_NEXT: Record<OrderStatus, readonly OrderStatus[]> = {
   PROCESSING: ["SHIPPED", "CANCELLED"],
   SHIPPED: ["DELIVERED", "CANCELLED"],
   DELIVERED: [],
-  CANCELLED: [],
+  // Yanlışlıkla iptal edilen sipariş PENDING'e geri alınabilir (reaktivasyon).
+  CANCELLED: ["PENDING"],
 };
 
 const CARRIER_KEYS: CargoCarrier[] = [
@@ -73,10 +75,13 @@ export function OrderStatusForm({
   const [carrierName, setCarrierName] = useState(trackingCarrierName ?? "");
   const [eta, setEta] = useState(toDateInput(estimatedDeliveryAt));
   const [note, setNote] = useState(adminNote ?? "");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
 
   // Depodan teslimde harici kargo takibi yoktur — takip no alanı gizlenir
   // ve gönderimde boş geçilir.
   const isWarehouse = carrier === "DEPODAN_TESLIM";
+  const isReactivating = status === "CANCELLED" && newStatus === "PENDING";
 
   function submit() {
     return run(async () => {
@@ -97,14 +102,15 @@ export function OrderStatusForm({
         const data = await res.json().catch(() => ({}));
         const msg = data.error ?? "Güncelleme başarısız.";
         setError(msg);
+        setConfirmOpen(false);
         toast.error("Güncelleme başarısız", msg);
         return;
       }
-      toast.success(
-        "Sipariş güncellendi",
-        `Durum: ${ORDER_STATUS_LABELS[newStatus]}`,
-      );
-      router.refresh();
+      // Önce başarı pop-up'ı net gözüksün; sayfa yenilemesi (router.refresh)
+      // kullanıcı "Tamam"a basınca yapılır — aksi halde refresh pop-up'ın
+      // altında çalışıp "ekran donuyor" hissi veriyor.
+      setConfirmOpen(false);
+      setSuccessOpen(true);
     });
   }
 
@@ -134,9 +140,13 @@ export function OrderStatusForm({
         </select>
         {ALLOWED_NEXT[status].length === 0 && (
           <span className="mt-1 block text-[11px] text-gray-400">
-            {status === "DELIVERED"
-              ? "Teslim edilmiş — final durum."
-              : "İptal edilmiş — yeni siparişle devam edin."}
+            Teslim edilmiş — final durum.
+          </span>
+        )}
+        {status === "CANCELLED" && (
+          <span className="mt-1 block text-[11px] text-amber-600">
+            İptal edilmiş — durumu Onay Bekliyor yapıp geri alabilirsiniz (stok
+            ve kredi tersine çevrilir).
           </span>
         )}
       </label>
@@ -210,12 +220,49 @@ export function OrderStatusForm({
       </label>
 
       <button
-        onClick={submit}
+        onClick={() => setConfirmOpen(true)}
         disabled={busy}
         className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
       >
         Güncelle
       </button>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title={isReactivating ? "Siparişi geri al?" : "Durumu güncelle?"}
+        tone={newStatus === "CANCELLED" ? "danger" : "default"}
+        message={
+          isReactivating ? (
+            <>
+              Bu sipariş <strong>İptal Edildi</strong> durumundan{" "}
+              <strong>Onay Bekliyor</strong> durumuna geri alınacak. Stok tekrar
+              düşülecek ve açık hesapta kredi yeniden borçlandırılacak.
+            </>
+          ) : (
+            <>
+              Sipariş durumu{" "}
+              <strong>{ORDER_STATUS_LABELS[newStatus]}</strong> olarak
+              güncellenecek. Onaylıyor musunuz?
+            </>
+          )
+        }
+        confirmLabel={newStatus === "CANCELLED" ? "Evet, iptal et" : "Evet, güncelle"}
+        busy={busy}
+        onConfirm={submit}
+        onCancel={() => setConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={successOpen}
+        title="Sipariş güncellendi"
+        tone="success"
+        message={<>Durum: <strong>{ORDER_STATUS_LABELS[newStatus]}</strong></>}
+        confirmLabel="Tamam"
+        onConfirm={() => {
+          setSuccessOpen(false);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ export function ChangePasswordForm() {
     setError(null);
     setSuccess(null);
     if (newPassword !== confirm) {
-      setError("Yeni sifre ile dogrulama sifresi ayni degil.");
+      setError("Yeni şifre ile dogrulama şifresi ayni degil.");
       return;
     }
     setWorking(true);
@@ -30,10 +30,10 @@ export function ChangePasswordForm() {
     };
     setWorking(false);
     if (!res.ok || !data.ok) {
-      setError(data.error ?? "Sifre degistirilemedi.");
+      setError(data.error ?? "Şifre degistirilemedi.");
       return;
     }
-    setSuccess("Sifre guncellendi.");
+    setSuccess("Şifre güncellendi.");
     setCurrent("");
     setNew("");
     setConfirm("");
@@ -54,7 +54,7 @@ export function ChangePasswordForm() {
 
       <label className="block">
         <span className="block text-sm font-medium text-brand-black mb-1">
-          Mevcut Sifre
+          Mevcut Şifre
         </span>
         <input
           type="password"
@@ -68,7 +68,7 @@ export function ChangePasswordForm() {
 
       <label className="block">
         <span className="block text-sm font-medium text-brand-black mb-1">
-          Yeni Sifre
+          Yeni Şifre
         </span>
         <input
           type="password"
@@ -85,7 +85,7 @@ export function ChangePasswordForm() {
 
       <label className="block">
         <span className="block text-sm font-medium text-brand-black mb-1">
-          Yeni Sifre (Tekrar)
+          Yeni Şifre (Tekrar)
         </span>
         <input
           type="password"
@@ -102,7 +102,7 @@ export function ChangePasswordForm() {
         disabled={working || !currentPassword || !newPassword || !confirm}
         className="w-full py-2.5 bg-brand-gold text-brand-black font-semibold rounded-lg hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
       >
-        {working ? "Kaydediliyor..." : "Sifreyi Degistir"}
+        {working ? "Kaydediliyor..." : "Şifreyi Degistir"}
       </button>
     </form>
   );

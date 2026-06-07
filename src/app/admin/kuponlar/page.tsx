@@ -27,8 +27,8 @@ export default async function AdminCouponsPage({ searchParams }: PageProps) {
           Kuponlar
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Promosyon kodlari yonetin. Yuzde, sabit tutar veya ucretsiz kargo
-          kuponlari olusturabilirsiniz.
+          Promosyon kodlari yonetin. Yuzde, sabit tutar veya ücretsiz kargo
+          kuponlari oluşturabilirsiniz.
         </p>
       </div>
 

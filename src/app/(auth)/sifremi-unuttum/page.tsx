@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Bir hata olustu.");
+      setError(data.error ?? "Bir hata oluştu.");
       return;
     }
     setSent(true);
@@ -36,10 +36,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      title={sent ? "Email yolda" : "Sifremi unuttum"}
+      title={sent ? "Email yolda" : "Şifremi unuttum"}
       subtitle={
         sent
-          ? "Eger bu email kayitliysa, birkac dakika icinde sifirlama linkini alacaksiniz."
+          ? "Eger bu email kayıtliysa, birkac dakika icinde sifirlama linkini alacaksiniz."
           : "Email adresinize sifirlama baglantisini gonderelim."
       }
       footer={
@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
             href="/giris"
             className="font-semibold text-neutral-900 underline-offset-4 hover:underline"
           >
-            Girise don
+            Girişe don
           </Link>
         </p>
       }

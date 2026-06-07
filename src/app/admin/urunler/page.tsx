@@ -2,23 +2,43 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ProductsTable, type ProductRow } from "@/components/admin/products-table";
+import { ProductsFilterBar } from "@/components/admin/products-filter-bar";
+import { ADMIN_PRODUCTS_PER_PAGE } from "@/lib/constants";
 
-export const metadata: Metadata = { title: "Urunler - Admin" };
+export const metadata: Metadata = { title: "Ürünler - Admin" };
 
 interface PageProps {
-  searchParams: Promise<{ sayfa?: string; ara?: string }>;
+  searchParams: Promise<{
+    sayfa?: string;
+    ara?: string;
+    stokMin?: string;
+    stokMax?: string;
+  }>;
 }
 
 export default async function AdminProductsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.sayfa || "1"));
   const search = params.ara || "";
-  const perPage = 20;
+  const perPage = ADMIN_PRODUCTS_PER_PAGE;
 
   const where: Record<string, unknown> = {};
   if (search) {
-    where.name = { contains: search, mode: "insensitive" };
+    // Ad, ISBN (sku) ve yazar koduna göre arama.
+    where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { sku: { contains: search, mode: "insensitive" } },
+      { authorCode: { contains: search, mode: "insensitive" } },
+    ];
   }
+
+  // Stok sayısal aralık filtresi (boş bırakılan uç uygulanmaz).
+  const stokMin = params.stokMin ? parseInt(params.stokMin) : null;
+  const stokMax = params.stokMax ? parseInt(params.stokMax) : null;
+  const stockFilter: Record<string, number> = {};
+  if (stokMin !== null && Number.isFinite(stokMin)) stockFilter.gte = stokMin;
+  if (stokMax !== null && Number.isFinite(stokMax)) stockFilter.lte = stokMax;
+  if (Object.keys(stockFilter).length > 0) where.stockQuantity = stockFilter;
 
   const [products, total, categories, publishers] = await Promise.all([
     prisma.product.findMany({
@@ -49,6 +69,16 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
 
   const totalPages = Math.ceil(total / perPage);
 
+  // Sayfalama linkleri aktif filtreleri korur.
+  const pageQuery = (p: number) => {
+    const qs = new URLSearchParams();
+    qs.set("sayfa", String(p));
+    if (search) qs.set("ara", search);
+    if (params.stokMin) qs.set("stokMin", params.stokMin);
+    if (params.stokMax) qs.set("stokMax", params.stokMax);
+    return qs.toString();
+  };
+
   const rows: ProductRow[] = products.map((p) => ({
     id: p.id,
     name: p.name,
@@ -64,10 +94,10 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-display font-bold text-brand-black">
-            Urunler
+            Ürünler
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            {total.toLocaleString("tr-TR")} urun
+            {total.toLocaleString("tr-TR")} ürün
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -87,34 +117,18 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
             href="/admin/urunler/toplu-yukleme"
             className="px-4 py-2 bg-white border border-gray-200 text-brand-black rounded-lg text-sm font-semibold hover:bg-gray-50"
           >
-            Toplu Yukle
+            Toplu Yükle
           </Link>
           <Link
             href="/admin/urunler/yeni"
             className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark"
           >
-            + Yeni Urun
+            + Yeni Ürün
           </Link>
         </div>
       </div>
 
-      <form className="mb-6">
-        <div className="flex gap-2 max-w-md">
-          <input
-            type="text"
-            name="ara"
-            defaultValue={search}
-            placeholder="Urun ara..."
-            className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2.5 bg-brand-gold text-brand-black text-sm font-semibold rounded-lg hover:bg-brand-gold-dark transition-colors cursor-pointer"
-          >
-            Ara
-          </button>
-        </div>
-      </form>
+      <ProductsFilterBar />
 
       <ProductsTable
         products={rows}
@@ -130,19 +144,15 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={`/admin/urunler?sayfa=${page - 1}${
-                  search ? `&ara=${search}` : ""
-                }`}
+                href={`/admin/urunler?${pageQuery(page - 1)}`}
                 className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
               >
-                Onceki
+                Önceki
               </Link>
             )}
             {page < totalPages && (
               <Link
-                href={`/admin/urunler?sayfa=${page + 1}${
-                  search ? `&ara=${search}` : ""
-                }`}
+                href={`/admin/urunler?${pageQuery(page + 1)}`}
                 className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
               >
                 Sonraki

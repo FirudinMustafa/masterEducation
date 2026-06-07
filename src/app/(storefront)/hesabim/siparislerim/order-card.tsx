@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatPrice } from "@/lib/utils";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import {
@@ -75,7 +74,6 @@ export function OrderCard({ order }: { order: OrderCardData }) {
 
   const visibleItems = expanded ? order.items : order.items.slice(0, 2);
   const hiddenCount = order.items.length - visibleItems.length;
-  const netTotal = order.subtotal - order.discountTotal - order.couponDiscount + order.shippingCost;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
@@ -103,19 +101,9 @@ export function OrderCard({ order }: { order: OrderCardData }) {
               </span>
               <span className="inline-flex items-center gap-1">
                 <TagIcon className="h-3.5 w-3.5" />
-                {order.items.length} urun
+                {order.items.length} ürün
               </span>
             </div>
-          </div>
-
-          {/* Tutar — sağda, sabit genişlik tabular-nums sığ */}
-          <div className="shrink-0 text-right">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-              Toplam
-            </p>
-            <p className="font-display text-xl font-bold tabular-nums text-neutral-950">
-              {formatPrice(order.total)}
-            </p>
           </div>
         </div>
       </div>
@@ -136,9 +124,6 @@ export function OrderCard({ order }: { order: OrderCardData }) {
                   {item.productName}
                 </span>
               </div>
-              <span className="shrink-0 font-medium tabular-nums text-neutral-900">
-                {formatPrice(item.lineTotal)}
-              </span>
             </li>
           ))}
         </ul>
@@ -148,7 +133,7 @@ export function OrderCard({ order }: { order: OrderCardData }) {
             onClick={() => setExpanded(true)}
             className="mt-3 w-full rounded-lg bg-neutral-50 px-3 py-2 text-center text-xs font-semibold text-neutral-600 hover:bg-neutral-100 cursor-pointer"
           >
-            + {hiddenCount} urun daha
+            + {hiddenCount} ürün daha
           </button>
         )}
 
@@ -187,7 +172,7 @@ export function OrderCard({ order }: { order: OrderCardData }) {
                 {order.shippingPhone}
               </p>
             </DetailBlock>
-            <DetailBlock label="Odeme">
+            <DetailBlock label="Ödeme">
               <p className="font-medium text-neutral-900">
                 {order.paymentMethod === "OPEN_ACCOUNT" ? "Acik Hesap" : "Kredi Karti"}
               </p>
@@ -205,9 +190,9 @@ export function OrderCard({ order }: { order: OrderCardData }) {
                     : order.paymentStatus === "PENDING"
                       ? "Bekliyor"
                       : order.paymentStatus === "FAILED"
-                        ? "Basarisiz"
+                        ? "Başarısız"
                         : order.paymentStatus === "REFUNDED"
-                          ? "Iade Edildi"
+                          ? "İade Edildi"
                           : order.paymentStatus}
                 </span>
               </p>
@@ -222,62 +207,11 @@ export function OrderCard({ order }: { order: OrderCardData }) {
             </DetailBlock>
           </div>
 
-          {/* Tutar dağılımı */}
-          <DetailBlock label="Tutar Detayi">
-            <table className="w-full text-[13px]">
-              <tbody>
-                <BreakdownRow label="Ara Toplam" value={order.subtotal} />
-                {order.discountTotal > 0 && (
-                  <BreakdownRow
-                    label="Bayi/Urun Iskontosu"
-                    value={-order.discountTotal}
-                    accent="emerald"
-                  />
-                )}
-                {order.couponDiscount > 0 && (
-                  <BreakdownRow
-                    label={`Kupon (${order.couponCode ?? ""})`}
-                    value={-order.couponDiscount}
-                    accent="emerald"
-                  />
-                )}
-                {order.vatTotal > 0 && (
-                  <BreakdownRow
-                    label="KDV (dahil)"
-                    value={order.vatTotal}
-                    muted
-                  />
-                )}
-                <BreakdownRow
-                  label="Kargo"
-                  value={order.shippingCost}
-                  muted={order.shippingCost === 0}
-                  free={order.shippingCost === 0}
-                />
-                <tr>
-                  <td
-                    colSpan={2}
-                    className="pt-2"
-                  >
-                    <div className="flex items-center justify-between border-t border-neutral-200 pt-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-                        Toplam
-                      </span>
-                      <span className="font-display text-lg font-bold tabular-nums text-neutral-950">
-                        {formatPrice(netTotal)}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </DetailBlock>
-
           {/* Zaman çizelgesi */}
           <DetailBlock label="Zaman Cizelgesi">
             <ol className="space-y-2 text-[12px]">
               <TimelineRow
-                label="Olusturuldu"
+                label="Oluşturuldu"
                 date={order.createdAt}
                 active
               />
@@ -310,7 +244,7 @@ export function OrderCard({ order }: { order: OrderCardData }) {
           onClick={() => setExpanded((v) => !v)}
           className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-semibold text-neutral-700 hover:bg-neutral-100 cursor-pointer"
         >
-          {expanded ? "Detayi Gizle" : "Detayi Goster"}
+          {expanded ? "Detayi Gizle" : "Detayi Göster"}
           <ChevronDownIcon
             className={cn(
               "h-4 w-4 transition-transform",
@@ -348,38 +282,6 @@ function DetailBlock({
       </p>
       <div className="text-[13px] leading-relaxed">{children}</div>
     </div>
-  );
-}
-
-function BreakdownRow({
-  label,
-  value,
-  accent,
-  muted,
-  free,
-}: {
-  label: string;
-  value: number;
-  accent?: "emerald";
-  muted?: boolean;
-  free?: boolean;
-}) {
-  return (
-    <tr>
-      <td className={cn("py-1", muted ? "text-neutral-500" : "text-neutral-700")}>
-        {label}
-      </td>
-      <td
-        className={cn(
-          "py-1 text-right tabular-nums",
-          accent === "emerald" && "text-emerald-700 font-semibold",
-          free && "text-emerald-700 font-semibold",
-          !accent && !free && "text-neutral-900 font-medium"
-        )}
-      >
-        {free ? "Ucretsiz" : value < 0 ? `-${formatPrice(Math.abs(value))}` : formatPrice(value)}
-      </td>
-    </tr>
   );
 }
 

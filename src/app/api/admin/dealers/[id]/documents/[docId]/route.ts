@@ -38,7 +38,7 @@ export async function PATCH(
   // REJECTED icin not zorunlu olsun (bayinin ne duzeltmesi gerektigini bilsin).
   if (status === "REJECTED" && !reviewNote?.trim()) {
     return NextResponse.json(
-      { error: "Red icin aciklama zorunludur." },
+      { error: "Red icin açıklama zorunludur." },
       { status: 400 }
     );
   }

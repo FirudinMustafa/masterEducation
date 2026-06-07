@@ -7,7 +7,7 @@ export default async function StorefrontLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Admin de storefront'i gorebilir — QA/test amacli. Admin paneli icin
+  // Admin de storefront'i görebilir — QA/test amacli. Admin paneli icin
   // Header/Footer uzerinden "/admin" linki var.
   return (
     <>

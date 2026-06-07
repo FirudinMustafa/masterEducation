@@ -62,13 +62,13 @@ export async function POST(req: NextRequest) {
   });
   if (!ps) {
     return NextResponse.json(
-      { error: "Odeme oturumu bulunamadi." },
+      { error: "Ödeme oturumu bulunamadi." },
       { status: 404 }
     );
   }
   if (ps.status !== "PENDING") {
     return NextResponse.json(
-      { error: `Odeme zaten ${ps.status.toLowerCase()} durumunda.` },
+      { error: `Ödeme zaten ${ps.status.toLowerCase()} durumunda.` },
       { status: 409 }
     );
   }
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       data: { status: "EXPIRED", processedAt: new Date() },
     });
     return NextResponse.json(
-      { error: "Odeme oturumu suresi dolmus." },
+      { error: "Ödeme oturumu suresi dolmus." },
       { status: 410 }
     );
   }
@@ -119,14 +119,14 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       if (err instanceof Error && err.message === RACE_ERROR) {
         return NextResponse.json(
-          { error: "Bu odeme oturumu baska bir istek tarafindan islendi." },
+          { error: "Bu ödeme oturumu baska bir istek tarafindan islendi." },
           { status: 409 }
         );
       }
       throw err;
     }
 
-    // E3 — odeme basarili: musteriye + admin'e mail.
+    // E3 — ödeme başarıli: musteriye + admin'e mail.
     after(() => {
       const customerEmail = ps.order.user?.email;
       const customerName = ps.order.shippingName || ps.order.user?.name || "";
@@ -196,14 +196,14 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof Error && err.message === RACE_ERROR) {
       return NextResponse.json(
-        { error: "Bu odeme oturumu baska bir istek tarafindan islendi." },
+        { error: "Bu ödeme oturumu baska bir istek tarafindan islendi." },
         { status: 409 }
       );
     }
     throw err;
   }
 
-  // E4 — odeme basarisiz: musteriye uyari + retry CTA.
+  // E4 — ödeme başarısız: musteriye uyarı + retry CTA.
   after(() => {
     const customerEmail = ps.order.user?.email;
     const customerName = ps.order.shippingName || ps.order.user?.name || "";

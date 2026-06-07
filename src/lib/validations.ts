@@ -21,6 +21,15 @@ const nullableString = (max: number) =>
     .or(z.literal(""))
     .transform((v) => (v === "" || v === undefined ? null : v));
 
+// Zorunlu (boş bırakılamaz) metin alanı — ürün formu zorunlu sınıflandırma
+// alanları için (Yayınevi, Kategori, Ana/Detay Tür, Dil, Ürün Tipi).
+const requiredString = (max: number, label: string) =>
+  z
+    .string({ error: `${label} zorunludur.` })
+    .trim()
+    .min(1, `${label} zorunludur.`)
+    .max(max);
+
 /**
  * Faz 19: TR telefon doğrulama.
  *
@@ -140,7 +149,7 @@ export const adminCreateDealerSchema = z.object({
   tradeRegNo: z.string().max(50).optional().or(z.literal("")).transform((v) => v || null),
   contactPerson: z.string().max(100).optional().or(z.literal("")).transform((v) => v || null),
   paymentTerms: z.enum(["OPEN_ACCOUNT", "PREPAID"]).default("OPEN_ACCOUNT"),
-  creditLimit: z.number().min(0).max(99999999).default(0),
+  creditLimit: z.number().min(0).max(20_000_000).default(0),
   status: z.enum(["PENDING", "APPROVED"]).default("APPROVED"),
   city: z.string().max(50).optional().or(z.literal("")).transform((v) => v || null),
   district: z.string().max(50).optional().or(z.literal("")).transform((v) => v || null),
@@ -275,7 +284,7 @@ export const dealerStatusUpdateSchema = z.object({
   // Null ve undefined her ikisi de "bu alani degistirme" anlaminda.
   rejectionReason: z.string().max(500).nullable().optional(),
   notes: z.string().max(500).nullable().optional(),
-  creditLimit: z.number().min(0).max(9999999).nullable().optional(),
+  creditLimit: z.number().min(0).max(20_000_000).nullable().optional(),
   paymentTerms: z.enum(["OPEN_ACCOUNT", "PREPAID"]).optional(),
 }).refine(
   // PREPAID modunda creditLimit > 0 mantiksiz; uyarı niyetinde 0'a sıfırla
@@ -333,18 +342,19 @@ export const discountRuleSchema = z.object({
 // (Faz 18 e2e regression: prod1 stock=60 → PATCH price=130 → stock=0.)
 const productBaseShape = {
   name: z.string().min(2).max(300),
-  nameEn: nullableString(300),
   sku: z.string().min(1).max(64),
   price: z.number().min(0).max(999_999),
+  // Opsiyonel kalan alanlar: Eski fiyat, İskonto grubu, Yazar.
   oldPrice: z.number().min(0).max(999_999).optional().nullable(),
   vatRate: z.number().min(0).max(100),
   stockQuantity: z.number().int().min(0).max(1_000_000),
-  publisherId: nullableString(64),
-  categoryId: nullableString(64),
-  anaTur: nullableString(100),
-  detayTur: nullableString(100),
-  language: nullableString(50),
-  productType: nullableString(50),
+  // Zorunlu sınıflandırma alanları (2026-06-08 talebi).
+  publisherId: requiredString(64, "Yayınevi"),
+  categoryId: requiredString(64, "Kategori"),
+  anaTur: requiredString(100, "Ana Tür"),
+  detayTur: requiredString(100, "Detay Tür"),
+  language: requiredString(50, "Dil"),
+  productType: requiredString(50, "Ürün Tipi"),
   discountGroup: nullableString(100),
   authorCode: nullableString(64),
   isPublished: z.boolean(),
@@ -352,13 +362,13 @@ const productBaseShape = {
 
 export const productCreateSchema = z.object({
   ...productBaseShape,
-  // Default'lar SADECE create'te uygulanır; update'e yansımasın diye base'den
-  // ayrı tanımlandı.
-  vatRate: productBaseShape.vatRate.default(0),
-  stockQuantity: productBaseShape.stockQuantity.default(0),
+  // isPublished default'u sadece create'te (update'e yansımasın). KDV/Stok
+  // artık zorunlu — default kaldırıldı, kullanıcı girmek zorunda.
   isPublished: productBaseShape.isPublished.default(true),
 });
 
+// Update PATCH semantiği: tüm alanlar opsiyonel, ama gönderilen zorunlu metin
+// alanları yine boş olamaz (requiredString min(1) korunur).
 export const productUpdateSchema = z.object(productBaseShape).partial();
 
 // Category — type default'u sadece create'te (PATCH'te detay → ana'ya

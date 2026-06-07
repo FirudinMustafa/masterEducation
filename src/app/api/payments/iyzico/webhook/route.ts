@@ -53,9 +53,54 @@ export async function POST(req: NextRequest) {
   if (eventType === "REFUND" || paymentStatus === "REFUNDED") {
     // PaymentSessionStatus enum'da REFUNDED yok — yalnızca Order.paymentStatus'a
     // (PaymentStatus.REFUNDED) yansıt; PaymentSession COMPLETED kalır.
-    await prisma.order.update({
-      where: { id: session.orderId },
-      data: { paymentStatus: "REFUNDED" },
+    // F-1002: REFUND geldiginde stok geri yüklenmeli, kupon kullanim sayısi
+    // azaltilmali ve OrderEvent atilmali (yoksa stok + kupon kilitli kalir).
+    await prisma.$transaction(async (tx) => {
+      const orderRow = await tx.order.findUnique({
+        where: { id: session.orderId },
+        select: { status: true, paymentStatus: true },
+      });
+      // Idempotency: ayni webhook tekrar gelirse zaten REFUNDED'sa noop.
+      if (!orderRow || orderRow.paymentStatus === "REFUNDED") {
+        if (orderRow) {
+          await tx.order.update({
+            where: { id: session.orderId },
+            data: { paymentStatus: "REFUNDED" },
+          });
+        }
+        return;
+      }
+      const items = await tx.orderItem.findMany({
+        where: { orderId: session.orderId },
+        select: { productId: true, quantity: true },
+      });
+      for (const item of items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: { increment: item.quantity } },
+        });
+      }
+      const redemption = await tx.couponRedemption.findUnique({
+        where: { orderId: session.orderId },
+      });
+      if (redemption) {
+        await tx.coupon.update({
+          where: { id: redemption.couponId },
+          data: { usedCount: { decrement: 1 } },
+        });
+        await tx.couponRedemption.delete({ where: { orderId: session.orderId } });
+      }
+      await tx.order.update({
+        where: { id: session.orderId },
+        data: { status: "CANCELLED", paymentStatus: "REFUNDED" },
+      });
+      await tx.orderEvent.create({
+        data: {
+          orderId: session.orderId,
+          type: "CANCELLED",
+          note: `Iyzico webhook REFUND — stok ve kupon geri yüklendi (paymentId=${paymentId})`,
+        },
+      });
     });
   } else if (paymentStatus === "FAILURE" || paymentStatus === "CANCELLED") {
     await prisma.paymentSession.updateMany({

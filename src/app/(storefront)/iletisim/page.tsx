@@ -3,18 +3,18 @@ import { BRAND } from "@/lib/constants";
 import { ContactForm } from "./contact-form";
 
 export const metadata: Metadata = {
-  title: "Iletisim",
-  description: "Master Education iletisim bilgileri, telefon, email, adres ve iletisim formu.",
+  title: "İletişim",
+  description: "Master Education iletişim bilgileri, telefon, email, adres ve iletişim formu.",
 };
 
 export default function ContactPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
       <h1 className="text-3xl font-display font-bold text-brand-black mb-2">
-        Iletisim
+        İletişim
       </h1>
       <p className="text-brand-muted mb-10">
-        Siparisleriniz, bayilik ve toptan talepleriniz icin bize ulasin.
+        Siparişleriniz, bayilik ve toptan talepleriniz icin bize ulasin.
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -40,7 +40,7 @@ export default function ContactPage() {
             >
               Hemen Yazin
             </a>
-            <p className="text-xs text-brand-muted mt-1">Hizli yanit.</p>
+            <p className="text-xs text-brand-muted mt-1">Hızlı yanit.</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-brand-border/50 p-5">
@@ -51,7 +51,7 @@ export default function ContactPage() {
             >
               {BRAND.email}
             </a>
-            <p className="text-xs text-brand-muted mt-1">Siparis, iade ve kurumsal talepler.</p>
+            <p className="text-xs text-brand-muted mt-1">Sipariş, iade ve kurumsal talepler.</p>
           </div>
 
           <div className="bg-white rounded-2xl border border-brand-border/50 p-5">

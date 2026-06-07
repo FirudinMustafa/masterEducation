@@ -25,8 +25,8 @@ export default async function AdminCategoriesPage() {
           Kategoriler
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Urun kategorilerini yonetin. &quot;Ana&quot; kategoriler magaza menulerinde
-          gosterilir.
+          Ürün kategorilerini yonetin. &quot;Ana&quot; kategoriler magaza menulerinde
+          gösterilir.
         </p>
       </div>
       <TaxonomyManager kind="category" items={items} />

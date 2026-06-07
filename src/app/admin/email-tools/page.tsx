@@ -7,7 +7,7 @@ import { CopyLinkButton } from "./copy-link-button";
 export const metadata: Metadata = { title: "Email Araclari - Admin" };
 
 /**
- * SMTP aktif edilmeden once kullanicilarin email dogrulama / sifre sifirlama
+ * SMTP aktif edilmeden once kullanıcılarin email dogrulama / şifre sifirlama
  * linklerini admin'in manuel bulup paylasabilmesi icin dev helper.
  * SMTP entegre edildiginde bu sayfa arka plana alinabilir.
  */
@@ -47,16 +47,16 @@ export default async function AdminEmailToolsPage() {
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           SMTP henuz aktif olmadigi icin dogrulama/sifre sifirlama linklerini
-          buradan alarak kullaniciya manuel gonderebilirsiniz.
+          buradan alarak kullanıcıya manuel gonderebilirsiniz.
         </p>
       </div>
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
         <p className="font-semibold mb-1">Nasil kullanilir?</p>
         <ol className="list-decimal list-inside space-y-0.5 text-amber-800">
-          <li>Kullanici kayit olunca burada &quot;Dogrulama Linki&quot; cikar.</li>
+          <li>Kullanıcı kayıt olunca burada &quot;Dogrulama Linki&quot; çıkar.</li>
           <li>&quot;Linki Kopyala&quot; butonuyla al, email / WhatsApp ile paylas.</li>
-          <li>Kullanici linke tiklayinca <code>/email-dogrula</code> sayfasi dogrular.</li>
+          <li>Kullanıcı linke tiklayinca <code>/email-dogrula</code> sayfasi dogrular.</li>
         </ol>
       </div>
 
@@ -78,8 +78,8 @@ export default async function AdminEmailToolsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100 text-left text-xs font-semibold text-gray-500 uppercase">
-                  <th className="p-3">Kullanici</th>
-                  <th className="p-3">Olusturma</th>
+                  <th className="p-3">Kullanıcı</th>
+                  <th className="p-3">Oluşturma</th>
                   <th className="p-3">Gecerlilik</th>
                   <th className="p-3 text-right">Aksiyon</th>
                 </tr>
@@ -119,7 +119,7 @@ export default async function AdminEmailToolsPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold text-brand-black">
-            Sifre Sifirlama Linkleri
+            Şifre Sifirlama Linkleri
           </h2>
           <span className="text-xs text-gray-500">
             {resetTokens.length} aktif
@@ -134,8 +134,8 @@ export default async function AdminEmailToolsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100 text-left text-xs font-semibold text-gray-500 uppercase">
-                  <th className="p-3">Kullanici</th>
-                  <th className="p-3">Olusturma</th>
+                  <th className="p-3">Kullanıcı</th>
+                  <th className="p-3">Oluşturma</th>
                   <th className="p-3">Gecerlilik</th>
                   <th className="p-3 text-right">Aksiyon</th>
                 </tr>
@@ -174,7 +174,7 @@ export default async function AdminEmailToolsPage() {
 
       <div className="text-xs text-gray-500">
         <Link href="/admin/email-log" className="text-brand-gold-dark hover:underline">
-          Tum email kayitlari (dryrun/sent/failed) icin email-log
+          Tüm email kayıtlari (dryrun/sent/failed) icin email-log
         </Link>
       </div>
     </div>

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useCartStore, CartProduct } from "@/stores/cart-store";
 import { useWishlistStore } from "@/stores/wishlist-store";
 import { useCompareStore } from "@/stores/compare-store";
 import { toast } from "@/stores/toast-store";
+import { useCanOrder, ensureCanOrder } from "@/lib/use-can-order";
 import {
   PlusIcon,
   MinusIcon,
@@ -39,14 +41,17 @@ export function AddToCartButton({ product, summary }: Props) {
   const inWishlist = hydrated && inWishlistRaw;
   const inCompare = hydrated && inCompareRaw;
 
+  const canOrder = useCanOrder();
   const inStock = product.stockQuantity > 0;
   const remaining = Math.max(0, product.stockQuantity - existingInCart);
   const canAdd = remaining > 0;
 
   function add() {
+    if (!ensureCanOrder(canOrder)) return;
     if (!inStock || !canAdd) return;
-    const toAdd = Math.min(quantity, remaining);
-    if (toAdd < quantity) {
+    const qty = Math.max(1, quantity);
+    const toAdd = Math.min(qty, remaining);
+    if (toAdd < qty) {
       toast.warning(`Stokta yalnizca ${remaining} adet kaldi.`);
     }
     addItem(product, toAdd);
@@ -55,9 +60,30 @@ export function AddToCartButton({ product, summary }: Props) {
     setTimeout(() => setJustAdded(false), 1600);
   }
 
+  // Manuel adet girişi: yalnız rakam kabul et, geçici olarak boş (0) kalabilir.
+  function handleQtyInput(raw: string) {
+    const digits = raw.replace(/\D/g, "");
+    setQuantity(digits === "" ? 0 : parseInt(digits, 10));
+  }
+  // Alan terk edilince geçerli aralığa sabitle (en az 1, en fazla kalan stok).
+  function clampQtyOnBlur() {
+    setQuantity((q) => {
+      const n = Math.max(1, q);
+      return remaining > 0 ? Math.min(remaining, n) : n;
+    });
+  }
+
   return (
     <div className="space-y-3">
-      {inStock ? (
+      {!canOrder ? (
+        <Link
+          href="/giris"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-neutral-700"
+        >
+          <ShoppingCartIcon className="h-5 w-5" />
+          Sipariş için Bayi Girişi
+        </Link>
+      ) : inStock ? (
         <div className="flex gap-3">
           <div className="flex items-center overflow-hidden rounded-xl border border-neutral-300 bg-white">
             <button
@@ -68,9 +94,16 @@ export function AddToCartButton({ product, summary }: Props) {
             >
               <MinusIcon className="h-4 w-4" />
             </button>
-            <span className="min-w-[3ch] px-2 text-center text-sm font-semibold tabular-nums">
-              {quantity}
-            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={quantity === 0 ? "" : String(quantity)}
+              onChange={(e) => handleQtyInput(e.target.value)}
+              onBlur={clampQtyOnBlur}
+              onFocus={(e) => e.target.select()}
+              aria-label="Adet"
+              className="w-14 border-0 px-1 py-2 text-center text-sm font-semibold tabular-nums outline-none focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+            />
             <button
               onClick={() => setQuantity((q) => (remaining > 0 ? Math.min(remaining, q + 1) : q))}
               className="p-3 text-neutral-500 hover:bg-neutral-50 cursor-pointer disabled:opacity-40"
@@ -119,7 +152,7 @@ export function AddToCartButton({ product, summary }: Props) {
           onClick={() => {
             const added = toggleWishlist(summary);
             if (added) toast.success("Favorilere eklendi");
-            else toast.info("Favorilerden cikarildi");
+            else toast.info("Favorilerden çıkarildi");
           }}
           activeClass="bg-rose-50 text-rose-600 border-rose-200"
         >
@@ -134,14 +167,14 @@ export function AddToCartButton({ product, summary }: Props) {
           active={inCompare}
           onClick={() => {
             const res = toggleCompare(summary);
-            if (res === "added") toast.success("Karsilastirmaya eklendi");
-            else if (res === "removed") toast.info("Karsilastirmadan cikarildi");
-            else toast.warning("En fazla 4 urun karsilastirabilirsiniz");
+            if (res === "added") toast.success("Karşılaştırmaya eklendi");
+            else if (res === "removed") toast.info("Karşılaştırmadan çıkarildi");
+            else toast.warning("En fazla 4 ürün karşılaştırabilirsiniz");
           }}
           activeClass="bg-sky-50 text-sky-600 border-sky-200"
         >
           <ScaleIcon className="h-4 w-4" />
-          {inCompare ? "Karsilastirmada" : "Karsilastir"}
+          {inCompare ? "Karşılaştırmada" : "Karşılaştır"}
         </SecondaryAction>
       </div>
 
@@ -152,7 +185,7 @@ export function AddToCartButton({ product, summary }: Props) {
       )}
       {inStock && !canAdd && (
         <p className="text-xs text-amber-700">
-          Bu urunun tum stogu sepetinizde.
+          Bu ürünun tüm stogu sepetinizde.
         </p>
       )}
     </div>

@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { formatPrice } from "@/lib/utils";
 import { mockPaymentsEnabled } from "@/lib/env";
 import { ThreeDSecureForm } from "./three-d-secure-form";
 
 export const metadata: Metadata = {
-  title: "3D Secure Odeme",
+  title: "3D Secure Ödeme",
   robots: { index: false, follow: false },
 };
 
@@ -57,19 +56,13 @@ export default async function ThreeDSecurePage({ params }: PageProps) {
 
         <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">Siparis No</span>
+            <span className="text-gray-500">Sipariş No</span>
             <span className="font-mono">{ps.order.orderNumber}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Kart</span>
             <span className="font-mono">
               {ps.cardBrand ?? "KART"} **** {ps.cardLastFour ?? "????"}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Tutar</span>
-            <span className="font-semibold text-brand-black">
-              {formatPrice(Number(ps.amount))}
             </span>
           </div>
           <div className="flex justify-between">
@@ -80,11 +73,11 @@ export default async function ThreeDSecurePage({ params }: PageProps) {
 
         {ps.status !== "PENDING" ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            Bu odeme oturumu zaten <strong>{ps.status}</strong> durumunda.
+            Bu ödeme oturumu zaten <strong>{ps.status}</strong> durumunda.
           </div>
         ) : expired ? (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            Odeme oturumu suresi dolmus. Siparisi iptal edip yeniden baslatmaniz
+            Ödeme oturumu suresi dolmus. Siparişi iptal edip yeniden baslatmaniz
             gerekiyor.
           </div>
         ) : (

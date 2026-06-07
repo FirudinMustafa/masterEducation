@@ -1,32 +1,22 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCartStore } from "@/stores/cart-store";
 import { ProductImage } from "@/components/products/product-image";
 import { CartRefreshBanner } from "@/components/cart/cart-refresh-banner";
-import { formatPrice } from "@/lib/utils";
 import {
   ShoppingCartIcon,
   XMarkIcon,
   PlusIcon,
   MinusIcon,
-  TruckIcon,
   ArrowRightIcon,
   ShieldCheckIcon,
 } from "@/components/ui/icons";
 
-const FREE_SHIPPING_THRESHOLD = 500;
-const SHIPPING_COST = 29.9;
-
 export default function CartPage() {
-  const { items, note, removeItem, updateQuantity, setNote, getSubtotal, clearCart } =
+  const { items, note, removeItem, updateQuantity, setNote, clearCart } =
     useCartStore();
-
-  const subtotal = getSubtotal();
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_COST;
-  const total = subtotal + shipping;
-  const freeShippingRemaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-  const freeShippingProgress = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
 
   if (items.length === 0) {
     return (
@@ -36,13 +26,13 @@ export default function CartPage() {
         </div>
         <h1 className="font-display text-2xl font-bold text-neutral-900">Sepetiniz bos</h1>
         <p className="mt-2 text-sm text-neutral-500">
-          Urunlerimize goz atin ve sepetinize ekleyin.
+          Ürünlerimize göz atin ve sepetinize ekleyin.
         </p>
         <Link
           href="/urunler"
           className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-neutral-800 shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-lg hover:shadow-brand-gold/30"
         >
-          Urunleri Kesfet
+          Ürünleri Kesfet
           <ArrowRightIcon className="h-4 w-4" />
         </Link>
       </div>
@@ -53,37 +43,13 @@ export default function CartPage() {
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       <h1 className="mb-2 font-display text-2xl font-bold text-neutral-900 sm:text-3xl">Sepetim</h1>
       <p className="mb-5 text-sm text-neutral-500 sm:mb-6">
-        {items.reduce((n, i) => n + i.quantity, 0)} urun sepetinizde
+        {items.reduce((n, i) => n + i.quantity, 0)} ürün sepetinizde
       </p>
 
       <CartRefreshBanner />
 
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3 lg:gap-8">
         <div className="space-y-3 lg:col-span-2">
-          {/* Free shipping progress */}
-          {shipping > 0 ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <div className="flex items-center gap-2 text-sm text-amber-900">
-                <TruckIcon className="h-5 w-5" />
-                <span>
-                  <strong>{formatPrice(freeShippingRemaining)}</strong> daha ekleyin,{" "}
-                  <strong>ucretsiz kargo</strong> kazanin.
-                </span>
-              </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-amber-100">
-                <div
-                  className="h-full bg-amber-500 transition-all"
-                  style={{ width: `${freeShippingProgress}%` }}
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-              <TruckIcon className="mr-1 inline h-4 w-4" />
-              Tebrikler — bu sipariste kargo <strong>ucretsiz</strong>.
-            </div>
-          )}
-
           {/* Items */}
           {items.map((item) => (
             <div
@@ -112,18 +78,12 @@ export default function CartPage() {
                   </h3>
                 </Link>
                 <p className="mt-0.5 text-xs text-neutral-500">ISBN: {item.product.sku}</p>
-                <p className="mt-2 text-base font-bold text-neutral-900">
-                  {formatPrice(item.product.price)}
-                </p>
-                <p className="text-[11px] text-neutral-400">
-                  {formatPrice(item.product.price * item.quantity)} toplam
-                </p>
               </div>
 
               <div className="flex flex-col items-end justify-between">
                 <button
                   onClick={() => removeItem(item.productId)}
-                  aria-label="Urunu sil"
+                  aria-label="Ürünu sil"
                   className="rounded-full p-1.5 text-neutral-400 hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
                 >
                   <XMarkIcon className="h-4 w-4" />
@@ -137,9 +97,11 @@ export default function CartPage() {
                   >
                     <MinusIcon className="h-3.5 w-3.5" />
                   </button>
-                  <span className="min-w-[2ch] px-2 text-center text-sm font-semibold tabular-nums">
-                    {item.quantity}
-                  </span>
+                  <CartQtyInput
+                    value={item.quantity}
+                    max={item.product.stockQuantity}
+                    onCommit={(n) => updateQuantity(item.productId, n)}
+                  />
                   <button
                     onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                     className="p-1.5 text-neutral-500 hover:bg-neutral-50 cursor-pointer disabled:opacity-40"
@@ -155,7 +117,7 @@ export default function CartPage() {
 
           <div className="rounded-xl border border-neutral-200 bg-white p-4">
             <label className="mb-2 block text-sm font-medium text-neutral-800">
-              Siparis Notu <span className="text-neutral-400">(opsiyonel)</span>
+              Sipariş Notu <span className="text-neutral-400">(opsiyonel)</span>
             </label>
             <textarea
               value={note}
@@ -178,40 +140,72 @@ export default function CartPage() {
         <div>
           <div className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-6 lg:sticky lg:top-28">
             <h2 className="mb-4 font-display text-lg font-bold text-neutral-900">
-              Siparis Ozeti
+              Sipariş Ozeti
             </h2>
-            <dl className="space-y-2.5 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-neutral-500">Ara Toplam</dt>
-                <dd className="font-medium">{formatPrice(subtotal)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-neutral-500">Kargo</dt>
-                <dd className={shipping === 0 ? "font-semibold text-emerald-600" : "font-medium"}>
-                  {shipping === 0 ? "Ucretsiz" : formatPrice(shipping)}
-                </dd>
-              </div>
-            </dl>
-            <div className="mt-4 flex items-baseline justify-between border-t border-neutral-100 pt-4">
-              <span className="text-sm font-semibold text-neutral-900">Toplam</span>
-              <span className="font-display text-2xl font-bold text-neutral-900">
-                {formatPrice(total)}
-              </span>
-            </div>
+            <p className="mb-4 text-sm text-neutral-500">
+              {items.reduce((n, i) => n + i.quantity, 0)} ürün · tüm siparişlerde ücretsiz kargo
+            </p>
             <Link
               href="/odeme"
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-brand-gold py-3 text-sm font-bold text-neutral-800 shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-lg hover:shadow-brand-gold/30"
             >
-              Odemeye Gec
+              Ödemeye Gec
               <ArrowRightIcon className="h-4 w-4" />
             </Link>
             <div className="mt-4 flex items-center gap-2 text-[11px] text-neutral-500">
               <ShieldCheckIcon className="h-4 w-4 text-emerald-500" />
-              256-bit SSL ile guvenli odeme
+              256-bit SSL ile guvenli ödeme
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Sepet satırı için manuel adet girişi — elle 1000 gibi büyük adet yazılabilir.
+ * Yerel string state ile yazım sırasında geçici boş değere izin verir;
+ * geçerli sayıda (≥1, stok sınırı) sepete commit eder.
+ */
+function CartQtyInput({
+  value,
+  max,
+  onCommit,
+}: {
+  value: number;
+  max: number;
+  onCommit: (n: number) => void;
+}) {
+  const [raw, setRaw] = useState(String(value));
+  useEffect(() => {
+    setRaw(String(value));
+  }, [value]);
+
+  function handleChange(input: string) {
+    const digits = input.replace(/\D/g, "");
+    setRaw(digits);
+    if (digits === "") return;
+    const n = Math.min(max > 0 ? max : 1, Math.max(1, parseInt(digits, 10)));
+    onCommit(n);
+  }
+
+  function handleBlur() {
+    const n = raw === "" ? value : Math.min(max > 0 ? max : 1, Math.max(1, parseInt(raw, 10)));
+    setRaw(String(n));
+    if (n !== value) onCommit(n);
+  }
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={raw}
+      onChange={(e) => handleChange(e.target.value)}
+      onBlur={handleBlur}
+      onFocus={(e) => e.target.select()}
+      aria-label="Adet"
+      className="w-12 border-0 px-1 py-1.5 text-center text-sm font-semibold tabular-nums outline-none focus:ring-0"
+    />
   );
 }

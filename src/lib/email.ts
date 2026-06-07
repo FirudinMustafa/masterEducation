@@ -48,7 +48,7 @@ function warnProdMisconfig() {
   if (process.env.NODE_ENV === "production" && !prodMisconfigWarned) {
     console.error(
       "[email:misconfig] Ne RESEND_API_KEY ne SMTP env tam set. " +
-        "Tum email gonderimleri DRYRUN moduna dustu — kullanici dogrulama/sifre reset/siparis emailleri ULASMIYOR."
+        "Tüm email gonderimleri DRYRUN moduna dustu — kullanıcı dogrulama/sifre reset/siparis emailleri ULASMIYOR."
     );
     prodMisconfigWarned = true;
   }
@@ -190,7 +190,7 @@ const FONT = `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', A
 function logoUrl(): string {
   // Mail templatelerinde logo HARICI bir URL'den fetch edilir. Domain canliya
   // cikana kadar (mastereducation.com.tr suan WordPress'te) `${NEXTAUTH_URL}/me-logo-v2.png`
-  // 404 doner ve mail clientlar broken-image gosterir.
+  // 404 doner ve mail clientlar broken-image gösterir.
   // EMAIL_LOGO_URL env tanimliysa onu kullan (Vercel Blob'da kalici asset).
   // Fallback: NEXTAUTH_URL/me-logo-v2.png (domain Next.js'e gectiginde otomatik calisir).
   const explicit = process.env.EMAIL_LOGO_URL;
@@ -201,7 +201,7 @@ function logoUrl(): string {
 
 /**
  * HTML escape — email template'lerinde kullanıcı kontrollü alanlar (ad,
- * sirket adi, urun adi, vs.) `dangerouslySetInnerHTML` ekvivalentinde raw
+ * sirket adi, ürün adi, vs.) `dangerouslySetInnerHTML` ekvivalentinde raw
  * interpolation yapılmaktaydı. Saldırgan order create'te shippingName'e
  * `<img src=x onerror=...>` koyup admin/musteri email'inde XSS tetikleyebilir.
  *
@@ -303,7 +303,7 @@ function wrap(opts: WrapOptions): string {
                     </a>
                   </td>
                   <td valign="middle" align="right" style="font-family:${FONT};font-size:11px;color:${C.muted};letter-spacing:0.6px;text-transform:uppercase;">
-                    Egitimin Tek Adresi
+                    Eğitimin Tek Adresi
                   </td>
                 </tr>
               </table>
@@ -346,7 +346,7 @@ function wrap(opts: WrapOptions): string {
                 <tr>
                   <td style="padding-bottom:12px;">
                     <strong style="color:#FFFFFF;font-size:13px;letter-spacing:0.4px;">${escapeHtml(BRAND.name)}</strong>
-                    <span style="display:block;color:#9CA3AF;margin-top:4px;">Cambridge · Pearson · Collins · Klett ve 15+ yayinevi</span>
+                    <span style="display:block;color:#9CA3AF;margin-top:4px;">Cambridge · Pearson · Collins · Klett ve 15+ yayınevi</span>
                   </td>
                 </tr>
                 <tr>
@@ -364,12 +364,12 @@ function wrap(opts: WrapOptions): string {
                     <span style="margin:0 8px;color:#374151;">·</span>
                     <a href="${base}/kvkk" style="color:#9CA3AF;text-decoration:none;">KVKK</a>
                     <span style="margin:0 8px;color:#374151;">·</span>
-                    <a href="${base}/iletisim" style="color:#9CA3AF;text-decoration:none;">Iletisim</a>
+                    <a href="${base}/iletisim" style="color:#9CA3AF;text-decoration:none;">İletişim</a>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding-top:14px;color:#4B5563;font-size:11px;">
-                    &copy; ${new Date().getFullYear()} ${escapeHtml(BRAND.name)}. Tum haklari saklidir. Bu mail otomatik olusturulmustur.
+                    &copy; ${new Date().getFullYear()} ${escapeHtml(BRAND.name)}. Tüm haklari saklidir. Bu mail otomatik oluşturulmustur.
                   </td>
                 </tr>
               </table>
@@ -439,16 +439,16 @@ export function templateDealerApplicationReceived(name: string): EmailPayload {
       heroAccent: "gold",
       body: `
         <p style="margin:0 0 14px 0;">
-          Bayilik basvurunuz tarafimiza basariyla ulasti. Ekibimiz en kisa surede
-          (genellikle 1-2 is gunu icinde) basvurunuzu inceleyecek ve sonucunu size
+          Bayilik basvurunuz tarafimiza başarıyla ulasti. Ekibimiz en kisa surede
+          (genellikle 1-2 is günu icinde) basvurunuzu inceleyecek ve sonucunu size
           email yoluyla iletecektir.
         </p>
         <p style="margin:0 0 14px 0;">
           Onay surecini hizlandirmak icin bayi panelinizden <strong>vergi levhasi</strong>,
           <strong>imza sirkuleri</strong> ve <strong>ticaret sicil gazetesi</strong>
-          gibi belgelerinizi yukleyebilirsiniz.
+          gibi belgelerinizi yükleyebilirsiniz.
         </p>
-        ${btn(`${base}/bayi/belgeler`, "Belgelerimi Yukle", "dark")}
+        ${btn(`${base}/bayi/belgeler`, "Belgelerimi Yükle", "dark")}
         ${infoCard(`<strong>Sorulariniz mi var?</strong><br>
           <a href="mailto:${BRAND.email}" style="color:${C.goldDark};text-decoration:none;font-weight:600;">${BRAND.email}</a>
           uzerinden veya <a href="tel:${BRAND.phone.replace(/\s/g, "")}" style="color:${C.goldDark};text-decoration:none;font-weight:600;">${BRAND.phone}</a> uzerinden bize ulasabilirsiniz.`)}`,
@@ -469,14 +469,14 @@ export function templateDealerApproved(companyName: string): EmailPayload {
       body: `
         <p style="margin:0 0 16px 0;">
           Bayilik basvurunuz <strong style="color:${C.success};">onaylandi</strong>!
-          Artik <strong>${escapeHtml(companyName)}</strong> adina ozel iskontolu
-          bayi fiyatlariyla siparis verebilir, cari hesap kullanabilirsiniz.
+          Artik <strong>${escapeHtml(companyName)}</strong> adina özel iskontolu
+          bayi fiyatlariyla sipariş verebilir, cari hesap kullanabilirsiniz.
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;">
           <tr>
             <td style="padding:14px 16px;background:${C.successBg};border-left:3px solid ${C.success};border-radius:8px;font-size:14px;color:${C.text};">
               <strong style="color:${C.success};">✓ Bayi paneline erisiminiz aktif</strong><br>
-              <span style="color:${C.muted};">Bayi fiyatlariyla alisveris · Cari hesap · Toplu siparis · Ozel iskontolar</span>
+              <span style="color:${C.muted};">Bayi fiyatlariyla alisveris · Cari hesap · Toplu sipariş · Özel iskontolar</span>
             </td>
           </tr>
         </table>
@@ -528,6 +528,51 @@ export function templateDealerRejected(
 }
 
 /**
+ * Bayi hesabı askıya alındı — bayiye markalı bilgilendirme.
+ */
+export function templateDealerSuspended(
+  companyName: string,
+  reason: string | null
+): EmailPayload {
+  return {
+    to: "",
+    subject: "Bayi hesabiniz askiya alindi",
+    html: wrap({
+      title: "Hesabiniz askiya alindi",
+      preheader: `${companyName} bayi hesabi askiya alindi`,
+      subtitle: `${companyName} bayi hesabiniz gecici olarak askiya alindi.`,
+      heroAccent: "rose",
+      body: `
+        <p style="margin:0 0 14px 0;">
+          <strong>${escapeHtml(companyName)}</strong> adina tanimli bayi hesabiniz
+          gecici olarak <strong>askiya alinmistir</strong>. Bu sure boyunca giris yapip
+          siparis veremezsiniz.
+        </p>
+        ${
+          reason
+            ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;">
+                <tr>
+                  <td style="padding:16px 18px;background:${C.roseBg};border-left:3px solid ${C.rose};border-radius:8px;">
+                    <p style="margin:0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.rose};">Gerekce</p>
+                    <p style="margin:6px 0 0 0;font-size:14px;color:${C.text};line-height:21px;">${escapeHtml(reason)}</p>
+                  </td>
+                </tr>
+              </table>`
+            : ""
+        }
+        <p style="margin:0 0 14px 0;">
+          Hesabinizin yeniden aktiflestirilmesi veya sorulariniz icin bizimle iletisime gecin.
+        </p>
+        ${infoCard(`<a href="mailto:${BRAND.email}" style="color:${C.goldDark};text-decoration:none;font-weight:600;">${BRAND.email}</a>
+          &nbsp;·&nbsp;
+          <a href="tel:${BRAND.phone.replace(/\s/g, "")}" style="color:${C.goldDark};text-decoration:none;font-weight:600;">${BRAND.phone}</a>
+          &nbsp;·&nbsp;
+          <a href="${BRAND.whatsapp}" style="color:${C.goldDark};text-decoration:none;font-weight:600;">WhatsApp</a>`)}`,
+    }),
+  };
+}
+
+/**
  * Fatura kesildi — bayiye e-fatura bilgilendirmesi.
  * sendPendingInvoice SENT olunca queue'ye atılır.
  */
@@ -538,27 +583,25 @@ export function templateInvoiceIssued(args: {
   total: number;
   panelUrl: string;
 }): EmailPayload {
-  const totalFmt = `${args.total.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
   return {
     to: "",
     subject: `E-Faturaniz hazir — ${args.orderNumber}`,
     html: wrap({
       title: "E-Faturaniz hazir",
-      preheader: `${args.orderNumber} icin e-fatura kesildi — ${totalFmt}`,
+      preheader: `${args.orderNumber} icin e-fatura kesildi`,
       subtitle: `${args.companyName} adina e-fatura sistemde.`,
       heroAccent: "success",
       body: `
         <p style="margin:0 0 16px 0;">
-          Sayin <strong>${escapeHtml(args.companyName)}</strong>,<br>
-          ${escapeHtml(args.orderNumber)} numarali siparisinize ait e-faturaniz
-          <strong>KolayBi</strong> uzerinden basariyla kesilmistir.
+          Sayın <strong>${escapeHtml(args.companyName)}</strong>,<br>
+          ${escapeHtml(args.orderNumber)} numarali siparişinize ait e-faturaniz
+          <strong>KolayBi</strong> uzerinden başarıyla kesilmistir.
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:18px 0;">
           <tr><td style="padding:18px 22px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               ${detailRow("Belge No", String(args.documentId), true)}
-              ${detailRow("Siparis No", args.orderNumber, true)}
-              <tr><td style="padding-top:12px;border-top:1px solid ${C.border};color:${C.muted};font-size:13px;">Toplam Tutar</td><td style="padding-top:12px;border-top:1px solid ${C.border};text-align:right;font-size:18px;color:${C.black};font-weight:700;">${escapeHtml(totalFmt)}</td></tr>
+              ${detailRow("Sipariş No", args.orderNumber, true)}
             </table>
           </td></tr>
         </table>
@@ -592,56 +635,45 @@ export function templateOrderCreated(
           <strong style="color:${C.black};">${escapeHtml(i.name)}</strong>
           <br><span style="font-size:12px;color:${C.muted};">${i.quantity} adet</span>
         </td>
-        <td style="padding:14px 0;${idx > 0 ? `border-top:1px solid ${C.borderSoft};` : ""}text-align:right;font-size:14px;font-weight:600;color:${C.black};white-space:nowrap;">
-          ${escapeHtml(formatPrice(i.lineTotal))}
-        </td>
       </tr>`
     )
     .join("");
   return {
     to: "",
-    subject: `Siparisiniz alindi — ${orderNumber}`,
+    subject: `Siparişiniz alindi — ${orderNumber}`,
     html: wrap({
-      title: "Siparisiniz alindi",
-      preheader: `${orderNumber} numarali siparisiniz onayda — toplam ${formatPrice(total)}`,
-      subtitle: `Tesekkurler ${customerName}, siparisinizi hazirliyoruz.`,
+      title: "Siparişiniz alindi",
+      preheader: `${orderNumber} numarali siparişiniz onayda`,
+      subtitle: `Tesekkurler ${customerName}, siparişinizi hazirliyoruz.`,
       heroAccent: "gold",
       body: `
         <p style="margin:0 0 6px 0;">
-          Siparisiniz tarafimiza ulasti. En kisa surede hazirlanip kargoya verilecektir.
+          Siparişiniz tarafimiza ulasti. En kisa surede hazirlanip kargoya verilecektir.
         </p>
         <p style="margin:0 0 18px 0;font-size:13px;color:${C.muted};">
-          Siparis No: <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(orderNumber)}</strong>
+          Sipariş No: <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(orderNumber)}</strong>
         </p>
 
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:8px 20px 4px 20px;">
-            <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:${C.muted};">Siparis Detayi</p>
+            <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:${C.muted};">Sipariş Detayi</p>
           </td></tr>
-          <tr><td style="padding:0 20px;">
+          <tr><td style="padding:0 20px 18px 20px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
-          </td></tr>
-          <tr><td style="padding:14px 20px 18px 20px;border-top:2px solid ${C.border};">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td style="font-size:13px;color:${C.muted};text-transform:uppercase;letter-spacing:0.6px;">Toplam</td>
-                <td style="text-align:right;font-size:20px;color:${C.black};font-weight:700;">${escapeHtml(formatPrice(total))}</td>
-              </tr>
-            </table>
           </td></tr>
         </table>
 
-        ${btn(`${base}/hesabim/siparislerim`, "Siparisi Goruntule", "dark")}
+        ${btn(`${base}/hesabim/siparislerim`, "Siparişi Görüntüle", "dark")}
 
         ${
           contractsAcceptedAt
             ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 8px 0;background:${C.skyBg};border:1px solid ${C.sky};border-radius:12px;">
               <tr><td style="padding:14px 18px;font-size:13px;color:${C.text};">
-                <strong style="color:${C.sky};font-size:11px;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Yasal Sozlesmeler</strong>
-                Siparis sirasinda <a href="${base}/mesafeli-satis-sozlesmesi" style="color:${C.sky};font-weight:600;">Mesafeli Satis Sozlesmesi</a> ve
+                <strong style="color:${C.sky};font-size:11px;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Yasal Sözleşmeler</strong>
+                Sipariş sirasinda <a href="${base}/mesafeli-satis-sozlesmesi" style="color:${C.sky};font-weight:600;">Mesafeli Satis Sözleşmesi</a> ve
                 <a href="${base}/on-bilgilendirme-formu" style="color:${C.sky};font-weight:600;">On Bilgilendirme Formu</a>'nu onayladiniz.
                 Onay tarihi: <strong>${escapeHtml(contractsAcceptedAt.toLocaleString("tr-TR"))}</strong>.
-                <br><span style="color:${C.muted};">Cayma hakkiniz teslim tarihinden itibaren 14 gun gecerlidir.</span>
+                <br><span style="color:${C.muted};">Cayma hakkiniz teslim tarihinden itibaren 14 gün gecerlidir.</span>
               </td></tr>
             </table>`
             : ""
@@ -711,16 +743,16 @@ export function templateOrderStatusChanged(input: {
 
   return {
     to: "",
-    subject: `Siparisiniz ${statusLabel} — ${orderNumber}`,
+    subject: `Siparişiniz ${statusLabel} — ${orderNumber}`,
     html: wrap({
-      title: `Siparisiniz ${statusLabel.toLowerCase()}`,
+      title: `Siparişiniz ${statusLabel.toLowerCase()}`,
       preheader: `${orderNumber} durumu: ${statusLabel}`,
-      subtitle: `Merhaba ${customerName}, ${orderNumber} icin durum guncellemesi.`,
+      subtitle: `Merhaba ${customerName}, ${orderNumber} icin durum güncellemesi.`,
       heroAccent: accent,
       body: `
         <p style="margin:0 0 16px 0;">
           <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(orderNumber)}</strong>
-          numarali siparisinizin durumu artik
+          numarali siparişinizin durumu artik
           <strong style="color:${C.black};">${escapeHtml(statusLabel)}</strong>.
         </p>
         ${etaLine ? `<p style="margin:0 0 16px 0;color:${C.muted};font-size:14px;">${etaLine.replace(/<\/?p>/g, "")}</p>` : ""}
@@ -732,18 +764,18 @@ export function templateOrderStatusChanged(input: {
 export function templatePasswordReset(resetUrl: string): EmailPayload {
   return {
     to: "",
-    subject: "Sifre sifirlama talebi",
+    subject: "Şifre sifirlama talebi",
     html: wrap({
-      title: "Sifre sifirlama talebi",
-      preheader: "Hesabiniz icin yeni sifre belirlemek 1 saatlik bir baglanti.",
-      subtitle: "Hesabiniza yeni sifre belirlemek icin asagidaki butonu kullanin.",
+      title: "Şifre sifirlama talebi",
+      preheader: "Hesabiniz icin yeni şifre belirlemek 1 saatlik bir baglanti.",
+      subtitle: "Hesabiniza yeni şifre belirlemek icin asagidaki butonu kullanin.",
       heroAccent: "gold",
       body: `
         <p style="margin:0 0 14px 0;">
-          Hesabiniz icin sifre sifirlama talebi aldik. Asagidaki butona tiklayarak
-          1 saat icinde yeni sifre belirleyebilirsiniz.
+          Hesabiniz icin şifre sifirlama talebi aldik. Asagidaki butona tiklayarak
+          1 saat icinde yeni şifre belirleyebilirsiniz.
         </p>
-        ${btn(resetUrl, "Sifreyi Sifirla", "dark")}
+        ${btn(resetUrl, "Şifreyi Sifirla", "dark")}
         <p style="margin:18px 0 6px 0;font-size:12px;color:${C.muted};">
           Buton calismazsa bu baglantiyi tarayicinizin adres cubuguna yapistirin:
         </p>
@@ -751,7 +783,7 @@ export function templatePasswordReset(resetUrl: string): EmailPayload {
           <a href="${escapeHtml(resetUrl)}" style="color:${C.goldDark};">${escapeHtml(resetUrl)}</a>
         </p>
         ${infoCard(`<strong style="color:${C.black};">Bu talebi siz yapmadiysaniz</strong>
-          bu maili guvenle goz ardi edebilirsiniz. Sifreniz degismez.`)}`,
+          bu maili guvenle göz ardi edebilirsiniz. Şifreniz degismez.`)}`,
     }),
   };
 }
@@ -767,9 +799,9 @@ const PAYMENT_METHOD_LABELS_TR: Record<string, string> = {
 };
 
 /**
- * Yeni siparis bildirimi → ADMIN'E.
- * isB2B → bayi siparisi (heroAccent sky, ozel rozet).
- * isHighValue → yuksek tutar uyarisi (banner). E21 bunun bayrak haliyle
+ * Yeni sipariş bildirimi → ADMIN'E.
+ * isB2B → bayi siparişi (heroAccent sky, özel rozet).
+ * isHighValue → yuksek tutar uyarısi (banner). E21 bunun bayrak haliyle
  * ayri mail yerine bu sablonun icinde kalir; gurultuyu azaltir.
  */
 export function templateOrderCreatedAdminNotice(args: {
@@ -786,22 +818,22 @@ export function templateOrderCreatedAdminNotice(args: {
 }): EmailPayload {
   const totalFmt = formatPrice(args.total);
   const pmLabel = PAYMENT_METHOD_LABELS_TR[args.paymentMethod] ?? args.paymentMethod;
-  const tag = args.isB2B ? "B2B Siparis" : "B2C Siparis";
+  const tag = args.isB2B ? "B2B Sipariş" : "B2C Sipariş";
   const accent = args.isB2B ? "sky" : "gold";
   const subjectPrefix = args.isHighValue ? "[YUKSEK TUTAR] " : "";
   const highValueBanner = args.isHighValue
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.roseBg};border:1px solid ${C.rose};border-radius:10px;margin:0 0 18px 0;">
         <tr><td style="padding:14px 18px;font-size:13px;color:${C.text};">
-          <strong style="color:${C.rose};font-size:11px;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Yuksek Tutar Uyarisi</strong>
-          Bu siparis HIGH_VALUE_ORDER_THRESHOLD esigini asti. Fraud kontrolu yapmaniz onerilir.
+          <strong style="color:${C.rose};font-size:11px;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Yuksek Tutar Uyarısi</strong>
+          Bu sipariş HIGH_VALUE_ORDER_THRESHOLD esigini asti. Fraud kontrolu yapmaniz onerilir.
         </td></tr>
       </table>`
     : "";
   return {
     to: "",
-    subject: `${subjectPrefix}Yeni siparis — ${args.orderNumber}`,
+    subject: `${subjectPrefix}Yeni sipariş — ${args.orderNumber}`,
     html: wrap({
-      title: "Yeni siparis alindi",
+      title: "Yeni sipariş alindi",
       preheader: `${args.orderNumber} — ${args.customerName} — ${totalFmt}`,
       subtitle: `${tag} · Panelde inceleyin`,
       heroAccent: accent,
@@ -809,22 +841,22 @@ export function templateOrderCreatedAdminNotice(args: {
         ${highValueBanner}
         <p style="margin:0 0 16px 0;">
           <strong style="color:${C.black};">${escapeHtml(args.customerName)}</strong>
-          tarafindan yeni siparis olusturuldu.
+          tarafindan yeni sipariş oluşturuldu.
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:18px 22px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              ${detailRow("Siparis No", args.orderNumber, true)}
+              ${detailRow("Sipariş No", args.orderNumber, true)}
               ${detailRow("Musteri", args.customerName)}
               ${detailRow("Email", args.customerEmail)}
               ${args.dealerCompany ? detailRow("Bayi", args.dealerCompany) : ""}
-              ${detailRow("Odeme", pmLabel)}
-              ${detailRow("Urun Sayisi", String(args.itemCount))}
+              ${detailRow("Ödeme", pmLabel)}
+              ${detailRow("Ürün Sayısi", String(args.itemCount))}
               <tr><td style="padding-top:12px;border-top:1px solid ${C.border};color:${C.muted};font-size:13px;">Toplam</td><td style="padding-top:12px;border-top:1px solid ${C.border};text-align:right;font-size:18px;color:${C.black};font-weight:700;">${escapeHtml(totalFmt)}</td></tr>
             </table>
           </td></tr>
         </table>
-        ${btn(args.panelUrl, "Panelde Goruntule", "dark")}`,
+        ${btn(args.panelUrl, "Panelde Görüntüle", "dark")}`,
     }),
   };
 }
@@ -852,7 +884,7 @@ export function templateDealerApplicationAdminNotice(args: {
       body: `
         <p style="margin:0 0 16px 0;">
           <strong style="color:${C.black};">${escapeHtml(args.companyName)}</strong>
-          tarafindan yeni bayi basvurusu olusturuldu.
+          tarafindan yeni bayi basvurusu oluşturuldu.
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:18px 22px;">
@@ -872,7 +904,7 @@ export function templateDealerApplicationAdminNotice(args: {
 }
 
 /**
- * 3DS odeme basarili — musteri ve admin icin tek sablon.
+ * 3DS ödeme başarıli — musteri ve admin icin tek sablon.
  * Admin maline `forAdmin: true` veriyoruz; ufak fark: panel CTA + farkli baslik.
  */
 export function templatePaymentSucceeded(args: {
@@ -895,32 +927,32 @@ export function templatePaymentSucceeded(args: {
   const target = args.forAdmin
     ? args.panelUrl ?? `${base}/admin/siparisler`
     : `${base}/hesabim/siparislerim`;
-  const targetLabel = args.forAdmin ? "Panelde Goruntule" : "Siparisi Goruntule";
-  const title = args.forAdmin ? "Odeme alindi" : "Odemeniz alindi";
+  const targetLabel = args.forAdmin ? "Panelde Görüntüle" : "Siparişi Görüntüle";
+  const title = args.forAdmin ? "Ödeme alindi" : "Ödemeniz alindi";
   return {
     to: "",
     subject: args.forAdmin
-      ? `Odeme tamamlandi — ${args.orderNumber}`
-      : `Odemeniz alindi — ${args.orderNumber}`,
+      ? `Ödeme tamamlandi — ${args.orderNumber}`
+      : `Ödemeniz alindi — ${args.orderNumber}`,
     html: wrap({
       title,
-      preheader: `${args.orderNumber} icin odeme basariyla alindi — ${totalFmt}`,
+      preheader: `${args.orderNumber} icin ödeme başarıyla alindi — ${totalFmt}`,
       subtitle: args.forAdmin
-        ? `${args.customerName} odemeyi tamamladi.`
-        : `Tesekkurler ${args.customerName}, siparisinizi hazirliyoruz.`,
+        ? `${args.customerName} ödemeyi tamamladi.`
+        : `Tesekkurler ${args.customerName}, siparişinizi hazirliyoruz.`,
       heroAccent: "success",
       body: `
         <p style="margin:0 0 16px 0;">
           ${args.forAdmin ? `<strong>${escapeHtml(args.customerName)}</strong> tarafindan` : "Sizin tarafinizdan"}
-          olusturulan
+          oluşturulan
           <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.orderNumber)}</strong>
-          numarali siparis icin odeme
-          <strong style="color:${C.success};">basariyla</strong> tamamlandi.
+          numarali sipariş icin ödeme
+          <strong style="color:${C.success};">başarıyla</strong> tamamlandi.
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:18px 22px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              ${detailRow("Siparis No", args.orderNumber, true)}
+              ${detailRow("Sipariş No", args.orderNumber, true)}
               ${cardLine ? detailRow("Kart", cardLine) : ""}
               <tr><td style="padding-top:12px;border-top:1px solid ${C.border};color:${C.muted};font-size:13px;">Tutar</td><td style="padding-top:12px;border-top:1px solid ${C.border};text-align:right;font-size:18px;color:${C.black};font-weight:700;">${escapeHtml(totalFmt)}</td></tr>
             </table>
@@ -932,7 +964,7 @@ export function templatePaymentSucceeded(args: {
 }
 
 /**
- * 3DS odeme basarisiz — musteriye bilgi + tekrar deneme CTA.
+ * 3DS ödeme başarısız — musteriye bilgi + tekrar deneme CTA.
  */
 export function templatePaymentFailed(args: {
   orderNumber: string;
@@ -942,17 +974,17 @@ export function templatePaymentFailed(args: {
 }): EmailPayload {
   return {
     to: "",
-    subject: `Odeme tamamlanamadi — ${args.orderNumber}`,
+    subject: `Ödeme tamamlanamadi — ${args.orderNumber}`,
     html: wrap({
-      title: "Odemeniz tamamlanamadi",
-      preheader: `${args.orderNumber} icin odeme basarisiz — yeniden denemek icin tiklayin`,
-      subtitle: `Merhaba ${args.customerName}, odemeniz tamamlanamadi.`,
+      title: "Ödemeniz tamamlanamadi",
+      preheader: `${args.orderNumber} icin ödeme başarısız — yeniden denemek icin tiklayin`,
+      subtitle: `Merhaba ${args.customerName}, ödemeniz tamamlanamadi.`,
       heroAccent: "rose",
       body: `
         <p style="margin:0 0 14px 0;">
           <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.orderNumber)}</strong>
-          numarali siparisiniz icin
-          <strong style="color:${C.rose};">odeme alinamadi</strong>.
+          numarali siparişiniz icin
+          <strong style="color:${C.rose};">ödeme alinamadi</strong>.
           Endiselenmeyin — tekrar deneyebilir veya farkli bir kart kullanabilirsiniz.
         </p>
         ${
@@ -1008,7 +1040,7 @@ export function templateDealerDocumentReviewed(args: {
       body: `
         <p style="margin:0 0 14px 0;">
           <strong style="color:${C.black};">${escapeHtml(args.companyName)}</strong>
-          adina yukledigininiz
+          adina yükledigininiz
           <strong>${escapeHtml(kindLabel)}</strong>
           belgesi
           <strong style="color:${isApproved ? C.success : C.rose};">${isApproved ? "onaylandi" : "reddedildi"}</strong>.
@@ -1025,8 +1057,8 @@ export function templateDealerDocumentReviewed(args: {
         }
         ${
           isApproved
-            ? `<p style="margin:0 0 6px 0;color:${C.muted};font-size:13px;">Tum belgeleriniz onaylanirsa bayilik basvurunuz onaya alinabilir.</p>`
-            : `<p style="margin:0 0 6px 0;color:${C.muted};font-size:13px;">Eksikleri tamamlayarak yeni bir belge yukleyebilirsiniz.</p>`
+            ? `<p style="margin:0 0 6px 0;color:${C.muted};font-size:13px;">Tüm belgeleriniz onaylanirsa bayilik basvurunuz onaya alinabilir.</p>`
+            : `<p style="margin:0 0 6px 0;color:${C.muted};font-size:13px;">Eksikleri tamamlayarak yeni bir belge yükleyebilirsiniz.</p>`
         }
         ${btn(args.panelUrl, "Bayi Paneline Git", "dark")}`,
     }),
@@ -1034,7 +1066,7 @@ export function templateDealerDocumentReviewed(args: {
 }
 
 /**
- * Bayi yeni belge yukledi → ADMIN'E.
+ * Bayi yeni belge yükledi → ADMIN'E.
  */
 export function templateDealerDocumentUploadedAdminNotice(args: {
   companyName: string;
@@ -1046,16 +1078,16 @@ export function templateDealerDocumentUploadedAdminNotice(args: {
     to: "",
     subject: `Yeni belge — ${args.companyName}`,
     html: wrap({
-      title: "Yeni belge yuklendi",
-      preheader: `${args.companyName} ${kindLabel} yukledi — inceleme bekleniyor`,
-      subtitle: `${args.companyName} bayi paneline yeni belge yukledi.`,
+      title: "Yeni belge yüklendi",
+      preheader: `${args.companyName} ${kindLabel} yükledi — inceleme bekleniyor`,
+      subtitle: `${args.companyName} bayi paneline yeni belge yükledi.`,
       heroAccent: "gold",
       body: `
         <p style="margin:0 0 16px 0;">
           <strong style="color:${C.black};">${escapeHtml(args.companyName)}</strong>
           tarafindan
           <strong>${escapeHtml(kindLabel)}</strong>
-          tipinde yeni bir belge yuklendi.
+          tipinde yeni bir belge yüklendi.
         </p>
         <p style="margin:0 0 16px 0;color:${C.muted};font-size:13px;">
           Belgenin durumu PENDING — admin panelinden inceleyip
@@ -1079,7 +1111,7 @@ function formatWhen(d: Date): string {
 }
 
 /**
- * E8 — Sifre degisti → kullaniciya guvenlik bildirimi.
+ * E8 — Şifre degisti → kullanıcıya guvenlik bildirimi.
  * "Bu siz degildiyseniz" CTA + IP/UA ile ATO algilamasi.
  */
 export function templatePasswordChanged(args: {
@@ -1092,17 +1124,17 @@ export function templatePasswordChanged(args: {
   const whenFmt = formatWhen(args.when);
   return {
     to: "",
-    subject: "Sifreniz degistirildi",
+    subject: "Şifreniz degistirildi",
     html: wrap({
-      title: "Sifreniz degistirildi",
-      preheader: `Hesabinizin sifresi ${whenFmt} tarihinde degistirildi.`,
+      title: "Şifreniz degistirildi",
+      preheader: `Hesabinizin şifresi ${whenFmt} tarihinde degistirildi.`,
       subtitle: `Merhaba ${args.name}, hesabinizla ilgili guvenlik bildirimi.`,
       heroAccent: "sky",
       body: `
         <p style="margin:0 0 16px 0;">
-          Hesabinizin sifresi
+          Hesabinizin şifresi
           <strong style="color:${C.black};">${escapeHtml(whenFmt)}</strong>
-          tarihinde basariyla degistirildi.
+          tarihinde başarıyla degistirildi.
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:18px 22px;">
@@ -1114,16 +1146,16 @@ export function templatePasswordChanged(args: {
           </td></tr>
         </table>
         ${infoCard(`<strong style="color:${C.rose};">Bu siz degildiyseniz</strong>
-          hemen sifrenizi sifirlayin ve oturumlarinizi kapatin.`)}
-        ${btn(`${base}/sifremi-unuttum`, "Sifremi Sifirla", "dark")}`,
+          hemen şifrenizi sifirlayin ve oturumlarinizi kapatin.`)}
+        ${btn(`${base}/sifremi-unuttum`, "Şifremi Sifirla", "dark")}`,
     }),
   };
 }
 
 /**
  * E9 — Email degisti.
- * `forOldEmail: true` → eski adrese guvenlik uyarisi (revoke CTA — destek).
- * `forOldEmail: false` → yeni adrese hosgeldin (verification ayrica gelir).
+ * `forOldEmail: true` → eski adrese guvenlik uyarısi (revoke CTA — destek).
+ * `forOldEmail: false` → yeni adrese hoşgeldin (verification ayrica gelir).
  */
 export function templateEmailChanged(args: {
   name: string;
@@ -1172,24 +1204,24 @@ export function templateEmailChanged(args: {
     subject: "Yeni email adresiniz onayda",
     html: wrap({
       title: "Yeni email adresiniz",
-      preheader: `Master Education hesabinizda email adresinizi guncellediniz.`,
+      preheader: `Master Education hesabinizda email adresinizi güncellediniz.`,
       subtitle: `Merhaba ${args.name}, yeni adresinize hos geldiniz.`,
       heroAccent: "gold",
       body: `
         <p style="margin:0 0 14px 0;">
           Master Education hesabinizda email adresinizi
           <strong style="color:${C.black};">${escapeHtml(args.newEmail)}</strong>
-          olarak guncellediniz. Hesabin guvenligi icin yeni adresinizi
+          olarak güncellediniz. Hesabin guvenligi icin yeni adresinizi
           onaylamanizi istiyoruz — onay maili kisa surede gelecek.
         </p>
-        ${btn(`${base}/hesabim`, "Hesabima Git", "dark")}`,
+        ${btn(`${base}/hesabim`, "Hesabıma Git", "dark")}`,
     }),
   };
 }
 
 /**
  * E10 — Hesap silindi/anonimlestirildi.
- * KVKK acisindan kullaniciya yasal kanit; silinmeden ONCE gonder
+ * KVKK acisindan kullanıcıya yasal kanit; silinmeden ONCE gonder
  * (silindikten sonra adres yok).
  */
 export function templateAccountDeleted(args: {
@@ -1217,13 +1249,13 @@ export function templateAccountDeleted(args: {
         ${
           isHard
             ? `<p style="margin:0 0 14px 0;color:${C.muted};font-size:14px;">
-                Tum kisisel verileriniz (ad, adres, telefon, parola) sistemden
+                Tüm kisisel verileriniz (ad, adres, telefon, parola) sistemden
                 kalici olarak silindi. Bu islem geri alinamaz.
               </p>`
             : `<p style="margin:0 0 14px 0;color:${C.muted};font-size:14px;">
                 KVKK kapsaminda kisisel verileriniz (ad, email, adres, telefon)
-                sistemden anonimlestirildi. Muhasebe ve yasal kayitlar gerekce
-                ile siparis kayitlariniz tutulmaya devam edecek; ancak hicbiri
+                sistemden anonimlestirildi. Muhasebe ve yasal kayıtlar gerekce
+                ile sipariş kayıtlariniz tutulmaya devam edecek; ancak hicbiri
                 size geri baglanamaz.
               </p>`
         }
@@ -1236,9 +1268,9 @@ export function templateAccountDeleted(args: {
 }
 
 /**
- * E11 — Siparis iptal edildi.
- * templateOrderStatusChanged jenerik kullanmak yerine ozel mesaj +
- * iade bilgisi (kart icin 3-7 is gunu, cari icin ledger kredi).
+ * E11 — Sipariş iptal edildi.
+ * templateOrderStatusChanged jenerik kullanmak yerine özel mesaj +
+ * iade bilgisi (kart icin 3-7 is günu, cari icin ledger kredi).
  */
 export function templateOrderCancelled(args: {
   customerName: string;
@@ -1250,30 +1282,30 @@ export function templateOrderCancelled(args: {
   const totalFmt = formatPrice(args.total);
   const refundInfo =
     args.paymentMethod === "OPEN_ACCOUNT"
-      ? "Acik hesap bakiyenize iade kredisi otomatik islendi. Bayi panelinden ekstreyi gorebilirsiniz."
+      ? "Acik hesap bakiyenize iade kredisi otomatik islendi. Bayi panelinden ekstreyi görebilirsiniz."
       : args.paymentMethod === "CREDIT_CARD"
-        ? "Kredi karti odemenizin iadesi 3-7 is gunu icinde kart hesabinizda gorunecektir."
-        : "Iade islemi icin destek ekibi sizinle iletisime gececektir.";
+        ? "Kredi karti ödemenizin iadesi 3-7 is günu icinde kart hesabinizda görünecektir."
+        : "İade islemi icin destek ekibi sizinle iletişime gececektir.";
   const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
   return {
     to: "",
-    subject: `Siparisiniz iptal edildi — ${args.orderNumber}`,
+    subject: `Siparişiniz iptal edildi — ${args.orderNumber}`,
     html: wrap({
-      title: "Siparisiniz iptal edildi",
-      preheader: `${args.orderNumber} numarali siparisiniz iptal edildi.`,
-      subtitle: `Merhaba ${args.customerName}, siparis durumu degisti.`,
+      title: "Siparişiniz iptal edildi",
+      preheader: `${args.orderNumber} numarali siparişiniz iptal edildi.`,
+      subtitle: `Merhaba ${args.customerName}, sipariş durumu degisti.`,
       heroAccent: "rose",
       body: `
         <p style="margin:0 0 14px 0;">
           <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.orderNumber)}</strong>
-          numarali siparisiniz
+          numarali siparişiniz
           <strong style="color:${C.rose};">iptal edildi</strong>.
         </p>
         ${
           args.reason
             ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
                 <tr><td style="padding:14px 18px;background:${C.roseBg};border-left:3px solid ${C.rose};border-radius:8px;">
-                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.rose};">Iptal Gerekcesi</p>
+                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.rose};">İptal Gerekcesi</p>
                   <p style="margin:6px 0 0 0;font-size:14px;color:${C.text};line-height:21px;">${escapeHtml(args.reason)}</p>
                 </td></tr>
               </table>`
@@ -1282,14 +1314,14 @@ export function templateOrderCancelled(args: {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:18px 22px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              ${detailRow("Siparis No", args.orderNumber, true)}
+              ${detailRow("Sipariş No", args.orderNumber, true)}
               <tr><td style="padding-top:8px;color:${C.muted};font-size:13px;">Tutar</td><td style="padding-top:8px;text-align:right;font-size:16px;color:${C.black};font-weight:700;">${escapeHtml(totalFmt)}</td></tr>
             </table>
           </td></tr>
         </table>
-        ${infoCard(`<strong style="color:${C.black};">Iade bilgisi</strong><br>
+        ${infoCard(`<strong style="color:${C.black};">İade bilgisi</strong><br>
           <span style="color:${C.muted};">${escapeHtml(refundInfo)}</span>`)}
-        ${btn(`${base}/hesabim/siparislerim`, "Siparislerimi Goruntule", "dark")}`,
+        ${btn(`${base}/hesabim/siparislerim`, "Siparişlerimi Görüntüle", "dark")}`,
     }),
   };
 }
@@ -1304,48 +1336,36 @@ export function templateDealerCreditLimitChanged(args: {
   newLimit: number;
   reason: string | null;
 }): EmailPayload {
-  const oldFmt = formatPrice(args.oldLimit);
-  const newFmt = formatPrice(args.newLimit);
   const increased = args.newLimit > args.oldLimit;
-  const diff = Math.abs(args.newLimit - args.oldLimit);
-  const diffFmt = formatPrice(diff);
   const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
   return {
     to: "",
     subject: increased
       ? "Kredi limitiniz artirildi"
-      : "Kredi limitiniz guncellendi",
+      : "Kredi limitiniz güncellendi",
     html: wrap({
-      title: increased ? "Kredi limitiniz artirildi" : "Kredi limitiniz guncellendi",
-      preheader: `${args.companyName} icin yeni limit: ${newFmt}`,
+      title: increased ? "Kredi limitiniz artirildi" : "Kredi limitiniz güncellendi",
+      preheader: `${args.companyName} icin kredi limitiniz güncellendi`,
       subtitle: `${args.companyName} icin cari limit ayarlandi.`,
       heroAccent: increased ? "success" : "gold",
       body: `
         <p style="margin:0 0 16px 0;">
           <strong style="color:${C.black};">${escapeHtml(args.companyName)}</strong>
           icin acik hesap kredi limitiniz
-          <strong style="color:${increased ? C.success : C.goldDark};">${increased ? "artirildi" : "guncellendi"}</strong>.
+          <strong style="color:${increased ? C.success : C.goldDark};">${increased ? "artirildi" : "güncellendi"}</strong>.
+          Güncel limitinizi bayi panelinizden takip edebilirsiniz.
         </p>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
-          <tr><td style="padding:18px 22px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              ${detailRow("Eski Limit", oldFmt)}
-              ${detailRow("Yeni Limit", newFmt)}
-              <tr><td style="padding-top:12px;border-top:1px solid ${C.border};color:${C.muted};font-size:13px;">${increased ? "Artis" : "Azalma"}</td><td style="padding-top:12px;border-top:1px solid ${C.border};text-align:right;font-size:16px;color:${increased ? C.success : C.goldDark};font-weight:700;">${escapeHtml(diffFmt)}</td></tr>
-            </table>
-          </td></tr>
-        </table>
         ${
           args.reason
             ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
                 <tr><td style="padding:14px 18px;background:${C.bg};border-left:3px solid ${increased ? C.success : C.gold};border-radius:8px;">
-                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.muted};">Aciklama</p>
+                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.muted};">Açıklama</p>
                   <p style="margin:6px 0 0 0;font-size:14px;color:${C.text};line-height:21px;">${escapeHtml(args.reason)}</p>
                 </td></tr>
               </table>`
             : ""
         }
-        ${btn(`${base}/bayi/ekstre`, "Ekstreyi Goruntule", "dark")}`,
+        ${btn(`${base}/bayi`, "Bayi Paneline Git", "dark")}`,
     }),
   };
 }
@@ -1361,8 +1381,6 @@ export function templateDealerLedgerEntry(args: {
   note: string | null;
   newBalance: number;
 }): EmailPayload {
-  const amountFmt = formatPrice(Math.abs(args.amount));
-  const balanceFmt = formatPrice(args.newBalance);
   const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
   const isPayment = args.kind === "PAYMENT";
   // PAYMENT amount: negatif (kredi); ADJUSTMENT amount: + veya -
@@ -1371,14 +1389,14 @@ export function templateDealerLedgerEntry(args: {
       ? "Hesabinizdan dustu (alacak)"
       : "Hesabiniza eklendi (borc)";
   const subject = isPayment
-    ? `Tahsilatiniz kaydedildi — ${amountFmt}`
-    : `Cari hareket — ${amountFmt}`;
+    ? "Tahsilatiniz kaydedildi"
+    : "Cari hareket islendi";
   return {
     to: "",
     subject,
     html: wrap({
       title: isPayment ? "Tahsilat kaydedildi" : "Cari hareket islendi",
-      preheader: `${args.companyName} cari hesabinizda yeni hareket var — yeni bakiye ${balanceFmt}`,
+      preheader: `${args.companyName} cari hesabinizda yeni hareket var`,
       subtitle: `${args.companyName} icin manuel cari hareketi.`,
       heroAccent: isPayment ? "success" : "gold",
       body: `
@@ -1393,8 +1411,6 @@ export function templateDealerLedgerEntry(args: {
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               ${detailRow("Hareket", isPayment ? "Tahsilat" : "Manuel Duzeltme")}
               ${detailRow("Yon", direction)}
-              ${detailRow("Tutar", amountFmt)}
-              <tr><td style="padding-top:12px;border-top:1px solid ${C.border};color:${C.muted};font-size:13px;">Yeni Bakiye</td><td style="padding-top:12px;border-top:1px solid ${C.border};text-align:right;font-size:18px;color:${C.black};font-weight:700;">${escapeHtml(balanceFmt)}</td></tr>
             </table>
           </td></tr>
         </table>
@@ -1402,13 +1418,13 @@ export function templateDealerLedgerEntry(args: {
           args.note
             ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
                 <tr><td style="padding:14px 18px;background:${C.bg};border-left:3px solid ${isPayment ? C.success : C.gold};border-radius:8px;">
-                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.muted};">Aciklama</p>
+                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${C.muted};">Açıklama</p>
                   <p style="margin:6px 0 0 0;font-size:14px;color:${C.text};line-height:21px;">${escapeHtml(args.note)}</p>
                 </td></tr>
               </table>`
             : ""
         }
-        ${btn(`${base}/bayi/ekstre`, "Ekstreyi Goruntule", "dark")}`,
+        ${btn(`${base}/bayi`, "Bayi Paneline Git", "dark")}`,
     }),
   };
 }
@@ -1417,7 +1433,7 @@ export function templateDealerLedgerEntry(args: {
 
 /**
  * E14 — Yorum onaylandi/reddedildi → yazana.
- * DELETE icin mail gondermeyiz (kullaniciyi tedirgin eder).
+ * DELETE icin mail gondermeyiz (kullanıcıyi tedirgin eder).
  */
 export function templateReviewModerated(args: {
   name: string;
@@ -1440,20 +1456,20 @@ export function templateReviewModerated(args: {
       body: `
         <p style="margin:0 0 14px 0;">
           <strong style="color:${C.black};">${escapeHtml(args.productName)}</strong>
-          urunu icin yazdiginiz yorum
+          ürünu icin yazdiginiz yorum
           <strong style="color:${isApproved ? C.success : C.rose};">${isApproved ? "yayinlandi" : "yayinlanmadi"}</strong>.
         </p>
         ${
           args.note
             ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
                 <tr><td style="padding:14px 18px;background:${isApproved ? C.successBg : C.roseBg};border-left:3px solid ${isApproved ? C.success : C.rose};border-radius:8px;">
-                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${isApproved ? C.success : C.rose};">Aciklama</p>
+                  <p style="margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${isApproved ? C.success : C.rose};">Açıklama</p>
                   <p style="margin:6px 0 0 0;font-size:14px;color:${C.text};line-height:21px;">${escapeHtml(args.note)}</p>
                 </td></tr>
               </table>`
             : ""
         }
-        ${btn(args.productUrl, "Urun Sayfasina Git", "dark")}`,
+        ${btn(args.productUrl, "Ürün Sayfasina Git", "dark")}`,
     }),
   };
 }
@@ -1476,8 +1492,8 @@ export function templateNewReviewAdminNotice(args: {
     to: "",
     subject: `Yeni yorum — ${args.productName}`,
     html: wrap({
-      title: "Yeni urun yorumu",
-      preheader: `${args.userName} ${args.productName} urunune ${args.rating}/5 puan verdi`,
+      title: "Yeni ürün yorumu",
+      preheader: `${args.userName} ${args.productName} ürünune ${args.rating}/5 puan verdi`,
       subtitle: "Panelden inceleyebilir, gerekirse moderasyon yapabilirsiniz.",
       heroAccent: "gold",
       body: `
@@ -1485,12 +1501,12 @@ export function templateNewReviewAdminNotice(args: {
           <strong style="color:${C.black};">${escapeHtml(args.userName)}</strong>
           tarafindan
           <strong>${escapeHtml(args.productName)}</strong>
-          urunune yeni bir yorum eklendi.
+          ürünune yeni bir yorum eklendi.
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:18px 22px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              ${detailRow("Urun", args.productName)}
+              ${detailRow("Ürün", args.productName)}
               ${detailRow("Yazan", args.userName)}
               ${detailRow("Puan", `${stars}  (${args.rating}/5)`)}
               ${args.title ? detailRow("Baslik", args.title) : ""}
@@ -1508,7 +1524,7 @@ export function templateNewReviewAdminNotice(args: {
 }
 
 /**
- * E16 — Yeni kullanici kayit → ADMIN'E (opt-in via ADMIN_NOTIFY_NEW_SIGNUP).
+ * E16 — Yeni kullanıcı kayıt → ADMIN'E (opt-in via ADMIN_NOTIFY_NEW_SIGNUP).
  * source: "customer" (auth/register) veya "dealer" (dealer/apply).
  */
 export function templateNewUserSignupAdminNotice(args: {
@@ -1524,20 +1540,20 @@ export function templateNewUserSignupAdminNotice(args: {
     to: "",
     subject: isDealer
       ? `Yeni bayi kaydi — ${args.email}`
-      : `Yeni kullanici kaydi — ${args.email}`,
+      : `Yeni kullanıcı kaydi — ${args.email}`,
     html: wrap({
-      title: isDealer ? "Yeni bayi kaydi" : "Yeni kullanici kaydi",
+      title: isDealer ? "Yeni bayi kaydi" : "Yeni kullanıcı kaydi",
       preheader: `${args.name} (${args.email}) — ${whenFmt}`,
       subtitle: isDealer
-        ? "Bayilik basvurusu yeni kullanici icin baslatildi."
-        : "Yeni musteri hesabi olusturuldu.",
+        ? "Bayilik basvurusu yeni kullanıcı icin baslatildi."
+        : "Yeni musteri hesabi oluşturuldu.",
       heroAccent: "sky",
       body: `
         <p style="margin:0 0 16px 0;">
           <strong style="color:${C.black};">${escapeHtml(args.name)}</strong>
           adina yeni bir
           <strong>${isDealer ? "bayi" : "musteri"}</strong>
-          kaydi olusturuldu.
+          kaydi oluşturuldu.
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:18px 22px;">
@@ -1557,7 +1573,7 @@ export function templateNewUserSignupAdminNotice(args: {
 
 /**
  * E17 — Dusuk stok daily digest → ADMIN'E.
- * Tek mail icinde tablo halinde threshold alti urunler.
+ * Tek mail icinde tablo halinde threshold alti ürünler.
  */
 export function templateLowStockDigest(args: {
   items: Array<{ sku: string; name: string; stock: number; productUrl: string }>;
@@ -1583,27 +1599,27 @@ export function templateLowStockDigest(args: {
   const moreLine =
     args.items.length > 50
       ? `<p style="margin:12px 0 0 0;font-size:12px;color:${C.muted};">
-           ... ve ${args.items.length - 50} urun daha. Tam listeyi panelde gorun.
+           ... ve ${args.items.length - 50} ürün daha. Tam listeyi panelde görün.
          </p>`
       : "";
   return {
     to: "",
-    subject: `Dusuk stok uyarisi — ${args.total} urun`,
+    subject: `Dusuk stok uyarısi — ${args.total} ürün`,
     html: wrap({
-      title: "Dusuk stok uyarisi",
-      preheader: `${args.total} urun esik altinda — ${args.criticalCount} tanesi kritik (0 stok)`,
+      title: "Dusuk stok uyarısi",
+      preheader: `${args.total} ürün esik altinda — ${args.criticalCount} tanesi kritik (0 stok)`,
       subtitle: `Esik: ${args.threshold} adet ve alti.`,
       heroAccent: args.criticalCount > 0 ? "rose" : "gold",
       body: `
         <p style="margin:0 0 16px 0;">
           Yayinda olan
           <strong style="color:${C.black};">${args.total}</strong>
-          urun stok esiginin altinda.
-          ${args.criticalCount > 0 ? `<strong style="color:${C.rose};">${args.criticalCount}</strong> urunun stogu sifir.` : ""}
+          ürün stok esiginin altinda.
+          ${args.criticalCount > 0 ? `<strong style="color:${C.rose};">${args.criticalCount}</strong> ürünun stogu sifir.` : ""}
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:8px 20px 4px 20px;">
-            <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:${C.muted};">Esik Alti Urunler</p>
+            <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:${C.muted};">Esik Alti Ürünler</p>
           </td></tr>
           <tr><td style="padding:0 20px 14px 20px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
@@ -1615,7 +1631,7 @@ export function templateLowStockDigest(args: {
 }
 
 /**
- * E18 — Cron job basarisiz → ADMIN'E.
+ * E18 — Cron job başarısız → ADMIN'E.
  * runCronJob wrapper'i tarafindan exception yakalandiginda yollanir.
  */
 export function templateCronFailureAdminNotice(args: {
@@ -1628,15 +1644,15 @@ export function templateCronFailureAdminNotice(args: {
     to: "",
     subject: `Cron hatasi — ${args.jobName}`,
     html: wrap({
-      title: "Cron job basarisiz",
+      title: "Cron job başarısız",
       preheader: `${args.jobName} - ${whenFmt}`,
-      subtitle: "Otomatik gorev calisirken hata olustu. Loglari kontrol edin.",
+      subtitle: "Otomatik görev calisirken hata oluştu. Loglari kontrol edin.",
       heroAccent: "rose",
       body: `
         <p style="margin:0 0 16px 0;">
           <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.jobName)}</strong>
-          gorevı
-          <strong style="color:${C.rose};">basarisiz</strong>
+          görevı
+          <strong style="color:${C.rose};">başarısız</strong>
           oldu (${escapeHtml(whenFmt)}).
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 18px 0;">
@@ -1667,7 +1683,7 @@ export function templateInvoiceRetryExhaustedAdminNotice(args: {
     subject: `Fatura kesilemedi — ${args.orderNumber} (manuel mudahale)`,
     html: wrap({
       title: "Fatura kesilemedi",
-      preheader: `${args.orderNumber} icin 5 deneme basarisiz — manuel mudahale gerek`,
+      preheader: `${args.orderNumber} icin 5 deneme başarısız — manuel mudahale gerek`,
       subtitle: `${args.dealerCompany} bayisi icin e-fatura akisi durdu.`,
       heroAccent: "rose",
       body: `
@@ -1675,14 +1691,14 @@ export function templateInvoiceRetryExhaustedAdminNotice(args: {
           <strong style="color:${C.black};">${escapeHtml(args.dealerCompany)}</strong>
           bayisinin
           <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.orderNumber)}</strong>
-          numarali siparisi icin KolayBi e-fatura kesimi
-          <strong style="color:${C.rose};">5 denemenin sonunda basarisiz</strong>
+          numarali siparişi icin KolayBi e-fatura kesimi
+          <strong style="color:${C.rose};">5 denemenin sonunda başarısız</strong>
           oldu. Otomatik retry durduruldu.
         </p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
           <tr><td style="padding:18px 22px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              ${detailRow("Siparis No", args.orderNumber, true)}
+              ${detailRow("Sipariş No", args.orderNumber, true)}
               ${detailRow("Bayi", args.dealerCompany)}
               ${detailRow("Tutar", totalFmt)}
             </table>
@@ -1695,6 +1711,165 @@ export function templateInvoiceRetryExhaustedAdminNotice(args: {
           </td></tr>
         </table>
         ${btn(args.panelUrl, "Faturalar Paneli", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * Muhasebe bildirimi — e-fatura başarıyla kesildiğinde muhasebe kutusuna
+ * gönderilir. Muhasebe fiyat/tutar görebildiği için toplam dahildir.
+ */
+export function templateInvoiceIssuedAccountingNotice(args: {
+  orderNumber: string;
+  dealerCompany: string;
+  documentId: string | number;
+  total: number;
+  panelUrl: string;
+}): EmailPayload {
+  const totalFmt = formatPrice(args.total);
+  return {
+    to: "",
+    subject: `KolayBi taslak fatura — ${args.orderNumber} (${args.dealerCompany})`,
+    html: wrap({
+      title: "KolayBi'ye taslak aktarıldı",
+      preheader: `${args.orderNumber} · ${args.dealerCompany} · ${totalFmt}`,
+      subtitle: `${args.dealerCompany} bayisinin siparişi KolayBi'ye taslak fatura olarak aktarıldı.`,
+      heroAccent: "gold",
+      body: `
+        <p style="margin:0 0 14px 0;">
+          <strong style="color:${C.black};">${escapeHtml(args.dealerCompany)}</strong>
+          bayisinin
+          <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.orderNumber)}</strong>
+          numarali siparişi <strong>KolayBi'ye taslak fatura kaydı</strong> olarak aktarildi.
+          Resmi e-fatura henuz <strong>kesilmedi</strong> — lutfen KolayBi panelinden
+          kaydi kontrol edip e-faturayi elle kesin.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("KolayBi Belge No", String(args.documentId), true)}
+              ${detailRow("Sipariş No", args.orderNumber, true)}
+              ${detailRow("Bayi", args.dealerCompany)}
+              <tr><td style="padding-top:12px;border-top:1px solid ${C.border};color:${C.muted};font-size:13px;">Toplam Tutar</td><td style="padding-top:12px;border-top:1px solid ${C.border};text-align:right;font-size:18px;color:${C.black};font-weight:700;">${escapeHtml(totalFmt)}</td></tr>
+            </table>
+          </td></tr>
+        </table>
+        ${btn(args.panelUrl, "Faturalar Paneli", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * Sipariş iptal edildi ama KolayBi'de fatura kaydı zaten oluşmuştu —
+ * muhasebenin KolayBi panelinden bu kaydı elle iptal etmesi gerekir.
+ */
+export function templateInvoiceCancelledAccountingNotice(args: {
+  orderNumber: string;
+  dealerCompany: string;
+  documentId: string | number;
+  panelUrl: string;
+}): EmailPayload {
+  return {
+    to: "",
+    subject: `KolayBi fatura İPTAL gerekli — ${args.orderNumber} (${args.dealerCompany})`,
+    html: wrap({
+      title: "Sipariş iptal edildi — KolayBi faturasını iptal edin",
+      preheader: `${args.orderNumber} · ${args.dealerCompany} · Belge ${args.documentId}`,
+      subtitle: `${args.dealerCompany} bayisinin siparişi iptal edildi; KolayBi kaydı elle iptal edilmeli.`,
+      heroAccent: "rose",
+      body: `
+        <p style="margin:0 0 14px 0;">
+          <strong style="color:${C.black};font-family:'SF Mono','Menlo',monospace;">${escapeHtml(args.orderNumber)}</strong>
+          numarali sipariş <strong>iptal edildi</strong>, ancak bu sipariş için
+          KolayBi'ye daha önce bir fatura kaydı aktarilmisti. Lutfen KolayBi
+          panelinden asagidaki belgeyi <strong>iptal edin</strong> (gerekirse iade/iptal faturasi kesin).
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("KolayBi Belge No", String(args.documentId), true)}
+              ${detailRow("Sipariş No", args.orderNumber, true)}
+              ${detailRow("Bayi", args.dealerCompany)}
+            </table>
+          </td></tr>
+        </table>
+        ${btn(args.panelUrl, "Faturalar Paneli", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * Admin tarafından oluşturulan bayiye hoş geldin + giriş bilgileri.
+ * Geçici şifre admin tarafından belirlenir ve maile dahil edilir.
+ */
+export function templateAdminCreatedDealer(args: {
+  name: string;
+  companyName: string;
+  email: string;
+  password: string;
+  loginUrl: string;
+}): EmailPayload {
+  return {
+    to: "",
+    subject: "Bayi hesabınız oluşturuldu — Master Education",
+    html: wrap({
+      title: "Bayi hesabınız hazır",
+      preheader: `${args.companyName} için bayi paneli erişiminiz tanımlandı`,
+      subtitle: `${args.companyName} adına bayi hesabınız aktif.`,
+      heroAccent: "success",
+      body: `
+        <p style="margin:0 0 16px 0;">
+          Sayın <strong>${escapeHtml(args.name)}</strong>, Master Education bayi
+          paneline erişiminiz tanımlandı. Aşağıdaki bilgilerle giriş yapabilirsiniz.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("E-posta", args.email, true)}
+              ${detailRow("Geçici Şifre", args.password)}
+            </table>
+          </td></tr>
+        </table>
+        <p style="margin:0 0 16px 0;font-size:13px;color:${C.muted};">
+          Güvenliğiniz için ilk girişten sonra şifrenizi değiştirmeniz önerilir.
+        </p>
+        ${btn(args.loginUrl, "Bayi Girişi", "dark")}`,
+    }),
+  };
+}
+
+/**
+ * Admin bir kullanıcının şifresini belirlediğinde/sıfırladığında bildirim.
+ */
+export function templateAdminSetPassword(args: {
+  name: string;
+  password: string;
+  loginUrl: string;
+}): EmailPayload {
+  return {
+    to: "",
+    subject: "Şifreniz güncellendi — Master Education",
+    html: wrap({
+      title: "Şifreniz güncellendi",
+      preheader: "Hesabınızın şifresi yönetici tarafından güncellendi",
+      subtitle: "Yeni şifrenizle giriş yapabilirsiniz.",
+      heroAccent: "gold",
+      body: `
+        <p style="margin:0 0 16px 0;">
+          Sayın <strong>${escapeHtml(args.name)}</strong>, hesabınızın şifresi
+          yönetici tarafından güncellendi. Yeni geçici şifreniz aşağıdadır.
+        </p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};border:1px solid ${C.border};border-radius:12px;margin:8px 0 18px 0;">
+          <tr><td style="padding:18px 22px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${detailRow("Yeni Şifre", args.password)}
+            </table>
+          </td></tr>
+        </table>
+        <p style="margin:0 0 16px 0;font-size:13px;color:${C.muted};">
+          Güvenliğiniz için ilk girişten sonra şifrenizi değiştirmeniz önerilir.
+        </p>
+        ${btn(args.loginUrl, "Giriş Yap", "dark")}`,
     }),
   };
 }
@@ -1714,10 +1889,10 @@ export function templateEmailVerification(
       body: `
         <p style="margin:0 0 14px 0;">
           Master Education ailesine hos geldiniz! Cambridge, Pearson, Collins, Klett
-          ve 15+ yayinevinden 4.800+ kitap sizi bekliyor.
+          ve 15+ yayınevinden 4.800+ kitap sizi bekliyor.
         </p>
         <p style="margin:0 0 14px 0;">
-          Hesabinizi aktiflestirmek ve siparis verebilmek icin email adresinizi
+          Hesabinizi aktiflestirmek ve sipariş verebilmek icin email adresinizi
           dogrulamaniz gerekiyor:
         </p>
         ${btn(verifyUrl, "Email Adresimi Dogrula", "dark")}
@@ -1727,8 +1902,8 @@ export function templateEmailVerification(
         <p style="margin:0;font-size:12px;color:${C.muted};word-break:break-all;font-family:'SF Mono','Menlo',monospace;">
           <a href="${escapeHtml(verifyUrl)}" style="color:${C.goldDark};">${escapeHtml(verifyUrl)}</a>
         </p>
-        ${infoCard(`<strong style="color:${C.black};">Siz kayit olmadiysaniz</strong>
-          bu maili goz ardi edebilirsiniz. Hesap olusturulmaz.<br>
+        ${infoCard(`<strong style="color:${C.black};">Siz kayıt olmadiysaniz</strong>
+          bu maili göz ardi edebilirsiniz. Hesap oluşturulmaz.<br>
           <span style="color:${C.muted};">Baglanti 1 saat icinde gecerliligini yitirir.</span>`)}`,
     }),
   };

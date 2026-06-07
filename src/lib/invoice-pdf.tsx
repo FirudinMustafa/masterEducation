@@ -12,6 +12,7 @@ import {
 import * as fs from "fs";
 import * as path from "path";
 import type { InvoiceOrder } from "@/components/invoice-view";
+import { LEGAL_SELLER } from "@/lib/constants";
 import React from "react";
 
 // Türkçe karakter desteği için sistem default font'u (Helvetica) yetersiz —
@@ -182,6 +183,38 @@ const styles = StyleSheet.create({
     borderTopColor: "#F0EDE8",
     borderTopStyle: "solid",
   },
+  // Teslim fişi: resmi satıcı kimliği başlığı
+  legalTitle: { fontSize: 12, fontWeight: "bold", color: "#0F0F0F", maxWidth: 300 },
+  legalLine: { fontSize: 8, color: "#374151", marginTop: 2, maxWidth: 300 },
+  // Teslim fişi: araç/şoför bilgileri — elle doldurulacak boş satırlar
+  deliveryBox: {
+    marginTop: 18,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E5E5E0",
+    borderStyle: "solid",
+    borderRadius: 4,
+  },
+  deliveryRow: { flexDirection: "row", alignItems: "flex-end", marginBottom: 8 },
+  deliveryLabel: { fontSize: 9, color: "#374151", width: 120 },
+  deliveryFill: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: "#9CA3AF",
+    borderBottomStyle: "solid",
+    height: 12,
+  },
+  // Teslim fişi: imza alanı
+  signatureRow: { flexDirection: "row", gap: 24, marginTop: 36 },
+  signatureBox: { flex: 1 },
+  signatureLabel: { fontSize: 9, fontWeight: "bold", color: "#374151", marginBottom: 28 },
+  signatureLine: {
+    borderTopWidth: 1,
+    borderTopColor: "#374151",
+    borderTopStyle: "solid",
+    paddingTop: 4,
+  },
+  signatureHint: { fontSize: 8, color: "#6B7280" },
 });
 
 const PAYMENT_LABEL: Record<string, string> = {
@@ -198,18 +231,17 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELLED: "İptal",
 };
 
-function formatCurrency(n: number): string {
-  return n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " TL";
-}
-
 function formatDate(d: Date | string): string {
   return new Date(d).toLocaleDateString("tr-TR");
 }
 
 interface Props {
   order: InvoiceOrder;
-  /** Fiyat/KDV/tutar sütunları ve toplamlar yalnız true iken çizilir (admin). */
-  showPrices?: boolean;
+  /**
+   * Teslim fişi modu: başlık resmi satıcı kimliği, araç/şoför/imza alanları
+   * eklenir, alt footer kaldırılır. (Fiyat/toplam hiçbir PDF'de gösterilmez.)
+   */
+  deliverySlip?: boolean;
 }
 
 function loadLogoBuffer(): Buffer | null {
@@ -221,25 +253,46 @@ function loadLogoBuffer(): Buffer | null {
   }
 }
 
-function InvoiceDocument({ order, logoBuf, showPrices = true }: Props & { logoBuf: Buffer | null }) {
+function InvoiceDocument({
+  order,
+  logoBuf,
+  deliverySlip = false,
+}: Props & { logoBuf: Buffer | null }) {
   return (
     <Document
       author="Master Education"
-      title={`Sipariş ${order.orderNumber}`}
+      title={
+        deliverySlip
+          ? `Teslim Fişi ${order.orderNumber}`
+          : `Sipariş ${order.orderNumber}`
+      }
       creator="Master Education"
     >
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.brandBox}>
-            {logoBuf && <Image style={styles.logo} src={logoBuf} />}
-            <View>
-              <Text style={styles.brandName}>MASTER EDUCATION</Text>
-              <Text style={styles.brandTag}>Eğitim Materyalleri</Text>
+          {deliverySlip ? (
+            <View style={{ maxWidth: 320 }}>
+              <Text style={styles.legalTitle}>{LEGAL_SELLER.title}</Text>
+              <Text style={styles.legalLine}>{LEGAL_SELLER.address}</Text>
+              <Text style={styles.legalLine}>
+                Vergi Dairesi: {LEGAL_SELLER.taxOffice} · VKN: {LEGAL_SELLER.taxNumber}
+              </Text>
+              <Text style={styles.legalLine}>Tel: {LEGAL_SELLER.phone}</Text>
             </View>
-          </View>
+          ) : (
+            <View style={styles.brandBox}>
+              {logoBuf && <Image style={styles.logo} src={logoBuf} />}
+              <View>
+                <Text style={styles.brandName}>MASTER EDUCATION</Text>
+                <Text style={styles.brandTag}>Eğitim Materyalleri</Text>
+              </View>
+            </View>
+          )}
           <View style={styles.invoiceMeta}>
-            <Text style={styles.invoiceLabel}>Sipariş No</Text>
+            <Text style={styles.invoiceLabel}>
+              {deliverySlip ? "Teslim Fişi" : "Sipariş No"}
+            </Text>
             <Text style={styles.invoiceNumber}>{order.orderNumber}</Text>
             <Text style={styles.invoiceDate}>{formatDate(order.createdAt)}</Text>
             <Text style={styles.invoiceDate}>
@@ -299,37 +352,8 @@ function InvoiceDocument({ order, logoBuf, showPrices = true }: Props & { logoBu
           ))}
         </View>
 
-        {/* Totals — yalnız fiyat görünür modunda (admin) */}
-        {showPrices && (
-          <View style={styles.totals}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Ara Toplam</Text>
-              <Text style={styles.totalValue}>{formatCurrency(order.subtotal)}</Text>
-            </View>
-            {order.discountTotal > 0 && (
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>İndirim</Text>
-                <Text style={[styles.totalValue, { color: "#16A34A" }]}>
-                  -{formatCurrency(order.discountTotal)}
-                </Text>
-              </View>
-            )}
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>KDV</Text>
-              <Text style={styles.totalValue}>{formatCurrency(order.vatTotal)}</Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Kargo</Text>
-              <Text style={styles.totalValue}>
-                {order.shippingCost === 0 ? "Ücretsiz" : formatCurrency(order.shippingCost)}
-              </Text>
-            </View>
-            <View style={styles.grandRow}>
-              <Text style={styles.grandLabel}>Genel Toplam</Text>
-              <Text style={styles.grandValue}>{formatCurrency(order.total)}</Text>
-            </View>
-          </View>
-        )}
+        {/* Fiyat/toplam bölümü bilinçli olarak kaldırıldı — hiçbir PDF'de
+            tutar gösterilmez (2026-06-08 talebi). */}
 
         {/* Note */}
         {order.note && (
@@ -339,9 +363,49 @@ function InvoiceDocument({ order, logoBuf, showPrices = true }: Props & { logoBu
           </View>
         )}
 
-        <Text style={styles.footer}>
-          Master Education · info@mastereducation.com.tr · 0 539 411 65 95 · mastereducation.com.tr
-        </Text>
+        {/* Teslim fişi: araç/şoför bilgileri (elle doldurulur) + imza alanı */}
+        {deliverySlip && (
+          <>
+            <View style={styles.deliveryBox}>
+              <Text style={[styles.colTitle, { marginBottom: 8 }]}>
+                Sevkiyat Bilgileri
+              </Text>
+              {[
+                "Teslim Şekli",
+                "Araç Plakası",
+                "Dorse Plakası",
+                "Şoför Adı Soyadı",
+                "Şoför TC No",
+              ].map((label) => (
+                <View key={label} style={styles.deliveryRow}>
+                  <Text style={styles.deliveryLabel}>{label}</Text>
+                  <View style={styles.deliveryFill} />
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.signatureRow}>
+              <View style={styles.signatureBox}>
+                <Text style={styles.signatureLabel}>Teslim Eden</Text>
+                <View style={styles.signatureLine}>
+                  <Text style={styles.signatureHint}>Ad Soyad / İmza</Text>
+                </View>
+              </View>
+              <View style={styles.signatureBox}>
+                <Text style={styles.signatureLabel}>Teslim Alan</Text>
+                <View style={styles.signatureLine}>
+                  <Text style={styles.signatureHint}>Ad Soyad / İmza</Text>
+                </View>
+              </View>
+            </View>
+          </>
+        )}
+
+        {!deliverySlip && (
+          <Text style={styles.footer}>
+            Master Education · info@mastereducation.com.tr · 0 539 411 65 95 · mastereducation.com.tr
+          </Text>
+        )}
       </Page>
     </Document>
   );
@@ -349,10 +413,22 @@ function InvoiceDocument({ order, logoBuf, showPrices = true }: Props & { logoBu
 
 export async function generateInvoicePdf(
   order: InvoiceOrder,
-  showPrices = true,
 ): Promise<Buffer> {
   ensureFonts();
   const logoBuf = loadLogoBuffer();
-  const doc = <InvoiceDocument order={order} logoBuf={logoBuf} showPrices={showPrices} />;
+  const doc = <InvoiceDocument order={order} logoBuf={logoBuf} />;
+  return await renderToBuffer(doc);
+}
+
+/**
+ * Teslim fişi PDF'i — fiyatsız, resmi satıcı kimliği başlığı, araç/şoför/imza
+ * alanları, footer'sız. "PDF İndir" (sipariş özeti) ile karıştırılmamalı.
+ */
+export async function generateDeliverySlipPdf(
+  order: InvoiceOrder,
+): Promise<Buffer> {
+  ensureFonts();
+  const logoBuf = loadLogoBuffer();
+  const doc = <InvoiceDocument order={order} logoBuf={logoBuf} deliverySlip />;
   return await renderToBuffer(doc);
 }

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { loadInvoiceOrder } from "@/lib/invoice-helpers";
 import { InvoiceView } from "@/components/invoice-view";
 
-export const metadata: Metadata = { title: "Siparis Ozeti - Admin" };
+export const metadata: Metadata = { title: "Sipariş Ozeti - Admin" };
 
 interface PageProps {
   params: Promise<{ id: string }>;

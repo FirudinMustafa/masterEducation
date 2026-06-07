@@ -172,7 +172,7 @@ export function BulkPriceForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label className="block">
             <span className="block text-xs font-medium text-gray-500 mb-1">
-              Yayinevi
+              Yayınevi
             </span>
             <select
               value={publisherId}
@@ -206,7 +206,7 @@ export function BulkPriceForm({
           </label>
           <label className="block">
             <span className="block text-xs font-medium text-gray-500 mb-1">
-              Iskonto Grubu
+              İskonto Grubu
             </span>
             <select
               value={discountGroup}

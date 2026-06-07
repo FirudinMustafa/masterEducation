@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { CouponKind } from "@prisma/client";
 import { formatPrice } from "@/lib/utils";
 import { CouponBulkModal } from "./coupon-bulk-modal";
+import { useBusy } from "@/lib/hooks/use-busy";
 
 export interface CouponRow {
   id: string;
@@ -22,12 +23,15 @@ export interface CouponRow {
 const KIND_LABELS: Record<CouponKind, string> = {
   PERCENT: "Yuzde",
   FIXED: "Sabit Tutar",
-  FREE_SHIPPING: "Ucretsiz Kargo",
+  FREE_SHIPPING: "Ücretsiz Kargo",
 };
 
 export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+  // Tek useBusy: oluştur + toggle + sil ortak guard. Bir aksiyon in-flight
+  // iken digerleri tetiklenemez (double-submit / yarisma korunmasi).
+  const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
   const [showBulk, setShowBulk] = useState(false);
   const [form, setForm] = useState({
@@ -43,55 +47,59 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    const body: Record<string, unknown> = {
-      code: form.code.trim().toUpperCase(),
-      kind: form.kind,
-      value: Number(form.value),
-      minSubtotal: Number(form.minSubtotal),
-      isActive: form.isActive,
-    };
-    if (form.maxUses) body.maxUses = Number(form.maxUses);
-    if (form.validFrom) {
-      // Başlangıç günün sıfırıncı saniyesi.
-      const d = new Date(form.validFrom);
-      d.setHours(0, 0, 0, 0);
-      body.validFrom = d.toISOString();
-    }
-    if (form.validUntil) {
-      // Girilen tarih gunun sonuna kadar gecerli (yoksa ayni gun 00:00'da
-      // expired gozukur, saat 10:00'da olusan "bugun gecerli" kupon calismaz).
-      const d = new Date(form.validUntil);
-      d.setHours(23, 59, 59, 999);
-      body.validUntil = d.toISOString();
-    }
+    await run(async () => {
+      setError(null);
+      const body: Record<string, unknown> = {
+        code: form.code.trim().toUpperCase(),
+        kind: form.kind,
+        value: Number(form.value),
+        minSubtotal: Number(form.minSubtotal),
+        isActive: form.isActive,
+      };
+      if (form.maxUses) body.maxUses = Number(form.maxUses);
+      if (form.validFrom) {
+        // Başlangıç günün sıfırıncı saniyesi.
+        const d = new Date(form.validFrom);
+        d.setHours(0, 0, 0, 0);
+        body.validFrom = d.toISOString();
+      }
+      if (form.validUntil) {
+        // Girilen tarih günun sonuna kadar gecerli (yoksa ayni gün 00:00'da
+        // expired gözukur, saat 10:00'da oluşan "bugun gecerli" kupon calismaz).
+        const d = new Date(form.validUntil);
+        d.setHours(23, 59, 59, 999);
+        body.validUntil = d.toISOString();
+      }
 
-    const res = await fetch("/api/admin/coupons", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      const res = await fetch("/api/admin/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Kupon oluşturulamadi.");
+        return;
+      }
+      setForm({ ...form, code: "", validFrom: "", validUntil: "" });
+      router.refresh();
     });
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) {
-      setError(data.error ?? "Kupon olusturulamadi.");
-      return;
-    }
-    setForm({ ...form, code: "", validFrom: "", validUntil: "" });
-    startTransition(() => router.refresh());
   }
 
   async function toggle(c: CouponRow) {
-    const res = await fetch(`/api/admin/coupons/${c.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !c.isActive }),
+    await run(async () => {
+      const res = await fetch(`/api/admin/coupons/${c.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !c.isActive }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Güncellenemedi.");
+        return;
+      }
+      router.refresh();
     });
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Guncellenemedi.");
-      return;
-    }
-    startTransition(() => router.refresh());
   }
 
   async function remove(c: CouponRow) {
@@ -102,13 +110,15 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
     ) {
       return;
     }
-    const res = await fetch(`/api/admin/coupons/${c.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Silinemedi.");
-      return;
-    }
-    startTransition(() => router.refresh());
+    await run(async () => {
+      const res = await fetch(`/api/admin/coupons/${c.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Silinemedi.");
+        return;
+      }
+      router.refresh();
+    });
   }
 
   return (
@@ -167,7 +177,7 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
           >
             <option value="PERCENT">Yuzde</option>
             <option value="FIXED">Sabit</option>
-            <option value="FREE_SHIPPING">Ucretsiz Kargo</option>
+            <option value="FREE_SHIPPING">Ücretsiz Kargo</option>
           </select>
         </label>
         <label className="block">
@@ -234,10 +244,10 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
         </label>
         <button
           type="submit"
-          disabled={pending || !form.code}
+          disabled={busy || !form.code}
           className="md:col-span-6 sm:col-auto px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
         >
-          Olustur
+          Oluştur
         </button>
       </form>
 
@@ -293,7 +303,8 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
                 <td className="p-3 text-center">
                   <button
                     onClick={() => toggle(c)}
-                    className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full cursor-pointer ${
+                    disabled={busy}
+                    className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full cursor-pointer disabled:opacity-50 ${
                       c.isActive
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-500"
@@ -305,7 +316,8 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
                 <td className="p-3 text-right">
                   <button
                     onClick={() => remove(c)}
-                    className="text-xs text-red-600 hover:underline cursor-pointer"
+                    disabled={busy}
+                    className="text-xs text-red-600 hover:underline cursor-pointer disabled:opacity-50"
                   >
                     Sil
                   </button>

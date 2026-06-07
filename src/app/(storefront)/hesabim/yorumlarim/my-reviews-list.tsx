@@ -113,7 +113,7 @@ export function MyReviewsList({ reviews }: { reviews: ReviewRow[] }) {
                     href={`/urunler/${r.product.slug}#reviews`}
                     className="rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
                   >
-                    Urunde Duzenle
+                    Üründe Duzenle
                   </Link>
                   <button
                     type="button"

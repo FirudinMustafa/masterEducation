@@ -66,15 +66,15 @@ export default async function AdminAnalyticsPage() {
           Analytics
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Magaza trafigi ozeti (son 30 gun). Admin/bayi sayfalari sayilmaz.
+          Magaza trafigi ozeti (son 30 gün). Admin/bayi sayfalari sayılmaz.
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Bugun" value={totalToday} />
-        <StatCard label="Son 7 gun" value={total7d} />
+        <StatCard label="Son 7 gün" value={total7d} />
         <StatCard
-          label="Son 7 gun tekil ziyaretci"
+          label="Son 7 gün tekil ziyaretci"
           value={uniqueSessionCount}
         />
       </div>
@@ -82,7 +82,7 @@ export default async function AdminAnalyticsPage() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 bg-gray-50">
           <h2 className="font-semibold text-brand-black">
-            Gunluk Trafik (son 7 gun)
+            Günluk Trafik (son 7 gün)
           </h2>
         </div>
         {byDay.length === 0 ? (
@@ -112,7 +112,7 @@ export default async function AdminAnalyticsPage() {
               <thead>
                 <tr className="text-xs uppercase text-gray-500 border-b border-gray-100">
                   <th className="text-left p-3">Sayfa</th>
-                  <th className="text-right p-3">Goruntulenme</th>
+                  <th className="text-right p-3">Görüntülenme</th>
                 </tr>
               </thead>
               <tbody>
@@ -144,7 +144,7 @@ export default async function AdminAnalyticsPage() {
               <thead>
                 <tr className="text-xs uppercase text-gray-500 border-b border-gray-100">
                   <th className="text-left p-3">Kaynak</th>
-                  <th className="text-right p-3">Sayi</th>
+                  <th className="text-right p-3">Sayı</th>
                 </tr>
               </thead>
               <tbody>

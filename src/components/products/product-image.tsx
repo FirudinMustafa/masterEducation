@@ -5,6 +5,14 @@ import { useState } from "react";
 
 interface ProductImageProps {
   src?: string;
+  /**
+   * 404 fallback chain: ana `src` yüklenemezse sırayla `fallbackSrcs[0]`,
+   * `fallbackSrcs[1]`, ... denenir. Hepsi başarısız olursa BookPlaceholder
+   * gösterilir. Aynı ürünün diğer image dosyalarını ileterek tek bir image'in
+   * (örn. CSV-disk uyumsuzluğu nedeniyle) eksik olması durumunda placeholder
+   * yerine geçerli bir alternatif render edilmesini sağlar.
+   */
+  fallbackSrcs?: string[];
   alt: string;
   width?: number;
   height?: number;
@@ -33,22 +41,43 @@ function BookPlaceholder({ className }: { className?: string }) {
   );
 }
 
-export function ProductImage({ src, alt, width = 300, height = 300, className, priority }: ProductImageProps) {
-  const [error, setError] = useState(false);
+export function ProductImage({
+  src,
+  fallbackSrcs,
+  alt,
+  width = 300,
+  height = 300,
+  className,
+  priority,
+}: ProductImageProps) {
+  // Aday liste: [src, ...fallbacks] — sadece tanımlı/boş-olmayan değerler.
+  const candidates = [src, ...(fallbackSrcs ?? [])].filter(
+    (s): s is string => !!s && s.length > 0,
+  );
+  // src prop dışarıdan değişirse component'i yeniden mount etmek
+  // tüketenin sorumluluğunda (consumer `key={src}` veriyor — bu durumda
+  // idx state'i otomatik sıfırlanır). useEffect ile reset etmiyoruz çünkü
+  // react-hooks/set-state-in-effect lint'i bunu yasaklar.
+  const [idx, setIdx] = useState(0);
+  const current = candidates[idx];
 
-  if (!src || error) {
+  if (!current) {
     return <BookPlaceholder className={className} />;
   }
 
   return (
     <Image
-      src={src}
+      key={current}
+      src={current}
       alt={alt}
       width={width}
       height={height}
       className={className}
       priority={priority}
-      onError={() => setError(true)}
+      onError={() => {
+        // Sıradaki adaya geç; tükenirse placeholder'a düşeriz (idx >= candidates.length).
+        setIdx((i) => i + 1);
+      }}
       style={{ objectFit: "contain" }}
     />
   );

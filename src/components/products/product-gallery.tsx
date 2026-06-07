@@ -21,12 +21,20 @@ export function ProductGallery({ images, alt }: ProductGalleryProps) {
     ? productImageUrl(images[activeIndex].filename)
     : undefined;
 
+  // 404 fallback chain: aktif image yüklenemezse aynı ürünün diğer
+  // image dosyalarına sırayla düşeriz (CSV-disk uyumsuzluğu durumunda
+  // placeholder yerine geçerli alternatif). Aktif olanı listeden çıkar.
+  const fallbackSrcs = images
+    .filter((_, i) => i !== activeIndex)
+    .map((img) => productImageUrl(img.filename));
+
   return (
     <div>
       <div className="bg-white rounded-2xl border border-brand-border/50 p-4 aspect-square flex items-center justify-center sm:p-6">
         <ProductImage
           key={activeSrc ?? "placeholder"}
           src={activeSrc}
+          fallbackSrcs={fallbackSrcs}
           alt={alt}
           width={500}
           height={500}

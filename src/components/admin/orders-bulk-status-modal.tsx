@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { OrderStatus, CargoCarrier } from "@prisma/client";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import { ConfirmDialog } from "./confirm-dialog";
 
 export type BulkPatch = {
   status?: OrderStatus;
@@ -59,6 +60,7 @@ export function OrdersBulkStatusModal({ count, onClose, onApply, pending }: Prop
   const [carrierName, setCarrierName] = useState("");
   const [eta, setEta] = useState("");
   const [adminNote, setAdminNote] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   function buildPatch(): BulkPatch | null {
     const patch: BulkPatch = {};
@@ -187,11 +189,7 @@ export function OrdersBulkStatusModal({ count, onClose, onApply, pending }: Prop
           </button>
           <button
             type="button"
-            onClick={async () => {
-              const patch = buildPatch();
-              if (!patch) return;
-              await onApply(patch);
-            }}
+            onClick={() => setConfirmOpen(true)}
             disabled={pending || !buildPatch()}
             className="px-5 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
           >
@@ -199,6 +197,32 @@ export function OrdersBulkStatusModal({ count, onClose, onApply, pending }: Prop
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Toplu güncelleme?"
+        tone={status === "CANCELLED" ? "danger" : "default"}
+        message={
+          <>
+            <strong>{count}</strong> siparişe seçili değerler uygulanacak
+            {status ? (
+              <>
+                {" "}(yeni durum: <strong>{ORDER_STATUS_LABELS[status] || status}</strong>)
+              </>
+            ) : null}
+            . Onaylıyor musunuz?
+          </>
+        }
+        confirmLabel="Evet, uygula"
+        busy={pending}
+        onConfirm={async () => {
+          const patch = buildPatch();
+          if (!patch) return;
+          await onApply(patch);
+          setConfirmOpen(false);
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

@@ -12,7 +12,7 @@ const STATIC_PAGES = [
   "/iade",
   "/kvkk",
   "/giris",
-  "/kayit",
+  "/bayi-basvuru",
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

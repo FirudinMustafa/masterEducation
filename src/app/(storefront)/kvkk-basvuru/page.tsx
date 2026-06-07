@@ -6,7 +6,7 @@ import { KvkkApplicationForm } from "./form";
 export const metadata: Metadata = {
   title: "KVKK Veri Sahibi Basvuru Formu",
   description:
-    "6698 sayili Kisisel Verilerin Korunmasi Kanunu kapsaminda veri sahibi basvuru formu — Master Education.",
+    "6698 sayıli Kisisel Verilerin Korunmasi Kanunu kapsaminda veri sahibi basvuru formu — Master Education.",
 };
 
 export default function KvkkApplicationPage() {
@@ -17,20 +17,20 @@ export default function KvkkApplicationPage() {
           href="/kvkk"
           className="text-xs text-brand-muted hover:text-brand-black"
         >
-          &larr; KVKK Aydinlatma Metni
+          &larr; KVKK Aydınlatma Metni
         </Link>
         <h1 className="mt-2 text-3xl font-display font-bold text-brand-black mb-2">
           KVKK Veri Sahibi Basvuru Formu
         </h1>
         <p className="text-sm text-brand-muted">
-          6698 sayili Kisisel Verilerin Korunmasi Kanunu&apos;nun 11. ve 13.
+          6698 sayıli Kisisel Verilerin Korunmasi Kanunu&apos;nun 11. ve 13.
           maddeleri kapsaminda haklarinizi bu form uzerinden kullanabilirsiniz.
-          Talebiniz en gec <strong>30 gun</strong> icinde sonuclandirilir.
+          Talebiniz en gec <strong>30 gün</strong> icinde sonuclandirilir.
         </p>
       </div>
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 mb-8">
-        <p className="font-semibold mb-1">Onemli</p>
+        <p className="font-semibold mb-1">Önemli</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>
             Basvurunuzun kabul edilebilmesi icin kimliginizi tespit etmeye
@@ -41,7 +41,7 @@ export default function KvkkApplicationPage() {
             oldugunu dogrulayamadigimiz durumlarda ek belge isteyebiliriz.
           </li>
           <li>
-            Basvurunuz, KVKK madde 13/2 uyarinca <strong>ucretsizdir</strong>;
+            Basvurunuz, KVKK madde 13/2 uyarınca <strong>ücretsizdir</strong>;
             ancak ayni mahiyetteki tekrarlanan basvurularda Kurul tarafindan
             belirlenen ucret tarifesi uygulanabilir.
           </li>

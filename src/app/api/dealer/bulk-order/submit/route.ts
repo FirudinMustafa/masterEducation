@@ -20,7 +20,7 @@ const schema = z.object({
     .array(
       z.object({
         productId: z.string().min(1),
-        quantity: z.number().int().min(1).max(1000),
+        quantity: z.number().int().min(1).max(100000),
       })
     )
     .min(1)
@@ -32,6 +32,8 @@ const schema = z.object({
     .optional()
     .or(z.literal(""))
     .transform((v) => v || null),
+  // Toplu sipariş yalnız bayi tarafından verilir → okul adı zorunlu.
+  schoolName: z.string().trim().min(1, "Okul adı zorunludur.").max(200),
 });
 
 export async function POST(req: NextRequest) {
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Generic 500 + server log; gerçek hata Sentry/console'a düşer.
     console.error("[bulk-order/submit] unhandled", err);
     return NextResponse.json(
-      { error: "Siparis olusturulamadi.", code: "INTERNAL_ERROR" },
+      { error: "Sipariş oluşturulamadi.", code: "INTERNAL_ERROR" },
       { status: 500 }
     );
   }
@@ -59,13 +61,13 @@ async function handlePost(req: NextRequest) {
       { status: 403 }
     );
   }
-  // Bulk-order yalniz cari hesap modunda anlamli; pesin bayi her siparis icin
+  // Bulk-order yalniz cari hesap modunda anlamli; pesin bayi her sipariş icin
   // kart girmesi gerektigi icin bu akis kapali.
   if (session.user.dealerPaymentTerms === "PREPAID") {
     return NextResponse.json(
       {
         error:
-          "Toplu siparis yalniz cari hesap modunda kullanilabilir. Hesabiniz pesin olarak tanimli.",
+          "Toplu sipariş yalniz cari hesap modunda kullanilabilir. Hesabiniz pesin olarak tanimli.",
         code: "PREPAID_DEALER_BULK_FORBIDDEN",
       },
       { status: 403 }
@@ -81,7 +83,7 @@ async function handlePost(req: NextRequest) {
       { status: 400 }
     );
   }
-  const { items, shipping, note } = parsed.data;
+  const { items, shipping, note, schoolName } = parsed.data;
 
   const products = await prisma.product.findMany({
     where: { id: { in: items.map((i) => i.productId) }, isPublished: true },
@@ -99,7 +101,7 @@ async function handlePost(req: NextRequest) {
   });
   if (products.length !== items.length) {
     return NextResponse.json(
-      { error: "Bazi urunler bulunamadi veya yayinda degil." },
+      { error: "Bazi ürünler bulunamadi veya yayinda degil." },
       { status: 400 }
     );
   }
@@ -225,6 +227,7 @@ async function handlePost(req: NextRequest) {
         shippingCost,
         total,
         note,
+        schoolName,
         shippingName: shipping.fullName,
         shippingCity: shipping.city,
         shippingAddress: shipping.address,
@@ -246,7 +249,7 @@ async function handlePost(req: NextRequest) {
       kind: "ORDER_DEBIT",
       amount: total,
       orderId: created.id,
-      note: `Toplu siparis: ${created.orderNumber}`,
+      note: `Toplu sipariş: ${created.orderNumber}`,
       enforceCreditLimit: true,
     });
 
@@ -260,7 +263,7 @@ async function handlePost(req: NextRequest) {
 
   if (order === "STOCK_CONFLICT") {
     return NextResponse.json(
-      { error: "Siparis olusturulurken stok yetersiz kaldi." },
+      { error: "Sipariş oluşturulurken stok yetersiz kaldi." },
       { status: 409 }
     );
   }
@@ -298,7 +301,7 @@ async function handlePost(req: NextRequest) {
     );
     queueEmail({ ...tpl, to: shipping.email });
 
-    // E1 (B2B varyant) — admin'e bayi siparis bildirimi.
+    // E1 (B2B varyant) — admin'e bayi sipariş bildirimi.
     const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
     if (adminTo) {
       const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";

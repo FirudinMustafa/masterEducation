@@ -56,7 +56,7 @@ export function Hero({ productCount, publisherCount, showcase }: HeroProps) {
 
       {/* Logo mark watermark — bottom-right corner */}
       <div className="pointer-events-none absolute bottom-8 right-8 hidden opacity-[0.06] lg:block">
-        <Image src="/me-mark.png" alt="" width={140} height={140} priority />
+        <Image src="/me-mark.png" alt="" width={200} height={72} className="object-contain" priority />
       </div>
 
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 px-4 pb-20 pt-16 sm:px-6 sm:pb-24 sm:pt-20 md:grid-cols-12 md:pb-28 md:pt-24 lg:gap-20 lg:pl-16 lg:pr-8 lg:pt-28 xl:pl-24">
@@ -70,7 +70,7 @@ export function Hero({ productCount, publisherCount, showcase }: HeroProps) {
 
           {/* Single bold display headline — mobile-friendly sizes */}
           <h1 className="font-display text-[40px] font-black leading-[0.95] tracking-[-0.035em] text-neutral-950 sm:text-5xl md:text-6xl lg:text-7xl xl:text-[80px]">
-            Egitimin
+            Eğitimin
             <br />
             <span
               className="font-display italic"
@@ -89,7 +89,7 @@ export function Hero({ productCount, publisherCount, showcase }: HeroProps) {
           </h1>
 
           <p className="mt-7 max-w-md text-lg text-neutral-600 sm:text-xl">
-            Cambridge, Pearson, Collins, Klett — dunyanin onde gelen yayinevleri,
+            Cambridge, Pearson, Collins, Klett — dunyanin onde gelen yayınevleri,
             tek tikla.
           </p>
 
@@ -100,7 +100,7 @@ export function Hero({ productCount, publisherCount, showcase }: HeroProps) {
               className="group relative inline-flex items-center gap-3 overflow-hidden rounded-full bg-neutral-950 px-8 py-4 text-sm font-bold tracking-wide text-white transition-all hover:scale-[1.02]"
             >
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-brand-gold/40 to-transparent transition-transform duration-1000 group-hover:translate-x-full" />
-              <span className="relative">Koleksiyonu Kesfet</span>
+              <span className="relative">Tüm Ürünler</span>
               <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-brand-gold text-neutral-950 transition-transform group-hover:rotate-45">
                 <ArrowRightIcon className="h-3.5 w-3.5" />
               </span>
@@ -109,15 +109,15 @@ export function Hero({ productCount, publisherCount, showcase }: HeroProps) {
               href="/yayinevleri"
               className="group inline-flex items-center gap-1.5 text-sm font-bold text-neutral-700 transition-colors hover:text-neutral-950"
             >
-              <span className="border-b-2 border-neutral-900 pb-0.5">Yayinevlerimiz</span>
+              <span className="border-b-2 border-neutral-900 pb-0.5">Yayınevlerimiz</span>
               <ArrowRightIcon className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
 
           {/* Mini stats — sade, minimal */}
           <div className="mt-16 flex items-end gap-10 border-t border-neutral-200 pt-7 md:gap-14">
-            <MiniStat value={productCount.toLocaleString("tr-TR")} suffix="+" label="urun" />
-            <MiniStat value={publisherCount.toString()} suffix="" label="yayinevi" />
+            <MiniStat value={productCount.toLocaleString("tr-TR")} suffix="+" label="ürün" />
+            <MiniStat value={publisherCount.toString()} suffix="" label="yayınevi" />
             <MiniStat value="10" suffix="+" label="yil" />
           </div>
         </div>

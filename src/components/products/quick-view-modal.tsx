@@ -9,6 +9,7 @@ import { useWishlistStore } from "@/stores/wishlist-store";
 import { useCompareStore } from "@/stores/compare-store";
 import { toast } from "@/stores/toast-store";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useCanOrder, ensureCanOrder } from "@/lib/use-can-order";
 import {
   XMarkIcon,
   HeartIcon,
@@ -37,6 +38,7 @@ export function QuickViewModal({ product, open, onClose }: Props) {
   const inCompareRaw = useCompareStore((s) => s.has(product.id));
   const inWishlist = hydrated && inWishlistRaw;
   const inCompare = hydrated && inCompareRaw;
+  const canOrder = useCanOrder();
 
   useEffect(() => {
     if (!open) return;
@@ -60,6 +62,7 @@ export function QuickViewModal({ product, open, onClose }: Props) {
       : product.price;
 
   function addToCart() {
+    if (!ensureCanOrder(canOrder)) return;
     if (!inStock) return;
     addItem({
       id: product.id,
@@ -148,7 +151,7 @@ export function QuickViewModal({ product, open, onClose }: Props) {
               onClick={() => {
                 const added = toggleWishlist(product);
                 if (added) toast.success("Favorilere eklendi");
-                else toast.info("Favorilerden cikarildi");
+                else toast.info("Favorilerden çıkarildi");
               }}
               aria-label="Favori"
               className={cn(
@@ -167,11 +170,11 @@ export function QuickViewModal({ product, open, onClose }: Props) {
             <button
               onClick={() => {
                 const res = toggleCompare(product);
-                if (res === "added") toast.success("Karsilastirmaya eklendi");
-                else if (res === "removed") toast.info("Karsilastirmadan cikarildi");
-                else toast.warning("En fazla 4 urun karsilastirabilirsiniz");
+                if (res === "added") toast.success("Karşılaştırmaya eklendi");
+                else if (res === "removed") toast.info("Karşılaştırmadan çıkarildi");
+                else toast.warning("En fazla 4 ürün karşılaştırabilirsiniz");
               }}
-              aria-label="Karsilastir"
+              aria-label="Karşılaştır"
               className={cn(
                 "flex w-12 items-center justify-center rounded-xl ring-1 transition-colors cursor-pointer",
                 inCompare

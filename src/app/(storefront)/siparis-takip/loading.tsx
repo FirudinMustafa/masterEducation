@@ -1,4 +1,4 @@
-// P2-PAGE-4: siparis-takip form loading skeleton.
+// P2-PAGE-4: sipariş-takip form loading skeleton.
 export default function Loading() {
   return (
     <div className="max-w-md mx-auto px-4 sm:px-6 py-12">

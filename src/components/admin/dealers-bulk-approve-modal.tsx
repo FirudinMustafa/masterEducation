@@ -73,6 +73,7 @@ export function DealersBulkApproveModal({
           <input
             type="number"
             min={0}
+            max={20_000_000}
             value={creditLimit}
             onChange={(e) => setCreditLimit(e.target.value)}
             disabled={paymentTerms === "PREPAID"}

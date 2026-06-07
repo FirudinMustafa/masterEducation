@@ -61,42 +61,12 @@ export function isConfigured(): boolean {
 }
 
 /**
- * Mock mode: env yok ama testleri sandbox-eşlik şekilde simüle etmek için.
- * `KOLAYBI_MOCK=true` set edildiğinde adapter gerçek HTTP atmadan deterministik
- * synthetic ID'ler döndürür. CI/staging'de credentials gelene kadar
- * end-to-end test akışını sürdürür. Prod'da false olmalı.
- */
-export function isMockMode(): boolean {
-  return (
-    process.env.KOLAYBI_MOCK === "true" || process.env.KOLAYBI_MOCK === "1"
-  );
-}
-
-/**
- * Mock mode'da `isConfigured()` true sayılsın diye kullanılır — invoice service
- * "DRYRUN değil, gönderim dene" yoluna girer ama kolaybi adapter mock döndürür.
+ * KolayBi gönderimi açık mı? Env (API key + channel) yapılandırılmışsa true.
+ * Değilse caller DRYRUN'da kalır (Invoice DB'ye yazılır, dış istek atılmaz;
+ * cron retry env dolunca devreye girer).
  */
 export function isOperational(): boolean {
-  return isConfigured() || isMockMode();
-}
-
-// Mock state — testlerde inspect edilebilir
-const mockState = {
-  contactSeq: 1000,
-  addressSeq: 2000,
-  productSeq: 3000,
-  invoiceSeq: 4000,
-  calls: [] as { method: string; path: string; body?: unknown }[],
-};
-export function _resetMockState(): void {
-  mockState.contactSeq = 1000;
-  mockState.addressSeq = 2000;
-  mockState.productSeq = 3000;
-  mockState.invoiceSeq = 4000;
-  mockState.calls = [];
-}
-export function _getMockCalls() {
-  return [...mockState.calls];
+  return isConfigured();
 }
 
 function baseUrl(): string {
@@ -221,6 +191,23 @@ export class KolaybiError extends Error {
       /kanal/i.test(this.apiMessage)
     );
   }
+
+  /**
+   * Fatura ön eki/serisi panelde tanımlı değil ("Ön ek bulunamadı.").
+   * Bu retry ile düzelmez — panel ayarı gerektirir (Ayarlar → e-Belge Ön Ekleri).
+   * Terminal hata: cron tekrar denememeli, admin'e net mesaj gitmeli.
+   */
+  get isPrefixError(): boolean {
+    return (
+      typeof this.apiMessage === "string" &&
+      /ön ?ek bulunamad/i.test(this.apiMessage)
+    );
+  }
+
+  /** Retry ile düzelmeyecek terminal yapılandırma hataları. */
+  get isTerminalConfig(): boolean {
+    return this.isConfigError || this.isPrefixError;
+  }
 }
 
 async function parseErrorBody(res: Response): Promise<unknown> {
@@ -236,17 +223,11 @@ async function parseErrorBody(res: Response): Promise<unknown> {
 /**
  * Authenticated fetch — token'ı cache'ten alır, 401 alırsa cache invalidate
  * + 1 retry yapar. Diğer hatalarda KolaybiError fırlatır.
- *
- * Mock mode aktifse gerçek HTTP atmaz; deterministik synthetic response
- * döndürür (testler için).
  */
 export async function authedFetch(
   path: string,
   init: { method?: string; body?: unknown; headers?: Record<string, string> } = {},
 ): Promise<unknown> {
-  if (isMockMode()) {
-    return mockResponse(path, init);
-  }
   if (!isConfigured()) {
     throw new KolaybiError("KolayBi not configured (DRYRUN mode)", 0);
   }
@@ -522,81 +503,3 @@ export async function createProduct(
   return data.data;
 }
 
-// ─── Mock response ───────────────────────────────────────
-
-function mockResponse(
-  path: string,
-  init: { method?: string; body?: unknown },
-): unknown {
-  mockState.calls.push({ method: init.method ?? "POST", path, body: init.body });
-  // Auth — never via authedFetch but kept for completeness
-  if (path === "/kolaybi/v1/access_token") {
-    return { data: "MOCK_TOKEN_eyJhbGciOiJIUzI1NiJ9" };
-  }
-  if (path === "/kolaybi/v1/associates") {
-    const id = mockState.contactSeq++;
-    const body = (init.body ?? {}) as KolaybiContactPayload;
-    // Eger payload'da addresses varsa response'ta address: [{id, ...}] don —
-    // gerçek API'nin davranışını taklit ediyoruz.
-    const addressArr =
-      body.addresses && body.addresses.length > 0
-        ? body.addresses.map((a) => ({
-            id: mockState.addressSeq++,
-            address: a.address,
-            city: a.city,
-            district: a.district,
-            address_type: a.address_type ?? "invoice",
-          }))
-        : undefined;
-    return {
-      data: {
-        id,
-        name: body.name ?? `Mock Contact ${id}`,
-        identity_no: body.identity_no ?? "0000000000",
-        ...(addressArr ? { address: addressArr } : {}),
-      },
-    };
-  }
-  if (path === "/kolaybi/v1/address/create") {
-    const id = mockState.addressSeq++;
-    const body = (init.body ?? {}) as KolaybiAddressCreatePayload;
-    return {
-      data: {
-        id,
-        associate_id: body.associate_id,
-        city: body.city,
-        district: body.district,
-      },
-    };
-  }
-  if (path === "/kolaybi/v1/products") {
-    const id = mockState.productSeq++;
-    const body = (init.body ?? {}) as KolaybiProductPayload;
-    return {
-      data: { id, name: body.name ?? `Mock Product ${id}`, code: body.code },
-    };
-  }
-  if (path === "/kolaybi/v1/invoices") {
-    const id = mockState.invoiceSeq++;
-    const body = (init.body ?? {}) as KolaybiInvoicePayload;
-    const total = body.items.reduce(
-      (s, i) => s + Number(i.unit_price) * Number(i.quantity),
-      0,
-    );
-    return {
-      data: {
-        document_id: id,
-        grand_total: total,
-        grand_currency: body.currency ?? "try",
-      },
-    };
-  }
-  // Unknown path — emulate KolayBi 404
-  throw new KolaybiError(`Mock: unknown path ${path}`, 404, {
-    data: [],
-    code: 10404,
-    message: "Kayıt bulunamadı.",
-    description: "Kayıt bulunamadı.",
-    success: false,
-  });
-}

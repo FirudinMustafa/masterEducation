@@ -28,12 +28,12 @@ export function ThreeDSecureForm({ token, orderId }: Props) {
         error?: string;
       };
       if (!res.ok) {
-        setError(data.error ?? "Dogrulama basarisiz.");
+        setError(data.error ?? "Dogrulama başarısız.");
         return;
       }
       if (action === "success") {
         clearCart();
-        // Full page replace — kullanici back basinca /odeme veya /sepet'e
+        // Full page replace — kullanıcı back basinca /odeme veya /sepet'e
         // donmesin (sepet bos olduğu için "Sepetiniz bos" gorur).
         window.location.replace(`/odeme/basarili?orderId=${orderId}`);
       } else {
@@ -75,14 +75,14 @@ export function ThreeDSecureForm({ token, orderId }: Props) {
           disabled={loading !== null || otp.length !== 6}
           className="w-full py-3 bg-brand-gold text-brand-black rounded-lg font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
         >
-          {loading === "success" ? "Dogrulaniyor..." : "Odemeyi Onayla"}
+          {loading === "success" ? "Dogrulaniyor..." : "Ödemeyi Onayla"}
         </button>
         <button
           onClick={() => confirm("failure")}
           disabled={loading !== null}
           className="w-full py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 cursor-pointer"
         >
-          {loading === "failure" ? "Iptal ediliyor..." : "Odemeyi Iptal Et"}
+          {loading === "failure" ? "İptal ediliyor..." : "Ödemeyi İptal Et"}
         </button>
       </div>
     </div>

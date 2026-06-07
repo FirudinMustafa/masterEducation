@@ -8,7 +8,15 @@ import { DealerSidebar, DealerMobileHeader } from "@/components/bayi/sidebar";
 // Routes reachable even when the dealer is PENDING/REJECTED/SUSPENDED.
 // Letting pending applicants upload paperwork while waiting for approval
 // shortens the back-and-forth with the admin team.
-const PATHS_ALLOWED_WHEN_UNAPPROVED = new Set(["/bayi/belgeler"]);
+const PATHS_ALLOWED_WHEN_UNAPPROVED = ["/bayi/belgeler"];
+
+function isAllowedUnapprovedPath(pathname: string): boolean {
+  if (!pathname) return false;
+  // exact-match veya alt-segment (querystring/trailing slash dahil)
+  return PATHS_ALLOWED_WHEN_UNAPPROVED.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`) || pathname.startsWith(`${p}?`),
+  );
+}
 
 export default async function DealerLayout({
   children,
@@ -21,19 +29,39 @@ export default async function DealerLayout({
     redirect("/giris");
   }
 
-  const dealerStatus = session.user.dealerStatus;
+  // Live DB lookup — never trust the JWT-cached dealerStatus. An admin
+  // approval should reflect on the very next /bayi page render without the
+  // dealer logging out/in. We pull rejectionReason/notes in the same query
+  // so the unapproved branch already has what it needs to render details.
+  const liveDealer = session.user.dealerId
+    ? await prisma.dealer.findUnique({
+        where: { id: session.user.dealerId },
+        select: { status: true, rejectionReason: true, notes: true },
+      })
+    : null;
+  const dealerStatus = liveDealer?.status ?? session.user.dealerStatus;
   const hdrs = await headers();
-  const pathname = hdrs.get("x-pathname") ?? hdrs.get("x-invoke-path") ?? "";
-  const allowUnapproved = PATHS_ALLOWED_WHEN_UNAPPROVED.has(pathname);
+  // Next.js 16 — pathname'i birden fazla yerden dene; proxy.ts 'x-pathname'
+  // ekliyor, ama bazi durumlarda (RSC payload, redirect chain) bos olabilir.
+  // Fallback olarak `next-url` ve `referer`'i tara.
+  const rawPath =
+    hdrs.get("x-pathname") ||
+    hdrs.get("x-invoke-path") ||
+    hdrs.get("next-url") ||
+    "";
+  let pathname = rawPath;
+  if (!pathname) {
+    const ref = hdrs.get("referer") || "";
+    try {
+      if (ref) pathname = new URL(ref).pathname;
+    } catch {
+      /* ignore */
+    }
+  }
+  const allowUnapproved = isAllowedUnapprovedPath(pathname);
 
   if (dealerStatus !== "APPROVED" && !allowUnapproved) {
-    // Ret/suspend durumlarinda admin'in yazdigi sebebi bayiye gosterelim.
-    const dealer = session.user.dealerId
-      ? await prisma.dealer.findUnique({
-          where: { id: session.user.dealerId },
-          select: { rejectionReason: true, notes: true },
-        })
-      : null;
+    const dealer = liveDealer;
 
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-16 text-center">
@@ -50,7 +78,7 @@ export default async function DealerLayout({
         <p className="text-brand-muted mb-6">
           {dealerStatus === "PENDING"
             ? "Bayi basvurunuz inceleme asamasindadir. En kisa surede size donecegiz."
-            : "Detayli bilgi icin bizimle iletisime gecebilirsiniz."}
+            : "Detayli bilgi icin bizimle iletişime gecebilirsiniz."}
         </p>
 
         {dealerStatus === "REJECTED" && dealer?.rejectionReason && (
@@ -62,7 +90,7 @@ export default async function DealerLayout({
 
         {dealerStatus === "SUSPENDED" && dealer?.notes && (
           <div className="mx-auto max-w-md mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-left text-amber-900">
-            <p className="font-semibold mb-1">Aciklama</p>
+            <p className="font-semibold mb-1">Açıklama</p>
             <p className="whitespace-pre-wrap">{dealer.notes}</p>
           </div>
         )}
@@ -72,20 +100,18 @@ export default async function DealerLayout({
             href="/bayi/belgeler"
             className="inline-flex items-center px-5 py-2.5 bg-brand-gold text-brand-black rounded-lg font-semibold hover:bg-brand-gold-dark"
           >
-            Belgelerinizi yukleyin &rarr;
+            Belgelerinizi yükleyin &rarr;
           </Link>
         )}
       </div>
     );
   }
 
-  // Bakiye + kredi limiti — sidebar'da hem dashboard'da gormek icin
+  // Sidebar firma adi + ödeme modu — para/bakiye gösterimi kaldirildi.
   const dealerInfo = session.user.dealerId
     ? await prisma.dealer.findUnique({
         where: { id: session.user.dealerId },
         select: {
-          creditLimit: true,
-          currentBalance: true,
           paymentTerms: true,
           companyName: true,
         },
@@ -93,8 +119,6 @@ export default async function DealerLayout({
     : null;
 
   const dealerProps = {
-    balance: dealerInfo ? Number(dealerInfo.currentBalance) : 0,
-    creditLimit: dealerInfo ? Number(dealerInfo.creditLimit) : 0,
     paymentTerms: dealerInfo?.paymentTerms ?? "OPEN_ACCOUNT",
     companyName: dealerInfo?.companyName ?? "",
   } as const;

@@ -3,25 +3,25 @@ import Link from "next/link";
 import { BRAND } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Cerez Politikasi",
+  title: "Çerez Politikasi",
   description:
-    "Master Education web sitesinde kullanilan cerez (cookie) turleri, amaclari ve tercihleri yonetme yontemleri.",
+    "Master Education web sitesinde kullanilan çerez (cookie) turleri, amaclari ve tercihleri yonetme yontemleri.",
 };
 
 export default function CookiePolicyPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
       <h1 className="text-3xl font-display font-bold text-brand-black mb-2">
-        Cerez Politikasi
+        Çerez Politikasi
       </h1>
       <p className="text-sm text-brand-muted mb-8">
-        Son guncelleme: {new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+        Son güncelleme: {new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
       </p>
 
       <div className="prose prose-sm max-w-none text-brand-black space-y-6">
         <section>
           <p>
-            Bu Cerez Politikasi; {BRAND.name} (&quot;Sirket&quot;, &quot;biz&quot;)
+            Bu Çerez Politikasi; {BRAND.name} (&quot;Sirket&quot;, &quot;biz&quot;)
             tarafindan isletilen{" "}
             <a
               href="https://mastereducation.com.tr"
@@ -29,8 +29,8 @@ export default function CookiePolicyPage() {
             >
               mastereducation.com.tr
             </a>{" "}
-            (&quot;Site&quot;) uzerinde kullanilan cerezler ve benzer izleme
-            teknolojileri hakkinda bilgi vermek; 6698 sayili Kisisel Verilerin
+            (&quot;Site&quot;) uzerinde kullanilan çerezler ve benzer izleme
+            teknolojileri hakkinda bilgi vermek; 6698 sayıli Kisisel Verilerin
             Korunmasi Kanunu (&quot;KVKK&quot;) ve Elektronik Haberlesme Kanunu
             kapsamindaki yukumluluklerimizi yerine getirmek amaciyla
             hazirlanmistir.
@@ -39,84 +39,84 @@ export default function CookiePolicyPage() {
 
         <section>
           <h2 className="text-xl font-display font-semibold">
-            Cerez (Cookie) Nedir?
+            Çerez (Cookie) Nedir?
           </h2>
           <p>
-            Cerezler, ziyaret ettiginiz web sitelerinin tarayicinizda sakladigi
+            Çerezler, ziyaret ettiginiz web sitelerinin tarayicinizda sakladigi
             kucuk metin dosyalaridir. Sitenin temel islevlerinin calismasi,
-            tercihlerinizin hatirlanmasi ve site kullanimini olculmesi icin
-            kullanilirlar. Cerezler kisisel veri icerebilir.
+            tercihlerinizin hatırlanmasi ve site kullanimini ölçulmesi icin
+            kullanilirlar. Çerezler kisisel veri icerebilir.
           </p>
         </section>
 
         <section>
           <h2 className="text-xl font-display font-semibold">
-            Kullandigimiz Cerez Turleri
+            Kullandigimiz Çerez Turleri
           </h2>
 
           <h3 className="text-base font-display font-semibold mt-4">
-            1. Zorunlu Cerezler (Strictly Necessary)
+            1. Zorunlu Çerezler (Strictly Necessary)
           </h3>
           <p>
             Sitenin temel islevlerini yerine getirmesi icin gereklidir. Oturum
-            yonetimi, sepet icerigi, guvenlik dogrulamalari (CSRF tokeni) ve
+            yönetimi, sepet icerigi, guvenlik dogrulamalari (CSRF tokeni) ve
             site icin tercihlerin (dil, oturum) saklanmasi bu kategoride yer
-            alir. Bu cerezler <strong>acik riza gerektirmez</strong> ve
+            alir. Bu çerezler <strong>acik riza gerektirmez</strong> ve
             kapatilmasi durumunda site duzgun calismaz.
           </p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
             <li>
-              <code>next-auth.session-token</code> — oturum yonetimi (HttpOnly)
+              <code>next-auth.session-token</code> — oturum yönetimi (HttpOnly)
             </li>
             <li>
               <code>next-auth.csrf-token</code> — CSRF saldirilarina karsi
               koruma
             </li>
             <li>
-              <code>me_cookie_consent</code> — cerez tercihlerinin kendisi
+              <code>me_cookie_consent</code> — çerez tercihlerinin kendisi
             </li>
-            <li>localStorage: sepet icerigi, favoriler, son gorulen urunler</li>
+            <li>localStorage: sepet icerigi, favoriler, son gorulen ürünler</li>
           </ul>
 
           <h3 className="text-base font-display font-semibold mt-4">
-            2. Performans / Analitik Cerezler
+            2. Performans / Analitik Çerezler
           </h3>
           <p>
-            Sitenin nasil kullanildigini olcer, sayfa goruntuleme istatistikleri
+            Sitenin nasil kullanildigini ölçer, sayfa görüntüleme istatistikleri
             tutariz. Bu veriler agregat olarak (kisisel olmayan) site
             performansini iyilestirmek icin kullanilir. Kabul etmediginiz
-            takdirde bu cerezler yuklenmez.
+            takdirde bu çerezler yüklenmez.
           </p>
           <ul className="list-disc pl-5 space-y-1 mt-2">
             <li>
-              Sayfa goruntuleme sayaci (kendi sunucumuzda;{" "}
+              Sayfa görüntüleme sayaci (kendi sunucumuzda;{" "}
               <code>page_views</code> tablosu)
             </li>
           </ul>
 
           <h3 className="text-base font-display font-semibold mt-4">
-            3. Pazarlama / Hedefleme Cerezleri
+            3. Pazarlama / Hedefleme Çerezleri
           </h3>
           <p>
             Ziyaretcilere ilgi alanlarina uygun icerik veya reklam sunmak icin
-            kullanilir. Kabul etmediginiz takdirde yuklenmez. Su anda 3.
-            taraf reklam veya yeniden hedefleme cerezi kullanmiyoruz; ileride
-            kullanildiginda bu liste guncellenir.
+            kullanilir. Kabul etmediginiz takdirde yüklenmez. Su anda 3.
+            taraf reklam veya yeniden hedefleme çerezi kullanmiyoruz; ileride
+            kullanildiginda bu liste güncellenir.
           </p>
         </section>
 
         <section>
           <h2 className="text-xl font-display font-semibold">
-            Cerez Tercihlerinizi Nasil Yonetirsiniz?
+            Çerez Tercihlerinizi Nasil Yonetirsiniz?
           </h2>
           <p>
-            Sitemizde ilk ziyaretinizde gordugunuz cerez yonetim panelinden
+            Sitemizde ilk ziyaretinizde gordugunuz çerez yönetim panelinden
             tercihlerinizi belirleyebilirsiniz. Tercihlerinizi sonradan
             degistirmek icin sayfanin alt kosesindeki{" "}
-            <strong>Cerez Tercihleri</strong> linkine tiklamaniz yeterlidir.
+            <strong>Çerez Tercihleri</strong> linkine tiklamaniz yeterlidir.
           </p>
           <p>
-            Ayrica tarayici ayarlarinizdan da cerezleri tamamen veya kismen
+            Ayrica tarayici ayarlarinizdan da çerezleri tamamen veya kismen
             engelleyebilirsiniz:
           </p>
           <ul className="list-disc pl-5 space-y-1">
@@ -162,25 +162,25 @@ export default function CookiePolicyPage() {
             </li>
           </ul>
           <p className="text-sm text-brand-muted">
-            Not: Zorunlu cerezleri kapatmaniz halinde sitemizin bazi bolumleri
-            (giris yapma, sepet, odeme) calismayabilir.
+            Not: Zorunlu çerezleri kapatmaniz halinde sitemizin bazi bolumleri
+            (giriş yapma, sepet, ödeme) calismayabilir.
           </p>
         </section>
 
         <section>
           <h2 className="text-xl font-display font-semibold">
-            Cerez Saklama Sureleri
+            Çerez Saklama Sureleri
           </h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              <strong>Oturum cerezleri</strong>: tarayici kapatildiginda silinir.
+              <strong>Oturum çerezleri</strong>: tarayici kapatildiginda silinir.
             </li>
             <li>
-              <strong>Kalici cerezler</strong>: 30 gun ile 1 yil arasi (cerez
-              turune gore).
+              <strong>Kalici çerezler</strong>: 30 gün ile 1 yil arasi (çerez
+              turune göre).
             </li>
             <li>
-              <strong>Cerez tercihleri</strong> (<code>me_cookie_consent</code>):
+              <strong>Çerez tercihleri</strong> (<code>me_cookie_consent</code>):
               12 ay sonra yenilenmeniz istenir.
             </li>
           </ul>
@@ -188,10 +188,10 @@ export default function CookiePolicyPage() {
 
         <section>
           <h2 className="text-xl font-display font-semibold">
-            Iletisim ve Basvuru
+            İletişim ve Basvuru
           </h2>
           <p>
-            Cerezler kanaliyla islenen kisisel verilerinize iliskin KVKK
+            Çerezler kanaliyla islenen kisisel verilerinize iliskin KVKK
             kapsamindaki haklarinizi kullanmak icin{" "}
             <Link
               href="/kvkk-basvuru"
@@ -207,7 +207,7 @@ export default function CookiePolicyPage() {
               href="/kvkk"
               className="text-brand-gold-dark font-medium hover:underline"
             >
-              KVKK Aydinlatma Metni
+              KVKK Aydınlatma Metni
             </Link>
             &apos;ni inceleyebilirsiniz.
           </p>

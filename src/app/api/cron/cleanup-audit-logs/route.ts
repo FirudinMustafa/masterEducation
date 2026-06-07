@@ -6,15 +6,15 @@ import { runCronJob } from "@/lib/cron-runner";
 export const dynamic = "force-dynamic";
 
 /**
- * Audit log retention — 365 gunden eski kayitlari siler.
+ * Audit log retention — 365 günden eski kayıtlari siler.
  *
  * KVKK madde 4/2-d: kisisel verilerin gerekli oldugu sure kadar
  * saklanmasi prensibi. 1 yil; gerekli olanlar (ornegin sipariş'in
- * sozlesme onayi gibi) zaten Order tablosunda kalir.
+ * sözleşme onayi gibi) zaten Order tablosunda kalir.
  *
- * Vercel Cron sıkligi: gunde 1 (4am).
+ * Vercel Cron sıkligi: günde 1 (4am).
  *
- * Page views icin de ayni mantik — 90 gun (analitik amaclar icin yeter).
+ * Page views icin de ayni mantik — 90 gün (analitik amaclar icin yeter).
  */
 const AUDIT_RETENTION_DAYS = 365;
 const PAGEVIEW_RETENTION_DAYS = 90;

@@ -11,7 +11,7 @@ export default async function DealerDocumentsPage() {
   if (!session?.user?.id) redirect("/giris");
 
   // JWT'deki dealerId stale olabilir (yeni basvuru sonrasi). DB'den fresh fetch
-  // yap — kullanici basvuru yaptiginda hemen belge yukleyebilsin diye.
+  // yap — kullanıcı basvuru yaptiginda hemen belge yükleyebilsin diye.
   const dealer = await prisma.dealer.findUnique({
     where: { userId: session.user.id },
     select: { id: true },
@@ -31,7 +31,7 @@ export default async function DealerDocumentsPage() {
           Belgelerim
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Vergi levhasi, ticaret sicil gazetesi ve imza sirkulerinizi yukleyin.
+          Vergi levhasi, ticaret sicil gazetesi ve imza sirkulerinizi yükleyin.
           Admin bayi basvurunuzu degerlendirirken bu belgeleri inceleyecek.
         </p>
       </div>

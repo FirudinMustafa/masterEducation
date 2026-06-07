@@ -12,7 +12,7 @@ const bodySchema = z
   .object({
     dealerIds: z.array(z.string().min(1)).min(1).max(MAX_IDS),
     paymentTerms: z.enum(["OPEN_ACCOUNT", "PREPAID"]),
-    creditLimit: z.number().min(0).max(9_999_999).optional(),
+    creditLimit: z.number().min(0).max(20_000_000).optional(),
     notes: z.string().max(500).optional(),
   })
   .refine(
@@ -24,7 +24,7 @@ const bodySchema = z
  * Toplu bayi onaylama. Yalnızca PENDING durumdaki bayilere uygulanır
  * (zaten APPROVED/REJECTED/SUSPENDED olanlar silently atlanır).
  *
- * Tüm seçili bayilere aynı paymentTerms + creditLimit + notes uygulanır.
+ * Tüm secili bayilere aynı paymentTerms + creditLimit + notes uygulanır.
  * Email queue (after) her başarılı onay için tetiklenir.
  */
 export async function POST(req: NextRequest) {

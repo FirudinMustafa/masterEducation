@@ -229,7 +229,7 @@ export function AddressManager({ addresses }: AddressManagerProps) {
               onClick={() => setShowForm(false)}
               className="px-4 py-2 text-sm text-gray-500 hover:text-brand-black cursor-pointer"
             >
-              Iptal
+              İptal
             </button>
             <button
               type="submit"
@@ -244,7 +244,7 @@ export function AddressManager({ addresses }: AddressManagerProps) {
 
       {addresses.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-500">
-          Kayitli adresiniz yok.
+          Kayıtli adresiniz yok.
         </div>
       ) : (
         <ul className="space-y-2">

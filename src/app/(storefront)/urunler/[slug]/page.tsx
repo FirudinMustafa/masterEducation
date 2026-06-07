@@ -45,17 +45,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       sku: true,
       isPublished: true,
       publisher: { select: { name: true } },
-      images: { select: { filename: true }, take: 1, orderBy: { displayOrder: "asc" } },
+      images: { select: { filename: true }, take: 1, orderBy: [{ displayOrder: "asc" }, { pictureId: "asc" }] },
     },
   });
-  if (!product) return { title: "Urun Bulunamadi" };
+  if (!product) return { title: "Ürün Bulunamadi" };
 
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
   const canonical = `${baseUrl}/urunler/${slug}`;
   const description = product.publisher
-    ? `${product.publisher.name} yayinevinden ${product.name}${
+    ? `${product.publisher.name} yayınevinden ${product.name}${
         product.nameEn ? ` (${product.nameEn})` : ""
-      }. Master Education'dan guvenli alisveris, hizli kargo.`
+      }. Master Education'dan guvenli alisveris, hızlı kargo.`
     : product.name;
   const firstImg = product.images[0]
     ? productImageUrl(product.images[0].filename)
@@ -101,7 +101,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     include: {
       publisher: true,
       category: true,
-      images: { orderBy: { displayOrder: "asc" } },
+      images: { orderBy: [{ displayOrder: "asc" }, { pictureId: "asc" }] },
     },
   });
 
@@ -156,7 +156,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       },
       include: {
         publisher: { select: { name: true } },
-        images: { orderBy: { displayOrder: "asc" }, take: 1 },
+        images: { orderBy: [{ displayOrder: "asc" }, { pictureId: "asc" }], take: 1 },
       },
       take: 8,
     }),
@@ -179,7 +179,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
         ]
       : [`${baseUrl}/me-logo-v2.png`],
     description: product.publisher
-      ? `${product.publisher.name} yayinevinden ${product.name}`
+      ? `${product.publisher.name} yayınevinden ${product.name}`
       : product.name,
     brand: product.publisher
       ? { "@type": "Brand", name: product.publisher.name }
@@ -187,8 +187,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
     offers: {
       "@type": "Offer",
       url: productUrl,
-      priceCurrency: "TRY",
-      price: Number(product.price).toFixed(2),
       availability: inStock
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
@@ -266,10 +264,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <TrackRecentlyViewed product={summary} />
 
       {/* Breadcrumb */}
-      <nav className="mb-6 flex items-center gap-1.5 text-xs text-neutral-500">
+      <nav aria-label="breadcrumb" className="mb-6 flex items-center gap-1.5 text-xs text-neutral-500">
         <Link href="/" className="hover:text-neutral-900">Anasayfa</Link>
         <ChevronRightIcon className="h-3 w-3 text-neutral-300" />
-        <Link href="/urunler" className="hover:text-neutral-900">Urunler</Link>
+        <Link href="/urunler" className="hover:text-neutral-900">Ürünler</Link>
         {product.category && (
           <>
             <ChevronRightIcon className="h-3 w-3 text-neutral-300" />
@@ -282,7 +280,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </>
         )}
         <ChevronRightIcon className="h-3 w-3 text-neutral-300" />
-        <span className="max-w-xs truncate text-neutral-900">{product.name}</span>
+        <span aria-current="page" className="max-w-xs truncate text-neutral-900">{product.name}</span>
       </nav>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
@@ -341,6 +339,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 oldPrice={product.oldPrice ? Number(product.oldPrice) : null}
                 dealerPrice={productPricing?.dealerPrice ?? null}
                 discountPct={productPricing?.dealerDiscountPct ?? null}
+                isDealer={pricingCtx.dealerId !== null}
                 size="lg"
               />
               <div className="mt-3 flex items-center gap-2 text-sm">
@@ -385,10 +384,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
             {/* Trust list */}
             <ul className="space-y-2.5 text-sm">
-              <TrustRow Icon={TruckIcon} text="Hizli kargo" />
-              <TrustRow Icon={ShieldCheckIcon} text="Guvenli odeme — 3D Secure destekli" />
-              <TrustRow Icon={CreditCardIcon} text="14 gun iade hakki" />
-              <TrustRow Icon={BuildingStorefrontIcon} text="Bayiler icin ozel iskonto" />
+              <TrustRow Icon={TruckIcon} text="Hızlı kargo" />
+              <TrustRow Icon={ShieldCheckIcon} text="Guvenli ödeme — 3D Secure destekli" />
+              <TrustRow Icon={CreditCardIcon} text="14 gün iade hakki" />
+              <TrustRow Icon={BuildingStorefrontIcon} text="Bayiler icin özel iskonto" />
             </ul>
           </div>
         </div>
@@ -399,19 +398,19 @@ export default async function ProductDetailPage({ params }: PageProps) {
         tabs={[
           {
             id: "desc",
-            label: "Urun Aciklamasi",
+            label: "Ürün Açıklamasi",
             content: (
               <div className="prose prose-neutral max-w-none text-sm leading-relaxed text-neutral-700">
                 <p>
                   <strong>{product.name}</strong>
                   {product.publisher && (
-                    <> — {product.publisher.name} yayinevi</>
+                    <> — {product.publisher.name} yayınevi</>
                   )}
                   {product.category && <> / {product.category.name}</>}.
                 </p>
                 <p>
-                  Master Education sectigi egitim materyallerinde orjinalligi garanti eder.
-                  Bu urun stogumuzda bulunmakta olup, siparisiniz 1-3 is gunu icinde
+                  Master Education sectigi eğitim materyallerinde orjinalligi garanti eder.
+                  Bu ürün stogumuzda bulunmakta olup, siparişiniz 1-3 is günu icinde
                   kargoya teslim edilir.
                 </p>
                 {product.nameEn && (
@@ -424,7 +423,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           },
           {
             id: "specs",
-            label: "Ozellikler",
+            label: "Özellikler",
             content: (
               <ProductSpecs
                 product={{
@@ -470,7 +469,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       {relatedSummaries.length > 0 && (
         <section className="mt-14">
           <h2 className="mb-5 font-display text-xl font-bold text-neutral-900">
-            Ayni Yayinevinden Digerleri
+            Ayni Yayınevinden Digerleri
           </h2>
           <ProductGrid products={relatedSummaries} />
         </section>
@@ -526,7 +525,7 @@ function ProductSpecs({ product }: { product: ProductSpecsData }) {
   const rows: Row[] = [
     product.publisher
       ? {
-          label: "Yayinevi",
+          label: "Yayınevi",
           value: (
             <Link
               href={`/yayinevleri/${product.publisher.slug}`}
@@ -557,11 +556,11 @@ function ProductSpecs({ product }: { product: ProductSpecsData }) {
       : null,
     showAnaTur ? { label: "Ana Kategori", value: showAnaTur } : null,
     product.detayTur ? { label: "Alt Kategori", value: product.detayTur } : null,
-    product.productType ? { label: "Urun Tipi", value: product.productType } : null,
+    product.productType ? { label: "Ürün Tipi", value: product.productType } : null,
     product.nameEn
       ? { label: "Ingilizce Adi", value: product.nameEn }
       : null,
-    { label: "ISBN / Urun Kodu", value: product.sku, mono: true },
+    { label: "ISBN / Ürün Kodu", value: product.sku, mono: true },
     { label: "KDV Orani", value: `%${product.vatRate}` },
   ];
   const visible = rows.filter((r): r is NonNullable<Row> => r !== null);

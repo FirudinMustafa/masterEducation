@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   if (scope === "PRODUCT" && !productId) {
     return NextResponse.json(
-      { error: "PRODUCT kapsami icin urun secilmeli." },
+      { error: "PRODUCT kapsami icin ürün secilmeli." },
       { status: 400 }
     );
   }
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   }
   if (scope === "PUBLISHER" && !publisherId) {
     return NextResponse.json(
-      { error: "PUBLISHER kapsami icin yayinevi secilmeli." },
+      { error: "PUBLISHER kapsami icin yayınevi secilmeli." },
       { status: 400 }
     );
   }

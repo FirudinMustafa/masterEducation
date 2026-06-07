@@ -35,7 +35,7 @@ export async function PATCH(
     include: { dealer: { select: { id: true } } },
   });
   if (!user) {
-    return NextResponse.json({ error: "Kullanici bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Kullanıcı bulunamadi." }, { status: 404 });
   }
 
   if (user.role === "ADMIN" && parsed.data.role !== "ADMIN") {
@@ -54,7 +54,7 @@ export async function PATCH(
     return NextResponse.json(
       {
         error:
-          "Bu kullanici bayi olarak kaydolmamis. Once bayi basvurusu yapmali.",
+          "Bu kullanıcı bayi olarak kaydolmamis. Once bayi basvurusu yapmali.",
       },
       { status: 400 }
     );

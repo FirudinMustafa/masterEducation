@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * Current dealer info — checkout/sidebar gibi yerlerin bakiye + limit'i
- * fresh okumasi icin. Yalniz oturum acik DEALER kullanicisi cagirir.
+ * fresh okumasi icin. Yalniz oturum acik DEALER kullanıcısi cagirir.
  */
 export async function GET() {
   const session = await auth();

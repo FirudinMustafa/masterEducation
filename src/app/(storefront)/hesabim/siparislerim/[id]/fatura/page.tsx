@@ -5,7 +5,7 @@ import { loadInvoiceOrder } from "@/lib/invoice-helpers";
 import { InvoiceView } from "@/components/invoice-view";
 import { PrintTrigger } from "@/components/invoice-print";
 
-export const metadata: Metadata = { title: "Siparis Ozeti" };
+export const metadata: Metadata = { title: "Sipariş Ozeti" };
 
 interface PageProps {
   params: Promise<{ id: string }>;

@@ -67,10 +67,10 @@ export function ReviewModeration({ reviews }: { reviews: ReviewRow[] }) {
       affected?: number;
     };
     if (!res.ok) {
-      setError(d.error ?? "Toplu islem basarisiz.");
+      setError(d.error ?? "Toplu islem başarısız.");
       return;
     }
-    setInfo(`${d.affected ?? 0} yorum guncellendi.`);
+    setInfo(`${d.affected ?? 0} yorum güncellendi.`);
     setSelected(new Set());
     startTransition(() => router.refresh());
   }
@@ -84,7 +84,7 @@ export function ReviewModeration({ reviews }: { reviews: ReviewRow[] }) {
     });
     if (!res.ok) {
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Islem basarisiz.");
+      setError(data.error ?? "Islem başarısız.");
       return;
     }
     startTransition(() => router.refresh());
@@ -121,7 +121,7 @@ export function ReviewModeration({ reviews }: { reviews: ReviewRow[] }) {
             onChange={toggleAll}
             className="h-4 w-4 cursor-pointer"
           />
-          Tumunu sec ({reviews.length})
+          Tümunu seç ({reviews.length})
         </label>
       )}
 

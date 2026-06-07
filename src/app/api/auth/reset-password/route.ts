@@ -4,16 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { resetPasswordSchema, flattenZodError } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { hashToken } from "@/lib/token-hash";
+import { getClientIp } from "@/lib/get-client-ip";
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali, QA 2026-05-18)
+  const ip = getClientIp(req.headers);
   const rl = rateLimit(`reset:${ip}`, 10, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: "Cok fazla istek. Daha sonra tekrar deneyin." },
+      { error: "Çok fazla istek. Daha sonra tekrar deneyin." },
       { status: 429 }
     );
   }
@@ -28,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { token, password } = parsed.data;
-  // DB'de hash saklanir; gelen plain token'i hash'le ve karsilastir.
+  // DB'de hash saklanir; gelen plain token'i hash'le ve karşılaştır.
   const record = await prisma.passwordResetToken.findUnique({
     where: { token: hashToken(token) },
   });

@@ -13,25 +13,25 @@ export function TrustFeatures() {
     {
       Icon: AcademicCapIcon,
       title: "Orjinal Materyaller",
-      desc: "Yetkili distributoru olarak; her urun orjinaldir.",
+      desc: "Yetkili distributoru olarak; her ürün orjinaldir.",
       accent: "bg-emerald-50 text-emerald-600",
     },
     {
       Icon: TruckIcon,
-      title: "Hizli Kargo",
-      desc: "1-3 is gunu icinde Turkiye'nin her yerine.",
+      title: "Hızlı Kargo",
+      desc: "1-3 is günu icinde Turkiye'nin her yerine.",
       accent: "bg-sky-50 text-sky-600",
     },
     {
       Icon: ShieldCheckIcon,
-      title: "Guvenli Odeme",
-      desc: "3D Secure ile tum kart islemleriniz korunur.",
+      title: "Guvenli Ödeme",
+      desc: "3D Secure ile tüm kart islemleriniz korunur.",
       accent: "bg-violet-50 text-violet-600",
     },
     {
       Icon: CreditCardIcon,
-      title: "Kolay Iade",
-      desc: "14 gun icinde kosulsuz iade hakki.",
+      title: "Kolay İade",
+      desc: "14 gün icinde kosulsuz iade hakki.",
       accent: "bg-amber-50 text-amber-600",
     },
   ];

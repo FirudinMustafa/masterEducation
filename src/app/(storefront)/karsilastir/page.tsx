@@ -7,14 +7,13 @@ import { useWishlistStore } from "@/stores/wishlist-store";
 import { toast } from "@/stores/toast-store";
 import { useHydrated } from "@/lib/use-hydrated";
 import { ProductImage } from "@/components/products/product-image";
-import { formatPrice, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   ScaleIcon,
   XMarkIcon,
   ShoppingCartIcon,
   HeartIcon,
   HeartIconSolid,
-  CheckIcon,
   CheckCircleIcon,
   XCircleIcon,
   ArrowRightIcon,
@@ -26,37 +25,7 @@ const ROWS: {
   label: string;
   render: (p: CompareItem) => React.ReactNode;
 }[] = [
-  {
-    label: "Fiyat",
-    render: (p) => {
-      const dealer =
-        p.dealerPrice != null && p.dealerPrice < p.price ? p.dealerPrice : null;
-      return (
-        <div>
-          {dealer ? (
-            <>
-              <span className="text-xs text-neutral-400 line-through">
-                {formatPrice(p.price)}
-              </span>
-              <div className="text-base font-bold text-emerald-600 sm:text-lg">
-                {formatPrice(dealer)}
-              </div>
-              {p.dealerDiscountPct && (
-                <div className="text-[10px] font-semibold text-emerald-700">
-                  Bayi -%{p.dealerDiscountPct}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-base font-bold text-neutral-900 sm:text-lg">
-              {formatPrice(p.price)}
-            </div>
-          )}
-        </div>
-      );
-    },
-  },
-  { label: "Yayinevi", render: (p) => p.publisherName ?? "—" },
+  { label: "Yayınevi", render: (p) => p.publisherName ?? "—" },
   {
     label: "ISBN",
     render: (p) => <code className="text-xs">{p.sku}</code>,
@@ -105,17 +74,17 @@ export default function ComparePage() {
           <ScaleIcon className="h-10 w-10 text-sky-400" />
         </div>
         <h1 className="font-display text-xl font-bold text-neutral-900 sm:text-2xl">
-          Karsilastirma listeniz bos
+          Karşılaştırma listeniz bos
         </h1>
         <p className="mt-2 text-sm text-neutral-500">
-          Urun kartlarinda terazi ikonuna tiklayarak en fazla {MAX_COMPARE_ITEMS}{" "}
-          urunu karsilastirabilirsiniz.
+          Ürün kartlarinda terazi ikonuna tiklayarak en fazla {MAX_COMPARE_ITEMS}{" "}
+          ürünu karşılaştırabilirsiniz.
         </p>
         <Link
           href="/urunler"
           className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-gold px-5 py-3 text-sm font-bold text-neutral-800 shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md sm:px-6"
         >
-          Urunlere Gozat
+          Ürünlere Gözat
           <ArrowRightIcon className="h-4 w-4" />
         </Link>
       </div>
@@ -144,33 +113,15 @@ export default function ComparePage() {
   function onToggleWishlist(p: CompareItem) {
     const added = toggleWishlist(p);
     if (added) toast.success("Favorilere eklendi");
-    else toast.info("Favorilerden cikarildi");
+    else toast.info("Favorilerden çıkarildi");
   }
 
   function onRemove(p: CompareItem) {
     remove(p.id);
-    toast.info("Karsilastirmadan cikarildi");
+    toast.info("Karşılaştırmadan çıkarildi");
   }
 
-  const hasAnyDealerDiscount = items.some(
-    (p) => p.dealerDiscountPct && p.dealerDiscountPct > 0,
-  );
-  const effectiveRows = hasAnyDealerDiscount
-    ? [
-        ...ROWS,
-        {
-          label: "Bayi Iskontosu",
-          render: (p: CompareItem) =>
-            p.dealerDiscountPct && p.dealerDiscountPct > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                <CheckIcon className="h-3 w-3" />%{p.dealerDiscountPct}
-              </span>
-            ) : (
-              <span className="text-xs text-neutral-400">—</span>
-            ),
-        },
-      ]
-    : ROWS;
+  const effectiveRows = ROWS;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
@@ -178,16 +129,16 @@ export default function ComparePage() {
         <div>
           <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-neutral-900 sm:text-3xl">
             <ScaleIcon className="h-6 w-6 text-sky-500 sm:h-7 sm:w-7" />
-            Karsilastirma
+            Karşılaştırma
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
-            {items.length}/{MAX_COMPARE_ITEMS} urun karsilastiriliyor
+            {items.length}/{MAX_COMPARE_ITEMS} ürün karşılaştıriliyor
           </p>
         </div>
         <button
           onClick={() => {
             clear();
-            toast.info("Karsilastirma temizlendi");
+            toast.info("Karşılaştırma temizlendi");
           }}
           className="inline-flex items-center justify-center gap-2 self-start rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 cursor-pointer sm:self-auto"
         >
@@ -205,7 +156,7 @@ export default function ComparePage() {
           >
             <button
               onClick={() => onRemove(p)}
-              aria-label="Cikar"
+              aria-label="Çıkar"
               className="absolute right-2 top-2 z-10 rounded-full bg-white p-1.5 text-neutral-400 ring-1 ring-neutral-200 hover:bg-neutral-50 hover:text-neutral-700 cursor-pointer"
             >
               <XMarkIcon className="h-4 w-4" />
@@ -276,7 +227,7 @@ export default function ComparePage() {
         ))}
       </div>
 
-      {/* Desktop: yatay karsilastirma grid'i */}
+      {/* Desktop: yatay karşılaştırma grid'i */}
       <div className="hidden md:block">
         <div className="overflow-x-auto">
           <div
@@ -294,7 +245,7 @@ export default function ComparePage() {
               >
                 <button
                   onClick={() => onRemove(p)}
-                  aria-label="Cikar"
+                  aria-label="Çıkar"
                   className="absolute right-2 top-2 rounded-full bg-white p-1 text-neutral-400 ring-1 ring-neutral-200 hover:bg-neutral-50 hover:text-neutral-700 cursor-pointer"
                 >
                   <XMarkIcon className="h-4 w-4" />

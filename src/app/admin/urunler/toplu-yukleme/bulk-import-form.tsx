@@ -61,7 +61,7 @@ export function BulkImportForm() {
     setWorking(false);
     const data = (await res.json().catch(() => ({}))) as Partial<DryRunResult> & { error?: string };
     if (!res.ok) {
-      setError(data.error ?? "Preview basarisiz.");
+      setError(data.error ?? "Preview başarısız.");
       return;
     }
     setDryRun(data as DryRunResult);
@@ -86,15 +86,15 @@ export function BulkImportForm() {
       error?: string;
     };
     if (!res.ok || !data.ok) {
-      setError(data.error ?? "Yukleme basarisiz.");
+      setError(data.error ?? "Yükleme başarısız.");
       return;
     }
     if (data.mode === "upsert") {
       setSuccess(
-        `${data.inserted ?? 0} urun eklendi, ${data.updated ?? 0} urun guncellendi.`
+        `${data.inserted ?? 0} ürün eklendi, ${data.updated ?? 0} ürün güncellendi.`
       );
     } else {
-      setSuccess(`${data.inserted} urun eklendi.`);
+      setSuccess(`${data.inserted} ürün eklendi.`);
     }
     setDryRun(null);
     setFile(null);
@@ -112,11 +112,11 @@ export function BulkImportForm() {
           href="/api/admin/products/template"
           className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50"
         >
-          Excel Sablonu Indir
+          Excel Sablonu İndir
         </a>
         <p className="text-xs text-gray-500 mt-2">
-          Sablonda &quot;Urunler&quot;, &quot;Yayinevleri&quot; ve &quot;Kategoriler&quot; sayfalari vardir.
-          Urun satirlarini &quot;Urunler&quot; sayfasina ekleyin.
+          Sablonda &quot;Ürünler&quot;, &quot;Yayınevleri&quot; ve &quot;Kategoriler&quot; sayfalari vardir.
+          Ürün satirlarini &quot;Ürünler&quot; sayfasina ekleyin.
         </p>
       </div>
 
@@ -124,7 +124,7 @@ export function BulkImportForm() {
         <h2 className="font-semibold text-brand-black">2. Dosya & Mod</h2>
         <div>
           <span className="block text-xs font-medium text-gray-500 mb-1">
-            Yukleme modu
+            Yükleme modu
           </span>
           <div className="flex flex-wrap gap-3 text-sm">
             <label className="inline-flex items-center gap-2 cursor-pointer">
@@ -200,7 +200,7 @@ export function BulkImportForm() {
             {dryRun.mode === "upsert" && (
               <>
                 <Stat label="Yeni eklenecek" value={String(dryRun.willInsert)} good />
-                <Stat label="Guncellenecek" value={String(dryRun.willUpdate)} />
+                <Stat label="Güncellenecek" value={String(dryRun.willUpdate)} />
               </>
             )}
             <Stat
@@ -240,8 +240,8 @@ export function BulkImportForm() {
                       <th className="text-left p-2">Satir</th>
                       <th className="text-left p-2">nopId</th>
                       <th className="text-left p-2">ISBN</th>
-                      <th className="text-left p-2">Urun</th>
-                      <th className="text-left p-2">Yayinevi</th>
+                      <th className="text-left p-2">Ürün</th>
+                      <th className="text-left p-2">Yayınevi</th>
                       <th className="text-left p-2">Kategori</th>
                       <th className="text-right p-2">Fiyat</th>
                     </tr>
@@ -254,7 +254,7 @@ export function BulkImportForm() {
                           {p.nopId}
                           {p.action === "update" && (
                             <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-amber-100 text-amber-700">
-                              guncelle
+                              güncelle
                             </span>
                           )}
                           {p.action === "insert" && (
@@ -284,7 +284,7 @@ export function BulkImportForm() {
               disabled={!dryRun.ok || working || pending}
               className="px-5 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
             >
-              {working ? "Yukleniyor..." : `Yukle (${dryRun.parsedCount} urun)`}
+              {working ? "Yükleniyor..." : `Yükle (${dryRun.parsedCount} ürün)`}
             </button>
             {!dryRun.ok && (
               <span className="text-xs text-red-700">

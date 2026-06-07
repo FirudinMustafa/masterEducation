@@ -84,14 +84,14 @@ export async function DELETE(
   if (productCount > 0 && !force) {
     return NextResponse.json(
       {
-        error: `Bu kategoride ${productCount} urun var. Urunleri baska kategoriye tasiyin veya ?force=1 ile iliskisini kirarak silin.`,
+        error: `Bu kategoride ${productCount} ürün var. Ürünleri baska kategoriye tasiyin veya ?force=1 ile iliskisini kirarak silin.`,
         productCount,
       },
       { status: 409 }
     );
   }
 
-  // Force delete: iliskili urunlerin categoryId'sini null yap, sonra kategoriyi sil.
+  // Force delete: iliskili ürünlerin categoryId'sini null yap, sonra kategoriyi sil.
   await prisma.$transaction([
     ...(productCount > 0
       ? [

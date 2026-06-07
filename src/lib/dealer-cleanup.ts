@@ -11,21 +11,21 @@ export interface DealerCleanupResult {
 }
 
 /**
- * Bayi'ye ait tum yan kayitlari temizler ve Dealer satirini siler.
+ * Bayi'ye ait tüm yan kayıtlari temizler ve Dealer satirini siler.
  * User KORUNUR — bu helper sadece Dealer scope'undaki temizligi yapar.
  *
  * Yapilanlar:
- *  1) Aktif siparisleri (PENDING/APPROVED/PROCESSING/SHIPPED) CANCELLED'a ceker.
- *     - Stok geri yuklenir
+ *  1) Aktif siparişleri (PENDING/APPROVED/PROCESSING/SHIPPED) CANCELLED'a çeker.
+ *     - Stok geri yüklenir
  *     - paymentStatus PAID → REFUNDED, degilse FAILED
  *     - OrderEvent CANCELLED audit kaydi
- *  2) DELIVERED + paymentStatus=PENDING siparisleri → paymentStatus FAILED
- *     (status DELIVERED kalir, yasal kayit). Bayi gittigi icin tahsilat
+ *  2) DELIVERED + paymentStatus=PENDING siparişleri → paymentStatus FAILED
+ *     (status DELIVERED kalir, yasal kayıt). Bayi gittigi icin tahsilat
  *     beklenmez.
  *  3) DealerLedger / DealerDocument / DealerDiscount satirlari silinir.
  *  4) Dealer kaydi silinir.
  *
- * Cagiran tarafa (admin endpoint) sayilari doner — audit log icin.
+ * Cagiran tarafa (admin endpoint) sayılari doner — audit log icin.
  *
  * Transaction icinde calistirilir; tx parametresi opsiyonel — verilmezse
  * kendi transaction'ini acar.
@@ -122,7 +122,7 @@ export async function cleanupDealerByUserId(
 
 /**
  * Dealer ID ile siler (UI bayi panelinden cagrilan akis). Internal'da
- * userId'a cevirip ayni helper'a duser.
+ * userId'a çevirip ayni helper'a duser.
  */
 export async function cleanupDealerById(
   dealerId: string,

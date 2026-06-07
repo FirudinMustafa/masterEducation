@@ -82,8 +82,18 @@ class MockShippingAdapter implements ShippingAdapter {
     return [];
   }
 
-  verifyWebhookSignature(): boolean {
-    return process.env.NODE_ENV !== "production";
+  verifyWebhookSignature(rawBody: string, signature: string): boolean {
+    const MOCK_TEST_SECRET = "shipping-mock-test-secret-2026";
+    const expected = crypto
+      .createHmac("sha256", MOCK_TEST_SECRET)
+      .update(rawBody)
+      .digest("hex");
+    if (expected.length !== signature.length) return false;
+    try {
+      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+    } catch {
+      return false;
+    }
   }
 }
 

@@ -15,7 +15,7 @@ const MIME_BY_EXT: Record<string, string> = {
  *
  * Yetki:
  *   - Bayi yalniz kendi belgelerini indirir
- *   - Admin tum belgelere erisir
+ *   - Admin tüm belgelere erisir
  *   - Diger roller 403
  *
  * `DealerDocument.filename` Vercel Blob URL'idir. URL paylaşılsa bile random
@@ -59,7 +59,7 @@ export async function GET(
   }
 
   // filename alani Blob URL olmali. Eski dosyalar (legacy disk path) destek
-  // disi — repo fresh-deploy edildigi icin bu durum normalde olusmaz.
+  // disi — repo fresh-deploy edildigi icin bu durum normalde oluşmaz.
   if (!/^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//i.test(doc.filename)) {
     return NextResponse.json(
       { error: "Belge depolama formati gecersiz." },

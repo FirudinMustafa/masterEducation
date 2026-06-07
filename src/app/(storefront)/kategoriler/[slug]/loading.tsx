@@ -1,4 +1,4 @@
-// P2-PAGE-1: Bölüm 1'den ertelendi. urunler/loading.tsx pattern'i.
+// P2-PAGE-1: Bölüm 1'den ertelendi. ürünler/loading.tsx pattern'i.
 export default function Loading() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">

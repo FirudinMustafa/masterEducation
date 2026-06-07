@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CartRefreshBanner } from "@/components/cart/cart-refresh-banner";
 import { LocationPicker } from "@/components/location-picker";
-import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 
 type Step = "info" | "payment" | "confirm";
@@ -27,11 +27,24 @@ interface SavedAddress {
 
 export default function CheckoutPage() {
   const { items, note, getSubtotal, clearCart } = useCartStore();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  // Bayi-only: sipariş yalnız giriş yapmış bayilere açık. Bayi olmayan
+  // ziyaretçi/müşteri ödeme sayfasına erişemez, girişe yönlendirilir.
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session?.user || session.user.role !== "DEALER") {
+      router.replace("/giris?callbackUrl=/odeme");
+    }
+  }, [status, session, router]);
 
   const [step, setStep] = useState<Step>("info");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Alan bazlı (anlık) doğrulama — kullanıcı alandan çıkınca (onBlur) hata
+  // gösterilir, düzeltmeye başlayınca (onChange) temizlenir.
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Saved addresses for logged-in users
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
@@ -51,8 +64,8 @@ export default function CheckoutPage() {
   });
 
   // Load saved addresses when a session is available.
-  // Not: Kayitli adres **otomatik olarak form'a prefill edilmez** — kullanici
-  // "kayitli bilgi" hissi yasamasin. Kullanici kayitli adresi tiklarsa
+  // Not: Kayıtli adres **otomatik olarak form'a prefill edilmez** — kullanıcı
+  // "kayıtli bilgi" hissi yasamasin. Kullanıcı kayıtli adresi tiklarsa
   // prefill selectAddress() ile olur.
   useEffect(() => {
     if (!session?.user) return;
@@ -114,37 +127,18 @@ export default function CheckoutPage() {
     cvv: "",
   });
 
-  // Yasal sozlesmelerin onayi (zorunlu).
+  // Yasal sözleşmelerin onayi (zorunlu).
   const [contractsAccepted, setContractsAccepted] = useState(false);
 
-  // Session yuklendikten sonra dealer ise method'u acik hesaba cevir.
+  // Okul adı — yalnız bayi siparişlerinde gösterilir ve zorunludur.
+  const [schoolName, setSchoolName] = useState("");
+
+  // Session yüklendikten sonra dealer ise method'u acik hesaba çevir.
   useEffect(() => {
     if (isOpenAccountDealer && payment.method === "CREDIT_CARD") {
       setPayment((p) => ({ ...p, method: "OPEN_ACCOUNT" }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpenAccountDealer]);
-
-  // Dealer bakiye + limit (sadece OPEN_ACCOUNT bayide gosterilir)
-  const [dealerInfo, setDealerInfo] = useState<{
-    creditLimit: number;
-    currentBalance: number;
-    remaining: number;
-  } | null>(null);
-  useEffect(() => {
-    if (!isOpenAccountDealer) return;
-    fetch("/api/dealer/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d) {
-          setDealerInfo({
-            creditLimit: d.creditLimit,
-            currentBalance: d.currentBalance,
-            remaining: d.remaining,
-          });
-        }
-      })
-      .catch(() => {});
   }, [isOpenAccountDealer]);
 
   // Coupon state
@@ -158,15 +152,9 @@ export default function CheckoutPage() {
   const [couponLoading, setCouponLoading] = useState(false);
 
   const subtotal = getSubtotal();
-  // Bayi B2B avantaji: her zaman ücretsiz kargo (backend orders/route.ts ile
-  // aynı kural). Diğer müşteri için 500 TL üstü ücretsiz, altı 29.90.
+  // Kupon değerlendirmesi için kargo bazını hesapla (gösterilmez; yalnız
+  // /api/coupons/validate çağrısına gönderilir). Bayi her zaman ücretsiz kargo.
   const baseShipping = isDealer ? 0 : subtotal >= 500 ? 0 : 29.9;
-  const couponDiscount = coupon?.discount ?? 0;
-  const shippingCost = Math.max(
-    0,
-    baseShipping - (coupon?.shippingDiscount ?? 0)
-  );
-  const total = Math.max(0, subtotal - couponDiscount + shippingCost);
 
   async function applyCoupon() {
     setCouponError(null);
@@ -203,8 +191,8 @@ export default function CheckoutPage() {
   }
 
   // Bos sepet kontrolu — confirm step'inden ONCE yapilmamali. OPEN_ACCOUNT
-  // siparis sonrasi clearCart() cagriliyor, items=[] olur ama step=confirm
-  // teskektur ekrani gosterilmeli (bu kontrolden once dusulur degildir).
+  // sipariş sonrasi clearCart() cagriliyor, items=[] olur ama step=confirm
+  // teskektur ekrani gösterilmeli (bu kontrolden once dusulur degildir).
   if (items.length === 0 && step !== "confirm") {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center">
@@ -214,7 +202,7 @@ export default function CheckoutPage() {
           </svg>
         </div>
         <h1 className="text-2xl font-display font-bold text-brand-black mb-2">Sepetiniz bos</h1>
-        <p className="text-brand-muted mb-6">Odeme yapmak icin sepetinize urun ekleyin.</p>
+        <p className="text-brand-muted mb-6">Ödeme yapmak icin sepetinize ürün ekleyin.</p>
         <Link href="/urunler">
           <Button>Alisverise Basla</Button>
         </Link>
@@ -224,6 +212,37 @@ export default function CheckoutPage() {
 
   function updateForm(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+    // Kullanıcı düzeltmeye başlayınca o alanın hatasını temizle.
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: "" } : prev));
+  }
+
+  // Tek alanın doğrulama mesajını döndürür ("" = geçerli).
+  function fieldError(field: string, value: string): string {
+    const v = value.trim();
+    switch (field) {
+      case "fullName":
+        return v ? "" : "Ad soyad zorunlu.";
+      case "email":
+        if (!v) return "Email zorunlu.";
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "" : "Geçerli bir email girin.";
+      case "phone": {
+        if (!v) return "Telefon zorunlu.";
+        const digits = v.replace(/\D/g, "");
+        return digits.length === 10 || digits.length === 11
+          ? ""
+          : "Telefon 10-11 haneli olmalı (örn: 0 5XX XXX XX XX).";
+      }
+      case "address":
+        return v ? "" : "Adres zorunlu.";
+      case "schoolName":
+        return v ? "" : "Okul adı zorunlu.";
+      default:
+        return "";
+    }
+  }
+
+  function handleBlur(field: string, value: string) {
+    setFieldErrors((prev) => ({ ...prev, [field]: fieldError(field, value) }));
   }
 
   function updatePayment(field: string, value: string) {
@@ -231,12 +250,22 @@ export default function CheckoutPage() {
   }
 
   function validateInfo(): boolean {
-    if (!form.fullName || !form.email || !form.phone || !form.city || !form.address) {
-      setError("Lutfen tum zorunlu alanlari doldurun.");
+    // Alan bazlı hataları topla → ilgili alanların altında göster.
+    const errs: Record<string, string> = {
+      fullName: fieldError("fullName", form.fullName),
+      email: fieldError("email", form.email),
+      phone: fieldError("phone", form.phone),
+      address: fieldError("address", form.address),
+    };
+    if (isDealer) errs.schoolName = fieldError("schoolName", schoolName);
+    setFieldErrors((prev) => ({ ...prev, ...errs }));
+
+    if (!form.city) {
+      setError("Lütfen il/ilçe seçin.");
       return false;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setError("Gecerli bir email adresi girin.");
+    if (Object.values(errs).some(Boolean)) {
+      setError("Lütfen işaretli alanları düzeltin.");
       return false;
     }
     setError("");
@@ -254,14 +283,14 @@ export default function CheckoutPage() {
 
     if (!contractsAccepted) {
       setError(
-        "Devam etmek icin Mesafeli Satis Sozlesmesi ve On Bilgilendirme Formu'nu onaylamaniz gerekir."
+        "Devam etmek icin Mesafeli Satis Sözleşmesi ve On Bilgilendirme Formu'nu onaylamaniz gerekir."
       );
       return;
     }
 
     if (payment.method === "CREDIT_CARD") {
       if (!payment.cardNumber || !payment.cardName || !payment.expiry || !payment.cvv) {
-        setError("Lutfen kart bilgilerini eksiksiz doldurun.");
+        setError("Lütfen kart bilgilerini eksiksiz doldurun.");
         return;
       }
       const digits = payment.cardNumber.replace(/\D/g, "");
@@ -283,7 +312,7 @@ export default function CheckoutPage() {
       }
       if (sum % 10 !== 0) {
         setError(
-          "Kart numarasi gecersiz (Luhn kontrolu). Mock odeme icin: 4111 1111 1111 1111"
+          "Kart numarasi gecersiz (Luhn kontrolu). Mock ödeme icin: 4111 1111 1111 1111"
         );
         return;
       }
@@ -317,6 +346,7 @@ export default function CheckoutPage() {
         paymentMethod: payment.method,
         couponCode: coupon?.code ?? null,
         note,
+        schoolName: isDealer ? schoolName.trim() : null,
         contractsAccepted,
       };
 
@@ -342,7 +372,7 @@ export default function CheckoutPage() {
       };
 
       if (!res.ok) {
-        throw new Error(data.error || "Siparis olusturulamadi.");
+        throw new Error(data.error || "Sipariş oluşturulamadi.");
       }
 
       // For CREDIT_CARD we hand off to the mock 3D Secure page which will
@@ -355,7 +385,7 @@ export default function CheckoutPage() {
       clearCart();
       setStep("confirm");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Bir hata olustu. Lutfen tekrar deneyin.");
+      setError(err instanceof Error ? err.message : "Bir hata oluştu. Lütfen tekrar deneyin.");
     } finally {
       setLoading(false);
     }
@@ -363,7 +393,7 @@ export default function CheckoutPage() {
 
   const steps = [
     { key: "info", label: "Teslimat Bilgileri", num: 1 },
-    { key: "payment", label: "Odeme", num: 2 },
+    { key: "payment", label: "Ödeme", num: 2 },
     { key: "confirm", label: "Onay", num: 3 },
   ];
 
@@ -377,10 +407,10 @@ export default function CheckoutPage() {
           </svg>
         </div>
         <h1 className="text-2xl font-display font-bold text-brand-black mb-2">
-          Siparisiniz Alindi!
+          Siparişiniz Alindi!
         </h1>
         <p className="text-brand-muted mb-2">
-          Siparisiniz basariyla olusturuldu. En kisa surede hazirlanip kargoya
+          Siparişiniz başarıyla oluşturuldu. En kisa surede hazirlanip kargoya
           verilecektir.
         </p>
         <p className="text-sm text-brand-muted mb-6">
@@ -390,7 +420,7 @@ export default function CheckoutPage() {
           {isDealer ? (
             <>
               <Link href="/bayi/siparisler">
-                <Button>Bayi Siparislerim</Button>
+                <Button>Bayi Siparişlerim</Button>
               </Link>
               <Link href="/bayi">
                 <Button variant="outline">Bayi Paneline Don</Button>
@@ -403,7 +433,7 @@ export default function CheckoutPage() {
               </Link>
               {session?.user && (
                 <Link href="/hesabim/siparislerim">
-                  <Button variant="outline">Siparislerimi Gor</Button>
+                  <Button variant="outline">Siparişlerimi Gor</Button>
                 </Link>
               )}
             </>
@@ -415,7 +445,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-      <h1 className="text-2xl font-display font-bold text-brand-black mb-5 sm:mb-6">Odeme</h1>
+      <h1 className="text-2xl font-display font-bold text-brand-black mb-5 sm:mb-6">Ödeme</h1>
 
       <CartRefreshBanner />
 
@@ -455,14 +485,14 @@ export default function CheckoutPage() {
 
               {!session?.user && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-5 text-sm text-blue-700">
-                  <Link href="/giris" className="font-semibold underline">Giris yapin</Link> veya asagidaki bilgileri doldurun.
+                  <Link href="/giris" className="font-semibold underline">Giriş yapin</Link> veya asagidaki bilgileri doldurun.
                 </div>
               )}
 
               {savedAddresses.length > 0 && (
                 <div className="mb-5 space-y-2">
                   <p className="text-xs font-medium text-gray-500">
-                    Kayitli adreslerinizden secin
+                    Kayıtli adreslerinizden secin
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {savedAddresses.map((a) => (
@@ -514,6 +544,8 @@ export default function CheckoutPage() {
                   label="Ad Soyad *"
                   value={form.fullName}
                   onChange={(e) => updateForm("fullName", e.target.value)}
+                  onBlur={(e) => handleBlur("fullName", e.target.value)}
+                  error={fieldErrors.fullName}
                   placeholder="Ad Soyad"
                   required
                 />
@@ -522,6 +554,8 @@ export default function CheckoutPage() {
                   type="email"
                   value={form.email}
                   onChange={(e) => updateForm("email", e.target.value)}
+                  onBlur={(e) => handleBlur("email", e.target.value)}
+                  error={fieldErrors.email}
                   placeholder="ornek@email.com"
                   required
                 />
@@ -530,6 +564,8 @@ export default function CheckoutPage() {
                   type="tel"
                   value={form.phone}
                   onChange={(e) => updateForm("phone", e.target.value)}
+                  onBlur={(e) => handleBlur("phone", e.target.value)}
+                  error={fieldErrors.phone}
                   placeholder="0 5XX XXX XX XX"
                   required
                 />
@@ -554,12 +590,40 @@ export default function CheckoutPage() {
                 <textarea
                   value={form.address}
                   onChange={(e) => updateForm("address", e.target.value)}
+                  onBlur={(e) => handleBlur("address", e.target.value)}
                   placeholder="Mahalle, sokak, bina no, daire no..."
                   rows={3}
                   required
-                  className="w-full px-4 py-2.5 rounded-lg border border-brand-border bg-white text-brand-black text-sm placeholder:text-brand-muted/60 focus:outline-none focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-all resize-none"
+                  className={`w-full px-4 py-2.5 rounded-lg border bg-white text-brand-black text-sm placeholder:text-brand-muted/60 focus:outline-none focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold transition-all resize-none ${
+                    fieldErrors.address ? "border-brand-danger" : "border-brand-border"
+                  }`}
                 />
+                {fieldErrors.address && (
+                  <p className="mt-1 text-xs text-brand-danger">{fieldErrors.address}</p>
+                )}
               </div>
+
+              {isDealer && (
+                <div className="mt-4">
+                  <Input
+                    label="Okul Adı *"
+                    value={schoolName}
+                    onChange={(e) => {
+                      setSchoolName(e.target.value);
+                      setFieldErrors((prev) =>
+                        prev.schoolName ? { ...prev, schoolName: "" } : prev
+                      );
+                    }}
+                    onBlur={(e) => handleBlur("schoolName", e.target.value)}
+                    error={fieldErrors.schoolName}
+                    placeholder="Siparişin verildiği okulun tam adı"
+                    required
+                  />
+                  <p className="mt-1.5 text-xs text-brand-muted">
+                    Bayi siparişlerinde okul adı zorunludur.
+                  </p>
+                </div>
+              )}
 
               {error && (
                 <p className="text-sm text-brand-danger bg-red-50 px-3 py-2 rounded-lg mt-4">{error}</p>
@@ -570,7 +634,7 @@ export default function CheckoutPage() {
                   &larr; Sepete Don
                 </Link>
                 <Button type="submit" size="lg">
-                  Odemeye Gec
+                  Ödemeye Gec
                 </Button>
               </div>
             </form>
@@ -578,10 +642,10 @@ export default function CheckoutPage() {
 
           {step === "payment" && (
             <form onSubmit={handleOrder} className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-brand-black mb-5">Odeme Yontemi</h2>
+              <h2 className="text-lg font-semibold text-brand-black mb-5">Ödeme Yontemi</h2>
 
               {/* Payment method selection — OPEN_ACCOUNT bayisi yalniz acik hesap
-                  gorur, kart secmemeli. PREPAID bayi + tum musteriler yalniz kart. */}
+                  gorur, kart secmemeli. PREPAID bayi + tüm musteriler yalniz kart. */}
               <div className="flex gap-3 mb-6">
                 {!isOpenAccountDealer && (
                   <button
@@ -599,7 +663,7 @@ export default function CheckoutPage() {
                       </svg>
                       <div>
                         <p className="font-semibold text-sm text-brand-black">Kredi / Banka Karti</p>
-                        <p className="text-xs text-gray-500">Guvenli odeme</p>
+                        <p className="text-xs text-gray-500">Guvenli ödeme</p>
                       </div>
                     </div>
                   </button>
@@ -634,7 +698,7 @@ export default function CheckoutPage() {
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 space-y-1">
                     <p className="font-semibold">Test / Mock modu</p>
                     <p>
-                      Gercek odeme gateway&apos;i henuz aktif degil. Test etmek icin:
+                      Gercek ödeme gateway&apos;i henuz aktif degil. Test etmek icin:
                     </p>
                     <ul className="list-disc list-inside pl-1">
                       <li>Kart: <strong className="font-mono">4111 1111 1111 1111</strong></li>
@@ -692,11 +756,11 @@ export default function CheckoutPage() {
 
               {payment.method === "OPEN_ACCOUNT" && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-                  Acik hesap odemesinde siparisiniz onaylandiktan sonra bayi hesabiniza fatura kesilecektir.
+                  Acik hesap ödemesinde siparişiniz onaylandiktan sonra bayi hesabiniza fatura kesilecektir.
                 </div>
               )}
 
-              {/* Yasal sozlesme onayi — Mesafeli Satis Sozlesmesi + On Bilgilendirme Formu (zorunlu) */}
+              {/* Yasal sözleşme onayi — Mesafeli Satis Sözleşmesi + On Bilgilendirme Formu (zorunlu) */}
               <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
                 <label className="flex items-start gap-3 cursor-pointer text-sm leading-relaxed text-neutral-800">
                   <input
@@ -720,14 +784,14 @@ export default function CheckoutPage() {
                       target="_blank"
                       className="font-semibold underline underline-offset-2 hover:text-amber-700"
                     >
-                      Mesafeli Satis Sozlesmesi
+                      Mesafeli Satis Sözleşmesi
                     </Link>
                     &apos;ni okudum, kabul ediyorum.{" "}
                     <span className="text-rose-600">*</span>
                   </span>
                 </label>
                 <p className="mt-2 pl-7 text-xs text-neutral-600">
-                  Cayma hakkiniz teslim tarihinden itibaren 14 gun icindir.
+                  Cayma hakkiniz teslim tarihinden itibaren 14 gün icindir.
                 </p>
               </div>
 
@@ -750,7 +814,7 @@ export default function CheckoutPage() {
                   disabled={!contractsAccepted}
                   className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Siparisi Onayla ({formatPrice(total)})
+                  Siparişi Onayla
                 </Button>
               </div>
             </form>
@@ -760,7 +824,7 @@ export default function CheckoutPage() {
         {/* Order Summary */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 lg:sticky lg:top-28">
-            <h2 className="text-lg font-semibold text-brand-black mb-4">Siparis Ozeti</h2>
+            <h2 className="text-lg font-semibold text-brand-black mb-4">Sipariş Ozeti</h2>
 
             {/* Items */}
             <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
@@ -778,9 +842,6 @@ export default function CheckoutPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-brand-black truncate">{item.product.name}</p>
                     <p className="text-xs text-brand-muted">{item.quantity} adet</p>
-                    <p className="text-sm font-semibold text-brand-black">
-                      {formatPrice(item.product.price * item.quantity)}
-                    </p>
                   </div>
                 </div>
               ))}
@@ -793,7 +854,7 @@ export default function CheckoutPage() {
             )}
 
             <div className="border-t border-gray-100 pt-4 space-y-2">
-              {/* Coupon — bayilere gosterilmez (zaten ozel iskonto aliyorlar) */}
+              {/* Coupon — bayilere gösterilmez (zaten özel iskonto aliyorlar) */}
               {!isDealer && (
               <div className="pb-2 border-b border-gray-100">
                 {coupon ? (
@@ -811,7 +872,7 @@ export default function CheckoutPage() {
                 ) : (
                   <div>
                     <label className="mb-1.5 block text-xs font-medium text-neutral-500">
-                      Indirim kuponu
+                      İndirim kuponu
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -842,79 +903,10 @@ export default function CheckoutPage() {
               </div>
               )}
 
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Ara Toplam</span>
-                <span className="font-medium">{formatPrice(subtotal)}</span>
-              </div>
-              {couponDiscount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Kupon Indirim</span>
-                  <span className="text-emerald-700 font-medium">
-                    -{formatPrice(couponDiscount)}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Kargo</span>
-                <span className={shippingCost === 0 ? "text-green-600 font-medium" : "font-medium"}>
-                  {shippingCost === 0 ? "Ucretsiz" : formatPrice(shippingCost)}
-                </span>
-              </div>
-              {shippingCost > 0 && (
-                <p className="text-xs text-green-600">
-                  {formatPrice(500 - subtotal)} daha ekleyin, ucretsiz kargo kazanin!
+              {isDealer && (
+                <p className="text-xs text-neutral-500">
+                  Bu sipariş cari hesabınıza işlenecektir.
                 </p>
-              )}
-              <div className="border-t border-gray-200 pt-3 flex justify-between">
-                <span className="font-bold text-brand-black">Toplam</span>
-                <span className="font-bold text-lg text-brand-black">{formatPrice(total)}</span>
-              </div>
-
-              {/* Bayi bakiye widget — OPEN_ACCOUNT bayide siparis sonrasi
-                  cari hesaptan dusulecek tutari onden gosterir */}
-              {isOpenAccountDealer && dealerInfo && (
-                <div className="mt-4 rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-3.5">
-                  <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-                    Cari Hesap
-                  </p>
-                  <div className="space-y-1.5 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600">Mevcut bakiye</span>
-                      <span className="font-medium text-neutral-900">
-                        {formatPrice(dealerInfo.currentBalance)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600">Bu siparis</span>
-                      <span className="font-medium text-rose-700">
-                        +{formatPrice(total)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-t border-emerald-200/60 pt-1.5">
-                      <span className="font-semibold text-neutral-900">Yeni bakiye</span>
-                      <span className="font-bold text-neutral-950">
-                        {formatPrice(dealerInfo.currentBalance + total)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-600">Kalan limit</span>
-                      <span
-                        className={
-                          dealerInfo.remaining - total < 0
-                            ? "font-bold text-rose-700"
-                            : "font-medium text-emerald-700"
-                        }
-                      >
-                        {formatPrice(Math.max(0, dealerInfo.remaining - total))}
-                      </span>
-                    </div>
-                  </div>
-                  {dealerInfo.remaining - total < 0 && (
-                    <p className="mt-2 rounded-md bg-rose-50 p-2 text-xs font-medium text-rose-700">
-                      ⚠ Bu siparis kredi limitinizi {formatPrice(total - dealerInfo.remaining)} asacak.
-                    </p>
-                  )}
-                </div>
               )}
             </div>
           </div>

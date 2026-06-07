@@ -32,7 +32,7 @@ export function DealerCTA() {
         <div className="md:col-span-7 text-white">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-brand-gold/30 bg-brand-gold/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-gold backdrop-blur">
             <StarIconSolid className="h-3.5 w-3.5" />
-            Bayilere Ozel
+            Bayilere Özel
           </div>
 
           <h2 className="font-display text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
@@ -44,7 +44,7 @@ export function DealerCTA() {
           </h2>
 
           <p className="mt-5 max-w-xl text-base text-neutral-300 sm:text-lg">
-            Egitim kurumlari, kirtasiyeler ve toptan satis noktalari icin tasarlanmis
+            Eğitim kurumlari, kirtasiyeler ve toptan satis noktalari icin tasarlanmis
             B2B portal. 24 saat icinde basvurunuz incelenir.
           </p>
 
@@ -71,25 +71,25 @@ export function DealerCTA() {
             <FeatureRow
               Icon={CreditCardIcon}
               title="Acik Hesap Sistemi"
-              desc="Onceden odeme yapmadan siparis verin"
+              desc="Onceden ödeme yapmadan sipariş verin"
               accent="from-emerald-500 to-emerald-600"
             />
             <FeatureRow
               Icon={BuildingStorefrontIcon}
-              title="Toplu Siparis"
+              title="Toplu Sipariş"
               desc="Excel ile yuzlerce kalemi tek seferde isleyin"
               accent="from-violet-500 to-violet-600"
             />
             <FeatureRow
               Icon={TruckIcon}
-              title="Oncelikli Sevkiyat"
-              desc="Bayi siparisleri 24 saat icinde kargoya"
+              title="Okul & Kurum Tedariği"
+              desc="Okullar ve kurumlar için toplu tedarik"
               accent="from-sky-500 to-sky-600"
             />
             <FeatureRow
               Icon={StarIconSolid}
               title="Dedike Destek"
-              desc="Size ozel temsilci ile direkt iletisim"
+              desc="Size özel temsilci ile direkt iletişim"
               accent="from-amber-500 to-rose-500"
             />
           </div>

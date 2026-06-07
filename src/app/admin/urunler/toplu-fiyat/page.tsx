@@ -34,10 +34,10 @@ export default async function BulkPricePage() {
           href="/admin/urunler"
           className="text-sm text-gray-500 hover:text-brand-black"
         >
-          &larr; Urunler
+          &larr; Ürünler
         </Link>
         <h1 className="text-2xl font-display font-bold text-brand-black mt-2">
-          Toplu Fiyat Guncelle
+          Toplu Fiyat Güncelle
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           Filtre ile bir ürün grubunu seç → tek fiyat ata, % artır/azalt veya

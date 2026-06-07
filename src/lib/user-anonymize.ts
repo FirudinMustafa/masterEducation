@@ -8,13 +8,13 @@ export interface AnonymizeResult {
 }
 
 /**
- * Bir kullaniciyi DB'de korur ama tum kisisel verisini siler/replace eder.
- * Self-delete (KVKK) ve admin-delete (siparis varsa hard-delete blocked)
+ * Bir kullanıcıyi DB'de korur ama tüm kisisel verisini siler/replace eder.
+ * Self-delete (KVKK) ve admin-delete (sipariş varsa hard-delete blocked)
  * pathlerinde ortak kullanilir.
  *
  * Davranis:
  *  - email → "deleted-<rand>@example.invalid"
- *  - name → "Silinen Kullanici"
+ *  - name → "Silinen Kullanıcı"
  *  - phone → null
  *  - passwordHash → rastgele (girilemez)
  *  - addresses (FK by orders) → kisisel alanlar bosaltilir
@@ -40,20 +40,28 @@ export async function anonymizeUser(userId: string): Promise<AnonymizeResult> {
     10
   );
 
+  const originalEmail = user.email;
+
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: userId },
       data: {
         email: anonEmail,
-        name: "Silinen Kullanici",
+        name: "Silinen Kullanıcı",
         phone: null,
         passwordHash: randomHash,
       },
     });
+    // F-0702 (KVKK): EmailLog kayıtlari da anonimlestirilmeli; aksi takdirde
+    // mail gecmisinde acik e-posta adresi kalir. FOLLOWUP: tarihsel rotasyon icin cron.
+    await tx.emailLog.updateMany({
+      where: { to: originalEmail },
+      data: { to: anonEmail },
+    });
     await tx.address.updateMany({
       where: { userId },
       data: {
-        fullName: "Silinen Kullanici",
+        fullName: "Silinen Kullanıcı",
         phone: "",
         addressLine: "[anonimlestirildi]",
         postalCode: null,
@@ -80,5 +88,5 @@ export async function anonymizeUser(userId: string): Promise<AnonymizeResult> {
     }
   });
 
-  return { anonEmail, originalEmail: user.email };
+  return { anonEmail, originalEmail };
 }

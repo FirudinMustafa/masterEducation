@@ -38,7 +38,7 @@ export default async function AdminDealersPage({ searchParams }: PageProps) {
   });
 
   const statusFilters = [
-    { value: "", label: "Tumu" },
+    { value: "", label: "Tümu" },
     { value: "PENDING", label: "Bekleyen" },
     { value: "APPROVED", label: "Onaylanan" },
     { value: "REJECTED", label: "Reddedilen" },
@@ -52,6 +52,12 @@ export default async function AdminDealersPage({ searchParams }: PageProps) {
           <h1 className="text-2xl font-display font-bold text-brand-black">Bayiler</h1>
           <p className="text-sm text-gray-500 mt-1">{dealers.length} bayi</p>
         </div>
+        <Link
+          href="/admin/bayiler/yeni"
+          className="rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-brand-black hover:bg-brand-gold-dark"
+        >
+          + Yeni Bayi Ekle
+        </Link>
       </div>
 
       <AdminSearchBar

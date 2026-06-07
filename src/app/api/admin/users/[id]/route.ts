@@ -10,9 +10,9 @@ import { queueEmail, templateAccountDeleted } from "@/lib/email";
  * DELETE /api/admin/users/[id]
  *
  * Davranis:
- *   - Siparisi yoksa → hard delete (cascade)
- *   - Siparisi varsa + `?mode=anonymize` → kisisel veri silinir, satir korunur
- *   - Siparisi varsa + mode yoksa → 409, UI anonymize seçeneği sunar
+ *   - Siparişi yoksa → hard delete (cascade)
+ *   - Siparişi varsa + `?mode=anonymize` → kisisel veri silinir, satir korunur
+ *   - Siparişi varsa + mode yoksa → 409, UI anonymize seceneği sunar
  *
  * Korumalar:
  *   - Kendi hesabini silemez
@@ -47,7 +47,7 @@ export async function DELETE(
     },
   });
   if (!user) {
-    return NextResponse.json({ error: "Kullanici bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Kullanıcı bulunamadi." }, { status: 404 });
   }
 
   if (user.role === "ADMIN") {
@@ -60,7 +60,7 @@ export async function DELETE(
     }
   }
 
-  // Bayi ise once dealer cleanup (aktif siparisleri iptal et, stok geri,
+  // Bayi ise once dealer cleanup (aktif siparişleri iptal et, stok geri,
   // ledger/iskonto/belge sil, dealer kaydini sil). Sonra User akisina devam.
   let dealerCleanup: Awaited<ReturnType<typeof cleanupDealerByUserId>> = null;
   if (user.dealer) {
@@ -72,7 +72,7 @@ export async function DELETE(
   if (orderCount > 0 && !wantsAnonymize) {
     return NextResponse.json(
       {
-        error: `Bu kullanicinin ${orderCount} siparisi var. Tam silme mumkun degil — anonimlestirme akisini kullanin.`,
+        error: `Bu kullanıcınin ${orderCount} siparişi var. Tam silme mumkun degil — anonimlestirme akisini kullanin.`,
         canAnonymize: true,
         orderCount,
         dealerCleanup,
@@ -82,7 +82,7 @@ export async function DELETE(
   }
 
   // Audit metadata icin diz: nested obje yerine duz alanlar (Prisma.InputJsonValue
-  // index signature istiyor; DealerCleanupResult ozel tip).
+  // index signature istiyor; DealerCleanupResult özel tip).
   const cleanupMeta = dealerCleanup
     ? {
         dealerCleaned: true,
@@ -125,7 +125,7 @@ export async function DELETE(
     return NextResponse.json({ ok: true, strategy: "anonymize", dealerCleanup });
   }
 
-  // Siparis yok → hard delete (cascade). Dealer kaydi varsa zaten yukarida silindi.
+  // Sipariş yok → hard delete (cascade). Dealer kaydi varsa zaten yukarida silindi.
   await prisma.user.delete({ where: { id } });
 
   logAudit({

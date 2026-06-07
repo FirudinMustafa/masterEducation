@@ -32,7 +32,7 @@ export function DeleteAccountForm() {
       setWorking(false);
       return;
     }
-    // Oturumu kapat ve anasayfaya yonlendir — once tum client store'lari temizle
+    // Oturumu kapat ve anasayfaya yonlendir — once tüm client store'lari temizle
     useCartStore.getState().clearCart();
     useWishlistStore.getState().clear();
     useCompareStore.getState().clear();
@@ -51,7 +51,7 @@ export function DeleteAccountForm() {
 
       <label className="block">
         <span className="block text-sm font-medium text-brand-black mb-1">
-          Sifreniz
+          Şifreniz
         </span>
         <input
           type="password"

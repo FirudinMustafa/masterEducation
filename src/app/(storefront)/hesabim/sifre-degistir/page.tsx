@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { ChangePasswordForm } from "./change-password-form";
 
-export const metadata: Metadata = { title: "Sifre Degistir" };
+export const metadata: Metadata = { title: "Şifre Degistir" };
 
 export default async function ChangePasswordPage() {
   const session = await auth();
@@ -16,10 +16,10 @@ export default async function ChangePasswordPage() {
         href="/hesabim"
         className="text-sm text-gray-500 hover:text-brand-black"
       >
-        &larr; Hesabim
+        &larr; Hesabım
       </Link>
       <h1 className="text-2xl font-display font-bold text-brand-black mt-4 mb-6">
-        Sifre Degistir
+        Şifre Degistir
       </h1>
 
       <ChangePasswordForm />

@@ -14,7 +14,9 @@ interface PageProps {
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
   PENDING: "Bekleniyor",
-  SENT: "Gönderildi",
+  // KolayBi'ye ön muhasebe satış faturası KAYDI (taslak) olarak aktarıldı.
+  // Resmi e-fatura (GİB) KolayBi panelinden elle kesilir.
+  SENT: "Aktarıldı (taslak)",
   FAILED: "Başarısız",
   CANCELLED: "İptal",
 };
@@ -79,19 +81,15 @@ export default async function AdminInvoicesPage({ searchParams }: PageProps) {
             Faturalar
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            KolayBi e-fatura kayıtları. Sipariş DELIVERED&apos;a geçince otomatik
-            tetiklenir; başarısız olanlar 30 dk&apos;da bir cron ile retry edilir.
+            KolayBi taslak fatura kayıtları — sipariş detayından elle veya DELIVERED&apos;da
+            otomatik aktarılır; başarısız olanlar 30 dk&apos;da bir cron ile retry edilir.
+            Resmi e-fatura KolayBi panelinden elle kesilir.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {!kolaybi.isConfigured() && !kolaybi.isMockMode() && (
+          {!kolaybi.isConfigured() && (
             <span className="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
               DRYRUN — KolayBi env yok
-            </span>
-          )}
-          {kolaybi.isMockMode() && (
-            <span className="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-              MOCK MODE
             </span>
           )}
           {kolaybi.isConfigured() && (

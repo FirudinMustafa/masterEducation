@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
-  title: "Odeme Basarisiz",
+  title: "Ödeme Başarısız",
   robots: { index: false, follow: false },
 };
 
@@ -40,16 +40,16 @@ export default async function PaymentFailurePage({ searchParams }: PageProps) {
           </svg>
         </div>
         <h1 className="text-2xl font-display font-bold text-brand-black mb-2">
-          Odeme tamamlanamadi
+          Ödeme tamamlanamadi
         </h1>
         {order ? (
           <p className="text-sm text-brand-muted">
             <span className="font-mono">{order.orderNumber}</span> numarali
-            siparis iptal edildi ve stoklariniz iade edildi.
+            sipariş iptal edildi ve stoklariniz iade edildi.
           </p>
         ) : (
           <p className="text-sm text-brand-muted">
-            Odeme akisi tamamlanamadi.
+            Ödeme akisi tamamlanamadi.
           </p>
         )}
       </div>
@@ -57,10 +57,10 @@ export default async function PaymentFailurePage({ searchParams }: PageProps) {
       <div className="rounded-xl border border-gray-200 bg-white p-5 text-sm space-y-2 mb-6">
         <p className="font-semibold text-brand-black">Ne yapabilirsiniz?</p>
         <ul className="list-disc list-inside text-brand-muted space-y-1">
-          <li>Sepete geri donup yeni bir odeme deneyin.</li>
+          <li>Sepete geri donup yeni bir ödeme deneyin.</li>
           <li>
             Kart bilgilerinin dogru girildiginden ve bankanizin 3D Secure
-            sifresini kullandiginizdan emin olun.
+            şifresini kullandiginizdan emin olun.
           </li>
           <li>
             Sorun devam ederse{" "}
@@ -86,7 +86,7 @@ export default async function PaymentFailurePage({ searchParams }: PageProps) {
           href="/urunler"
           className="px-5 py-2.5 bg-white border border-gray-200 rounded-lg font-medium hover:bg-gray-50"
         >
-          Urunlere Don
+          Ürünlere Don
         </Link>
       </div>
     </div>

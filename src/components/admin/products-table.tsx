@@ -81,10 +81,10 @@ export function ProductsTable({ products, categories, publishers }: Props) {
       updated?: number;
     };
     if (!res.ok) {
-      setError(data.error ?? "Toplu guncelleme basarisiz.");
+      setError(data.error ?? "Toplu güncelleme başarısız.");
       return;
     }
-    setInfo(`${data.updated ?? 0} urun guncellendi.`);
+    setInfo(`${data.updated ?? 0} ürün güncellendi.`);
     setShowModal(false);
     clearSelection();
     startTransition(() => router.refresh());
@@ -93,7 +93,7 @@ export function ProductsTable({ products, categories, publishers }: Props) {
   async function bulkSetPublished(isPublished: boolean) {
     if (
       !confirm(
-        `${selected.size} urun ${isPublished ? "yayina alinsin" : "yayindan kaldirilsin"} mi?`
+        `${selected.size} ürün ${isPublished ? "yayina alinsin" : "yayindan kaldirilsin"} mi?`
       )
     )
       return;
@@ -103,7 +103,7 @@ export function ProductsTable({ products, categories, publishers }: Props) {
   async function bulkDelete() {
     if (
       !confirm(
-        `${selected.size} urun silinsin mi?\n\nSiparise konu olmus urunler "yayin disi" yapilir, digerleri tamamen silinir.`
+        `${selected.size} ürün silinsin mi?\n\nSiparise konu olmus ürünler "yayin disi" yapilir, digerleri tamamen silinir.`
       )
     )
       return;
@@ -120,11 +120,11 @@ export function ProductsTable({ products, categories, publishers }: Props) {
       softDeleted?: number;
     };
     if (!res.ok) {
-      setError(data.error ?? "Silme basarisiz.");
+      setError(data.error ?? "Silme başarısız.");
       return;
     }
     setInfo(
-      `${data.hardDeleted ?? 0} urun silindi, ${data.softDeleted ?? 0} urun yayin disi yapildi.`
+      `${data.hardDeleted ?? 0} ürün silindi, ${data.softDeleted ?? 0} ürün yayin disi yapildi.`
     );
     clearSelection();
     startTransition(() => router.refresh());
@@ -196,18 +196,18 @@ export function ProductsTable({ products, categories, publishers }: Props) {
                     type="checkbox"
                     checked={allChecked}
                     onChange={toggleAll}
-                    aria-label="Tumunu sec"
+                    aria-label="Tümunu seç"
                     className="h-4 w-4 cursor-pointer"
                   />
                 </th>
                 <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
-                  Urun
+                  Ürün
                 </th>
                 <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
                   ISBN
                 </th>
                 <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
-                  Yayinevi
+                  Yayınevi
                 </th>
                 <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">
                   Fiyat
@@ -233,7 +233,7 @@ export function ProductsTable({ products, categories, publishers }: Props) {
                       type="checkbox"
                       checked={selected.has(product.id)}
                       onChange={() => toggleOne(product.id)}
-                      aria-label={`${product.name} sec`}
+                      aria-label={`${product.name} seç`}
                       className="h-4 w-4 cursor-pointer"
                     />
                   </td>
@@ -289,7 +289,7 @@ export function ProductsTable({ products, categories, publishers }: Props) {
           <div className="px-4 py-3 flex flex-wrap items-center gap-2 justify-between">
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-brand-black">
-                {selected.size} urun secildi
+                {selected.size} ürün secildi
               </span>
               <button
                 onClick={clearSelection}
@@ -304,7 +304,7 @@ export function ProductsTable({ products, categories, publishers }: Props) {
                 disabled={pending}
                 className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
               >
-                Toplu Guncelle
+                Toplu Güncelle
               </button>
               <button
                 onClick={() => bulkSetPublished(true)}

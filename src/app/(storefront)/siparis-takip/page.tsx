@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { formatPrice } from "@/lib/utils";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Siparis Takibi",
-  description: "Siparis numaraniz ve email adresiniz ile siparis durumunuzu sorgulayin.",
+  title: "Sipariş Takibi",
+  description: "Sipariş numaraniz ve email adresiniz ile sipariş durumunuzu sorgulayin.",
 };
 
 interface PageProps {
@@ -51,7 +50,7 @@ export default async function OrderTrackPage({ searchParams }: PageProps) {
     });
     if (!found) {
       error =
-        "Sorguladiginiz siparis bulunamadi. Lutfen sipariş numaranizi ve email adresinizi kontrol edin.";
+        "Sorguladiginiz sipariş bulunamadi. Lütfen sipariş numaranizi ve email adresinizi kontrol edin.";
     } else {
       order = {
         ...found,
@@ -63,10 +62,10 @@ export default async function OrderTrackPage({ searchParams }: PageProps) {
   return (
     <div className="max-w-xl mx-auto px-4 sm:px-6 py-10">
       <h1 className="text-2xl font-display font-bold text-brand-black mb-2">
-        Siparis Takibi
+        Sipariş Takibi
       </h1>
       <p className="text-sm text-brand-muted mb-6">
-        Giris yapmadan, siparis numaraniz ve email adresiniz ile siparis
+        Giriş yapmadan, sipariş numaraniz ve email adresiniz ile sipariş
         durumunuzu sorgulayabilirsiniz.
       </p>
 
@@ -76,7 +75,7 @@ export default async function OrderTrackPage({ searchParams }: PageProps) {
       >
         <label className="block">
           <span className="block text-sm font-medium text-brand-black mb-1">
-            Siparis Numarasi
+            Sipariş Numarasi
           </span>
           <input
             name="no"
@@ -116,7 +115,7 @@ export default async function OrderTrackPage({ searchParams }: PageProps) {
         <div className="mt-6 bg-white rounded-xl border border-gray-200 p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-gray-500">Siparis No</p>
+              <p className="text-xs text-gray-500">Sipariş No</p>
               <p className="font-mono font-semibold text-brand-black">
                 {order.orderNumber}
               </p>
@@ -132,12 +131,8 @@ export default async function OrderTrackPage({ searchParams }: PageProps) {
             </dd>
             <dt className="text-gray-500">Alici</dt>
             <dd className="text-right">{order.shippingName}</dd>
-            <dt className="text-gray-500">Sehir</dt>
+            <dt className="text-gray-500">Şehir</dt>
             <dd className="text-right">{order.shippingCity}</dd>
-            <dt className="text-gray-500">Tutar</dt>
-            <dd className="text-right font-semibold">
-              {formatPrice(order.total)}
-            </dd>
           </dl>
           {order.trackingNumber && (
             <div className="pt-3 border-t border-gray-100 text-sm flex items-center justify-between">

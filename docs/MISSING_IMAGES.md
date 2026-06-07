@@ -1,11 +1,6 @@
 # Gorseli Eksik Urunler
 
-> **Guncelleme 2026-04-24:** Bu 211 urun siteden `isPublished=false` ile gizlendi (soft delete).
-> Arsiv: `../../211 urun gorselsiz/archive/2026-04-24/` (products.csv + products.json + orphan-images/).
-> Ayrica DB'de referansi olmayan 5594 orphan gorsel dosyasi (~1.3 GB) ayni arsive tasindi.
-> Geri yayinlamak icin `archive/2026-04-24/products.json` > id listesiyle `isPublished=true` update et.
-
-Orjinal rapor (2026-04-12, seed ciktisi): 205 urun. Guncellenmis gercek DB sayisi: 211 urun.
+Toplam: 205 urun
 
 | NopId | Urun Adi | SKU |
 |---|---|---|

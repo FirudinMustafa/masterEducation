@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { loadInvoiceOrder } from "@/lib/invoice-helpers";
 import { InvoiceView } from "@/components/invoice-view";
 
-export const metadata: Metadata = { title: "Siparis Ozeti - Bayi" };
+export const metadata: Metadata = { title: "Sipariş Ozeti - Bayi" };
 
 interface PageProps {
   params: Promise<{ id: string }>;

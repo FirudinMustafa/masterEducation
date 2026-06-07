@@ -40,13 +40,13 @@ export function ProfileForm({ initial, emailVerified }: Props) {
       error?: string;
     };
     if (!res.ok || !data.ok) {
-      setError(data.error ?? "Profil guncellenemedi.");
+      setError(data.error ?? "Profil güncellenemedi.");
       return;
     }
     setSuccess(
       data.emailChanged
-        ? "Profil guncellendi. Yeni email icin dogrulama gondeirilecek."
-        : "Profil guncellendi."
+        ? "Profil güncellendi. Yeni email icin dogrulama gondeirilecek."
+        : "Profil güncellendi."
     );
     setCurrentPassword("");
     startTransition(() => router.refresh());
@@ -115,7 +115,7 @@ export function ProfileForm({ initial, emailVerified }: Props) {
       {emailChanged && (
         <label className="block">
           <span className="block text-sm font-medium text-brand-black mb-1">
-            Mevcut sifre
+            Mevcut şifre
             <span className="ml-1 text-xs text-gray-500">
               (email degistiriyorsunuz, guvenlik icin gerekli)
             </span>

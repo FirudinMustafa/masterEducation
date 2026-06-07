@@ -1,8 +1,18 @@
 /**
- * Invoice service — sipariş DELIVERED'a geçince fatura kayıtı + KolayBi'ye
- * gönderim. Kapsam (Faz 20.A kararı):
+ * Invoice service — siparişi KolayBi'ye fatura KAYDI (taslak) olarak aktarır.
  *
- *   ✅ Bayi siparişleri (DEALER role + companyName + taxNumber) için fatura kes
+ * Taslak/kayıt modeli: KolayBi `POST /invoices` yalnızca ön muhasebe satış
+ * faturası KAYDI oluşturur; resmi e-fatura (GİB gönderimi,
+ * `/invoices/e-document/create`) BİLİNÇLİ olarak tetiklenmez — gerçek kesim
+ * KolayBi panelinden elle yapılır. Bu yüzden bu adımda bayiye e-posta gitmez,
+ * yalnız muhasebeye "taslak aktarıldı" bildirimi gönderilir.
+ *
+ * Tetikleme: sipariş verilir verilmez otomatik (orders route `after()`),
+ * sipariş DELIVERED olduğunda tekrar (status route `after()`), ve admin sipariş
+ * detayından elle buton (CANCELLED hariç). Hepsi idempotent.
+ *
+ * Kapsam (Faz 20.A kararı):
+ *   ✅ Bayi siparişleri (DEALER role + companyName + taxNumber) için kayıt aç
  *   ❌ Müşteri (CUSTOMER) siparişleri için kesim yok (T.C. kimlik yok)
  *
  * Akış:
@@ -15,19 +25,15 @@
  *      e. Hata: status=FAILED, errorMessage, attemptCount++
  *   3. retryFailedInvoices(): cron için PENDING/FAILED kuyruğu
  *
- * Mock mode (`KOLAYBI_MOCK=true`): adapter gerçek HTTP atmaz,
- * synthetic ID'ler döndürür → end-to-end test akışı credentials gelmeden
- * çalışır.
- *
- * DRYRUN (`!isOperational()`): hiçbir gönderim olmaz, status PENDING kalır.
- * Cron retry ileride credentials gelince devreye girer.
+ * DRYRUN (`!isOperational()` — env yapılandırılmamış): hiçbir gönderim olmaz,
+ * status PENDING kalır. Cron retry ileride credentials gelince devreye girer.
  */
 import { prisma } from "@/lib/prisma";
 import * as kolaybi from "@/lib/adapters/kolaybi";
 import { logAudit } from "@/lib/audit";
 import {
   queueEmail,
-  templateInvoiceIssued,
+  templateInvoiceIssuedAccountingNotice,
   templateInvoiceRetryExhaustedAdminNotice,
 } from "@/lib/email";
 import { env } from "@/lib/env";
@@ -39,7 +45,7 @@ const RETRY_BATCH_SIZE = 20;
 
 /** Invoice service hata sınıfları — caller'a anlamlı kategori sunar. */
 export class InvoiceServiceError extends Error {
-  reason: "NOT_DEALER" | "ORDER_NOT_DELIVERED" | "ORDER_NOT_FOUND";
+  reason: "NOT_DEALER" | "ORDER_CANCELLED" | "ORDER_NOT_FOUND";
   constructor(message: string, reason: InvoiceServiceError["reason"]) {
     super(message);
     this.name = "InvoiceServiceError";
@@ -73,10 +79,13 @@ export async function ensureInvoiceForOrder(orderId: string): Promise<{
     throw new InvoiceServiceError(`Order ${orderId} not found`, "ORDER_NOT_FOUND");
   }
 
-  if (order.status !== "DELIVERED") {
+  // Taslak/kayıt modeli: sipariş verilir verilmez KolayBi'ye kayıt aktarılır
+  // (panelde elle düzenlenip fatura kesilecek). Yalnız iptal edilmiş siparişe
+  // kayıt açmayız.
+  if (order.status === "CANCELLED") {
     throw new InvoiceServiceError(
-      `Order ${orderId} status=${order.status}, DELIVERED bekleniyor`,
-      "ORDER_NOT_DELIVERED",
+      `Order ${orderId} CANCELLED — iptal edilmiş siparişe fatura kaydı açılmaz`,
+      "ORDER_CANCELLED",
     );
   }
 
@@ -146,6 +155,11 @@ async function ensureKolaybiContactForDealer(dealerId: string): Promise<{
   const defaultAddr = dealer.user.addresses[0];
   const isCorporate = dealer.taxNumber.length === 10;
 
+  // NOT: Adresi associate'e GÖMEREK (addresses[]) göndermiyoruz — KolayBi
+  // sandbox'ında embedded adres country'i hatalı işliyor ve country "Türkiye"
+  // dahi olsa "Ülke eşleşmiyor." (400) ile reddediliyor. Ayrı /address/create
+  // endpoint'i ise country: "Türkiye" ile sorunsuz çalışıyor. Bu yüzden contact'ı
+  // adressiz oluşturup adresi her zaman ayrı çağrıyla ekliyoruz.
   const created = await kolaybi.createContact({
     name: dealer.companyName,
     // KolayBi tüzel kişi için "surname" yine zorunlu — companyName'i ayır
@@ -157,24 +171,12 @@ async function ensureKolaybiContactForDealer(dealerId: string): Promise<{
     email: dealer.user.email,
     phone: dealer.user.phone ?? undefined,
     code: `DEALER-${dealer.id.slice(0, 12)}`,
-    // Adres bilgisini associate ile birlikte gonder — response'tan id alacagiz
-    addresses: defaultAddr
-      ? [
-          {
-            address: defaultAddr.addressLine,
-            city: defaultAddr.city,
-            district: defaultAddr.district,
-            country: "Türkiye",
-            address_type: "invoice",
-            postal_code: defaultAddr.postalCode ?? undefined,
-          },
-        ]
-      : undefined,
   });
 
-  // Address ID — response'tan oku
+  // Address ID — adres her zaman ayrı endpoint'le eklenir (yukarıdaki nota bak).
   let addressId: number;
   if (created.address && created.address.length > 0) {
+    // (İleride embedded adres düzelirse otomatik kullanılır.)
     addressId = created.address[0].id;
   } else if (defaultAddr) {
     // Response'ta gelmediyse ayri endpoint'le ekle (fallback)
@@ -251,9 +253,9 @@ async function ensureKolaybiProduct(productId: string): Promise<number> {
 /**
  * Bir invoice kaydını KolayBi'ye gönder.
  *
- * DRYRUN (env yok ve mock kapalı) → status PENDING kalır, attemptCount artmaz.
- * Mock mode → synthetic ID'ler ile akış gerçekleşir.
- * Real mode → contact/product ensure + POST /invoices.
+ * DRYRUN (env yok) → status PENDING kalır, attemptCount artmaz; env dolunca
+ * cron retry devreye girer.
+ * Yapılandırılmış → contact/product ensure + POST /invoices.
  */
 export async function sendPendingInvoice(invoiceId: string): Promise<{
   status: "PENDING" | "SENT" | "FAILED" | "CANCELLED";
@@ -277,8 +279,20 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
     return { status: inv.status };
   }
 
+  // İdempotency: KolayBi'de kayıt zaten oluşmuş (externalId dolu) ama status
+  // SENT değilse (önceki denemede createInvoice başarılı olup DB yazımı
+  // patlamış olabilir) — TEKRAR createInvoice YAPMA, sadece SENT'e çek.
+  // Aksi halde aynı sipariş için ikinci bir KolayBi faturası oluşur.
+  if (inv.externalId) {
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: { status: "SENT", syncedAt: inv.syncedAt ?? new Date(), errorMessage: null },
+    });
+    return { status: "SENT", reason: "already has externalId — reconciled" };
+  }
+
   if (!kolaybi.isOperational()) {
-    return { status: "PENDING", reason: "KolayBi DRYRUN (env yok, mock kapalı)" };
+    return { status: "PENDING", reason: "KolayBi DRYRUN (env yapılandırılmamış)" };
   }
 
   if (inv.attemptCount >= MAX_ATTEMPTS) {
@@ -329,38 +343,55 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
     return { status: fresh?.status ?? "FAILED", reason: "concurrent or capped" };
   }
 
+  // createInvoice yanıtını dış kapsamda tut — catch'te "KolayBi'de kayıt oluştu
+  // mu?" kararını verip, oluştuysa FAILED'a düşürmeden mükerrer kesimi önlemek için.
+  let response: kolaybi.KolaybiInvoiceResponse | null = null;
   try {
     const dealerId = inv.order.user.dealer.id;
     const { contactId, addressId } = await ensureKolaybiContactForDealer(dealerId);
 
-    // Her order_item için product ensure
+    // Her order_item için product ensure + KDV dönüşümü.
+    //
+    // ÖNEMLİ KDV mantığı: bizim `unitPrice` KDV DAHİL ve İSKONTOLU (dealerPrice =
+    // listPrice × (1 − iskonto)). KolayBi ise birim fiyatı KDV HARİÇ kabul edip
+    // üstüne KDV ekler. Bu yüzden:
+    //   - unit_price = unitPrice / (1 + vat/100)  (KDV hariç tabana çevir)
+    //   - discount_amount GÖNDERMEYİZ (iskonto zaten unitPrice'a gömülü; ayrıca
+    //     göndermek çift iskonto olurdu).
+    // Böylece KolayBi satır toplamı = unitExVat × adet × (1+vat/100) = lineTotal
+    // (bizim KDV dahil tutarımız) → birebir tutar. (sandbox ile doğrulandı)
     const itemsWithKolaybiId: kolaybi.KolaybiInvoiceItem[] = [];
+    let sumInclVat = 0; // kalemlerin KDV dahil toplamı (kupon oranı için)
+    let sumVat = 0; // kalemlerin KDV tutarı toplamı
     for (const item of inv.order.items) {
       const kolaybiProductId = await ensureKolaybiProduct(item.productId);
-      // OrderItem.discountPct (yüzde) → KolayBi discount_amount (tutar) hesabı
-      // unitPrice * quantity * pct/100. Sıfır ise alanı atla.
-      const discountAmount =
-        Number(item.discountPct) > 0
-          ? Math.round(
-              Number(item.unitPrice) *
-                item.quantity *
-                (Number(item.discountPct) / 100) *
-                100,
-            ) / 100
-          : 0;
+      const vatRate = Number(item.vatRate);
+      const unitInclVat = Number(item.unitPrice);
+      const unitExVat = Math.round((unitInclVat / (1 + vatRate / 100)) * 10000) / 10000;
+      sumInclVat += Number(item.lineTotal);
+      sumVat += Number(item.vatAmount);
       itemsWithKolaybiId.push({
         product_id: kolaybiProductId,
         quantity: String(item.quantity),
-        unit_price: String(Number(item.unitPrice)),
-        vat_rate: Number(item.vatRate),
+        unit_price: String(unitExVat),
+        vat_rate: vatRate,
         description: item.productName,
-        ...(discountAmount > 0
-          ? { discount_amount: String(discountAmount) }
-          : {}),
       });
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    // Kupon iskontosu (varsa) → genel iskonto. KolayBi subtotal_discount_amount'ı
+    // da KDV HARİÇ ister. couponDiscount bizde KDV dahil; KDV payını düşerek
+    // tabana indir (tek KDV oranında birebir, karışık oranda en iyi tahmin).
+    const couponDiscount = Number(inv.order.couponDiscount ?? 0);
+    let subtotalDiscountExVat = 0;
+    if (couponDiscount > 0 && sumInclVat > 0) {
+      const vatFraction = sumVat / sumInclVat;
+      subtotalDiscountExVat =
+        Math.round(couponDiscount * (1 - vatFraction) * 100) / 100;
+    }
+
+    // Fatura tarihi = sipariş tarihi (butona basılan gün DEĞİL — geç aktarımda
+    // muhasebe tarihi kaymasın). KolayBi panelinde gerekiyorsa elle düzeltilir.
     const orderDateIso = inv.order.createdAt.toISOString().slice(0, 10);
     // E-ticaret faturası — KolayBi'nin internet_sale field'i ile platformu
     // ve ödeme tipini taşımak best-practice (e-fatura/e-arşiv uyumluluğu).
@@ -371,7 +402,7 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
     const payload: kolaybi.KolaybiInvoicePayload = {
       contact_id: contactId,
       address_id: addressId,
-      order_date: today,
+      order_date: orderDateIso,
       currency: "try",
       items: itemsWithKolaybiId,
       receiver_email: inv.order.user.email,
@@ -379,6 +410,15 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
       document_scenario: "TICARIFATURA",
       document_type: "SATIS",
       description: `Sipariş ${inv.order.orderNumber}`,
+      // Belirli bir seri zorlanmak istenirse env'den; normalde boş bırakılır
+      // ve KolayBi panelinde tanımlı varsayılan ön ek kullanılır.
+      ...(env.KOLAYBI_INVOICE_PREFIX
+        ? { serial_no: env.KOLAYBI_INVOICE_PREFIX }
+        : {}),
+      // Kupon iskontosu → genel iskonto (KDV hariç). Yoksa alan gönderilmez.
+      ...(subtotalDiscountExVat > 0
+        ? { subtotal_discount_amount: subtotalDiscountExVat }
+        : {}),
       // Sipariş referansı — KolayBi tarafında orderNumber'ı görünür yap
       order_reference: {
         serial_no: inv.order.orderNumber,
@@ -392,7 +432,11 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
       },
     };
 
-    const response = await kolaybi.createInvoice(payload);
+    // NOT: Burada yalnızca KolayBi ön muhasebe satış faturası KAYDI oluşturulur.
+    // Resmi e-fatura (GİB'e gönderim) bilinçli olarak tetiklenmez —
+    // /kolaybi/v1/invoices/e-document/create ÇAĞRILMAZ. Gerçek e-fatura kesimi
+    // muhasebe ekibi tarafından KolayBi panelinden elle yapılır.
+    response = await kolaybi.createInvoice(payload);
 
     await prisma.invoice.update({
       where: { id: invoiceId },
@@ -416,35 +460,77 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
       },
     });
 
-    // Bayiye e-fatura hazır maili — SMTP yoksa email_log'a DRYRUN olarak yazılır.
-    // Fire-and-forget; mail başarısız olursa fatura yine başarılı sayılır.
+    // Taslak/kayıt modeli — bu adımda BAYİYE e-posta gönderilmez: resmi e-fatura
+    // henüz kesilmedi (panelden elle kesilecek). Yalnız muhasebeye "taslak
+    // aktarıldı, panelden kesin" bildirimi gider. Fire-and-forget; mail
+    // başarısız olursa fatura kaydı yine başarılı sayılır.
     try {
       const dealerName = inv.order.user.dealer.companyName;
-      const panelUrl = `${baseUrl}/bayi/faturalar`;
-      const tpl = templateInvoiceIssued({
-        companyName: dealerName,
-        orderNumber: inv.order.orderNumber,
-        documentId: response.document_id,
-        total: Number(response.grand_total),
-        panelUrl,
-      });
-      queueEmail({ ...tpl, to: inv.order.user.email });
+
+      // Muhasebe bildirimi — taslak aktarımı + panelden kesim çağrısı.
+      const accountingTo = env.ACCOUNTING_EMAIL;
+      if (accountingTo) {
+        const accTpl = templateInvoiceIssuedAccountingNotice({
+          orderNumber: inv.order.orderNumber,
+          dealerCompany: dealerName,
+          documentId: response.document_id,
+          total: Number(response.grand_total),
+          panelUrl: `${baseUrl}/admin/faturalar`,
+        });
+        queueEmail({ ...accTpl, to: accountingTo });
+      }
     } catch {
       // Mail kuyruklama hatası — invoice success'i etkilemesin
     }
 
     return { status: "SENT" };
   } catch (err) {
+    // #5 İdempotency kurtarma: createInvoice BAŞARILI olduysa (response var)
+    // ama sonraki adım patladıysa → KolayBi'de kayıt OLUŞTU. FAILED işaretlersek
+    // cron retry MÜKERRER fatura açar. Bu yüzden SENT olarak kurtar.
+    if (response) {
+      const docId = response.document_id;
+      await prisma.invoice
+        .update({
+          where: { id: invoiceId },
+          data: {
+            status: "SENT",
+            externalId: String(docId),
+            syncedAt: new Date(),
+            errorMessage: null,
+          },
+        })
+        .catch((e2) =>
+          console.error(
+            `[invoice] createInvoice OK fakat DB persist hatası — KolayBi belge=${docId} invoice=${invoiceId}`,
+            e2,
+          ),
+        );
+      return { status: "SENT" };
+    }
+
     const message = err instanceof Error ? err.message : String(err);
     let detail = message;
     if (err instanceof kolaybi.KolaybiError && err.apiMessage) {
       detail = `${err.apiMessage} (code ${err.apiCode ?? "?"})`;
     }
+
+    // #4 Terminal yapılandırma hataları (ön ek/kanal) retry ile düzelmez —
+    // attemptCount'u tavana çekip cron'un boşuna denemesini engelle ve mesajı
+    // aksiyon alınabilir hâle getir. Eşik dolduğu için tek seferlik net uyarı
+    // maili (aşağıdaki blok) admin + muhasebeye gider.
+    const terminal = err instanceof kolaybi.KolaybiError && err.isTerminalConfig;
+    if (err instanceof kolaybi.KolaybiError && err.isPrefixError) {
+      detail =
+        "KolayBi panelinde fatura ön eki tanımlı değil (Ayarlar → e-Belge Ön Ekleri). Tanımladıktan sonra tekrar deneyin.";
+    }
+
     const updated = await prisma.invoice.update({
       where: { id: invoiceId },
       data: {
         status: "FAILED",
         errorMessage: detail.slice(0, 500),
+        ...(terminal ? { attemptCount: MAX_ATTEMPTS } : {}),
       },
       select: { attemptCount: true },
     });
@@ -457,20 +543,25 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
       metadata: { orderId: inv.orderId, error: detail.slice(0, 300) },
     });
 
-    // E19 — N defa retry tukendigi anda admin'e manuel mudahale uyarisi.
+    // E19 — N defa retry tukendigi anda admin'e manuel mudahale uyarısi.
     // attemptCount yukarida atomik increment edildi; eseik basinca tek mail.
     if (updated.attemptCount >= MAX_ATTEMPTS) {
-      const adminTo = env.ADMIN_EMAIL ?? BRAND.email;
-      if (adminTo) {
-        const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
-        const tpl = templateInvoiceRetryExhaustedAdminNotice({
-          orderNumber: inv.order.orderNumber,
-          dealerCompany: inv.order.user.dealer?.companyName ?? "—",
-          total: Number(inv.totalAmount),
-          lastError: detail,
-          panelUrl: `${base}/admin/faturalar`,
-        });
-        queueEmail({ ...tpl, to: adminTo });
+      const base = process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+      const tpl = templateInvoiceRetryExhaustedAdminNotice({
+        orderNumber: inv.order.orderNumber,
+        dealerCompany: inv.order.user.dealer?.companyName ?? "—",
+        total: Number(inv.totalAmount),
+        lastError: detail,
+        panelUrl: `${base}/admin/faturalar`,
+      });
+      // Hem admin hem muhasebe kutusuna bildir (tekrarsiz set).
+      const recipients = new Set(
+        [env.ADMIN_EMAIL ?? BRAND.email, env.ACCOUNTING_EMAIL].filter(
+          (x): x is string => Boolean(x),
+        ),
+      );
+      for (const to of recipients) {
+        queueEmail({ ...tpl, to });
       }
     }
 

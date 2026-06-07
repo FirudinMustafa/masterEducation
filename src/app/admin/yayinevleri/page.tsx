@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { TaxonomyManager } from "@/components/admin/taxonomy-manager";
 
-export const metadata: Metadata = { title: "Yayinevleri - Admin" };
+export const metadata: Metadata = { title: "Yayınevleri - Admin" };
 
 export default async function AdminPublishersPage() {
   const publishers = await prisma.publisher.findMany({
@@ -21,10 +21,10 @@ export default async function AdminPublishersPage() {
     <div className="max-w-4xl space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-brand-black">
-          Yayinevleri
+          Yayınevleri
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Yayinevlerini yonetin. Urunler veya iskonto kurallari baglandigi surece
+          Yayınevlerini yonetin. Ürünler veya iskonto kurallari baglandigi surece
           silinemez.
         </p>
       </div>

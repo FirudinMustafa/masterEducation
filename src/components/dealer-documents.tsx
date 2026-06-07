@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DealerDocumentKind, DealerDocumentStatus } from "@prisma/client";
+import { useBusy } from "@/lib/hooks/use-busy";
 
 const KIND_LABELS: Record<DealerDocumentKind, string> = {
   TAX_CERTIFICATE: "Vergi Levhasi",
@@ -25,7 +26,7 @@ const STATUS_BADGE: Record<DealerDocumentStatus, string> = {
 };
 const STATUS_LABEL: Record<DealerDocumentStatus, string> = {
   PENDING: "Inceleniyor",
-  APPROVED: "Onayli",
+  APPROVED: "Onaylı",
   REJECTED: "Reddedildi",
 };
 
@@ -67,43 +68,46 @@ export function DealerDocuments({
   canReview,
 }: DealerDocumentsProps) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  // Tek useBusy: upload + sil + review aksiyonlari paylasir. Onayla/Reddet
+  // butonlarinin in-flight bir aksiyon icindeyken tetiklenmemesi önemli.
+  const { busy, run } = useBusy();
   const [kind, setKind] = useState<DealerDocumentKind>("TAX_CERTIFICATE");
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
 
   async function upload(file: File) {
-    setError(null);
-    setMessage(null);
-    setUploading(true);
-    const fd = new FormData();
-    fd.append("kind", kind);
-    fd.append("file", file);
-    const res = await fetch(uploadUrl, { method: "POST", body: fd });
-    setUploading(false);
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Yukleme basarisiz.");
-      return;
-    }
-    setMessage("Belge yuklendi. Admin incelemesi bekleniyor.");
-    startTransition(() => router.refresh());
+    await run(async () => {
+      setError(null);
+      setMessage(null);
+      const fd = new FormData();
+      fd.append("kind", kind);
+      fd.append("file", file);
+      const res = await fetch(uploadUrl, { method: "POST", body: fd });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Yükleme başarısız.");
+        return;
+      }
+      setMessage("Belge yüklendi. Admin incelemesi bekleniyor.");
+      router.refresh();
+    });
   }
 
   async function remove(id: string) {
     if (!confirm("Belge silinsin mi?")) return;
-    const res = await fetch(deleteUrlTemplate.replace("{id}", id), {
-      method: "DELETE",
+    await run(async () => {
+      const res = await fetch(deleteUrlTemplate.replace("{id}", id), {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Silinemedi.");
+        return;
+      }
+      router.refresh();
     });
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Silinemedi.");
-      return;
-    }
-    startTransition(() => router.refresh());
   }
 
   async function review(id: string, status: DealerDocumentStatus) {
@@ -112,23 +116,25 @@ export function DealerDocuments({
     setMessage(null);
     const note = status === "REJECTED" ? reviewNote.trim() : null;
     if (status === "REJECTED" && !note) {
-      setError("Red icin aciklama girmelisiniz.");
+      setError("Red icin açıklama girmelisiniz.");
       return;
     }
-    const res = await fetch(reviewUrlTemplate.replace("{id}", id), {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, reviewNote: note }),
+    await run(async () => {
+      const res = await fetch(reviewUrlTemplate.replace("{id}", id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, reviewNote: note }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? "Güncelleme başarısız.");
+        return;
+      }
+      setMessage(status === "APPROVED" ? "Belge onaylandi." : "Belge reddedildi.");
+      setReviewingId(null);
+      setReviewNote("");
+      router.refresh();
     });
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? "Guncelleme basarisiz.");
-      return;
-    }
-    setMessage(status === "APPROVED" ? "Belge onaylandi." : "Belge reddedildi.");
-    setReviewingId(null);
-    setReviewNote("");
-    startTransition(() => router.refresh());
   }
 
   const grouped = new Map<DealerDocumentKind, DealerDocumentItem[]>();
@@ -170,12 +176,12 @@ export function DealerDocuments({
             </select>
           </label>
           <label className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark cursor-pointer whitespace-nowrap">
-            {uploading ? "Yukleniyor..." : "Dosya Sec"}
+            {busy ? "Yükleniyor..." : "Dosya Seç"}
             <input
               type="file"
               accept="application/pdf,image/jpeg,image/png,image/webp"
               className="hidden"
-              disabled={uploading || pending}
+              disabled={busy}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 e.target.value = "";
@@ -191,7 +197,7 @@ export function DealerDocuments({
 
       {documents.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-6 text-sm text-center text-gray-500">
-          Henuz belge yuklenmemis.
+          Henuz belge yüklenmemis.
         </div>
       ) : (
         KIND_ORDER.map((k) => {
@@ -258,14 +264,14 @@ export function DealerDocuments({
                             <div className="flex gap-2">
                               <button
                                 onClick={() => review(d.id, "APPROVED")}
-                                disabled={pending}
+                                disabled={busy}
                                 className="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded hover:bg-green-700 disabled:opacity-50 cursor-pointer"
                               >
                                 Onayla
                               </button>
                               <button
                                 onClick={() => review(d.id, "REJECTED")}
-                                disabled={pending}
+                                disabled={busy}
                                 className="px-3 py-1 bg-red-600 text-white text-xs font-semibold rounded hover:bg-red-700 disabled:opacity-50 cursor-pointer"
                               >
                                 Reddet
@@ -277,7 +283,7 @@ export function DealerDocuments({
                                 }}
                                 className="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded cursor-pointer"
                               >
-                                Iptal
+                                İptal
                               </button>
                             </div>
                           </div>
@@ -297,7 +303,7 @@ export function DealerDocuments({
                             {d.status !== "PENDING" && (
                               <button
                                 onClick={() => review(d.id, "PENDING")}
-                                disabled={pending}
+                                disabled={busy}
                                 className="px-2 py-1 text-xs text-gray-500 hover:underline cursor-pointer"
                               >
                                 Durumu sifirla

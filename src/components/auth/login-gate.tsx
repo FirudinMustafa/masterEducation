@@ -8,9 +8,6 @@ import { safeCallbackUrl } from "@/lib/safe-callback";
 import {
   XMarkIcon,
   ArrowRightIcon,
-  HeartIcon,
-  TruckIcon,
-  ShieldCheckIcon,
 } from "@/components/ui/icons";
 
 export function LoginGate() {
@@ -42,7 +39,7 @@ export function LoginGate() {
   const callback = safeCallbackUrl(rawCallback);
 
   const loginHref = `/giris?callbackUrl=${encodeURIComponent(callback)}`;
-  const registerHref = `/kayit?callbackUrl=${encodeURIComponent(callback)}`;
+  const registerHref = "/bayi-basvuru";
 
   return (
     <div
@@ -77,7 +74,7 @@ export function LoginGate() {
               <Image
                 src="/me-logo-v2.png"
                 alt="Master Education"
-                width={120}
+                width={182}
                 height={65}
                 priority
                 className="object-contain"
@@ -100,7 +97,7 @@ export function LoginGate() {
               onClick={hide}
               className="group flex items-center justify-center gap-2 rounded-xl bg-brand-gold px-5 py-3.5 text-sm font-bold text-neutral-800 shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-lg hover:shadow-brand-gold/30"
             >
-              30 Saniyede Hesap Olustur
+              Bayi Başvurusu Yap
               <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
             <Link
@@ -108,47 +105,11 @@ export function LoginGate() {
               onClick={hide}
               className="flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-5 py-3 text-sm font-semibold text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
             >
-              Zaten hesabim var — Giris Yap
+              Bayiyseniz giriş yapın
             </Link>
-          </div>
-
-          {/* Trust row */}
-          <div className="mt-6 grid grid-cols-3 gap-2 border-t border-neutral-100 pt-5">
-            <TrustBullet
-              Icon={HeartIcon}
-              text="Favorileri kaydet"
-              iconClass="text-rose-500"
-            />
-            <TrustBullet
-              Icon={TruckIcon}
-              text="Siparis takibi"
-              iconClass="text-emerald-600"
-            />
-            <TrustBullet
-              Icon={ShieldCheckIcon}
-              text="Guvenli odeme"
-              iconClass="text-sky-600"
-            />
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function TrustBullet({
-  Icon,
-  text,
-  iconClass,
-}: {
-  Icon: React.ComponentType<{ className?: string }>;
-  text: string;
-  iconClass: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1 text-[10.5px] font-medium text-neutral-500">
-      <Icon className={`h-5 w-5 ${iconClass}`} />
-      {text}
     </div>
   );
 }

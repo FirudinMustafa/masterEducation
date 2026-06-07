@@ -44,7 +44,7 @@ export function CinematicPublisher({ publishers }: Props) {
           <div>
             <div className="mb-3 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.25em] text-brand-gold">
               <span className="font-display text-[18px] font-black italic leading-none">№</span>
-              <span>03 / Yayinevleri</span>
+              <span>03 / Yayınevleri</span>
             </div>
             <h2 className="font-display text-4xl font-black leading-[1.05] tracking-[-0.025em] sm:text-5xl md:text-6xl">
               Dunyanin{" "}
@@ -61,17 +61,17 @@ export function CinematicPublisher({ publishers }: Props) {
                 en saygin
               </span>{" "}
               <br className="hidden sm:block" />
-              egitim markalari.
+              eğitim markalari.
             </h2>
             <p className="mt-3 max-w-lg text-base text-neutral-400 sm:text-lg">
-              Yetkili distributoru olarak; orjinal urun, dogrudan tedarik ve uygun fiyat garantisi.
+              Yetkili distributoru olarak; orjinal ürün, dogrudan tedarik ve uygun fiyat garantisi.
             </p>
           </div>
           <Link
             href="/yayinevleri"
             className="group inline-flex items-center gap-2 rounded-full border-2 border-white/20 bg-white/5 px-5 py-2.5 text-sm font-bold backdrop-blur transition-all hover:-translate-y-0.5 hover:border-brand-gold hover:bg-brand-gold hover:text-neutral-950"
           >
-            Tum Yayinevleri
+            Tüm Yayınevleri
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-gold text-neutral-950 transition-transform group-hover:rotate-45">
               <ArrowRightIcon className="h-3 w-3" />
             </span>
@@ -93,7 +93,7 @@ export function CinematicPublisher({ publishers }: Props) {
               <div className="relative flex h-full flex-col justify-between gap-12 md:gap-16">
                 <div className="flex items-start justify-between">
                   <div className="rounded-full border border-brand-gold/40 bg-brand-gold/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-brand-gold backdrop-blur">
-                    En populer yayinevi
+                    En populer yayınevi
                   </div>
                   <div className="font-display text-6xl font-black italic leading-none text-white/5">
                     01
@@ -110,7 +110,7 @@ export function CinematicPublisher({ publishers }: Props) {
                         {hero.count.toLocaleString("tr-TR")}
                       </p>
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-neutral-400">
-                        Urun
+                        Ürün
                       </p>
                     </div>
                     <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-gold text-neutral-950 transition-transform group-hover:translate-x-2 group-hover:rotate-45">
@@ -136,7 +136,7 @@ export function CinematicPublisher({ publishers }: Props) {
                 <div className="mt-3">
                   <p className="font-display text-lg font-black tracking-tight">{p.name}</p>
                   <p className="mt-1 text-xs font-bold uppercase tracking-wider text-brand-gold">
-                    {p.count.toLocaleString("tr-TR")} urun
+                    {p.count.toLocaleString("tr-TR")} ürün
                   </p>
                 </div>
               </Link>

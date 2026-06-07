@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 import { ArrowRightOnRectangleIcon, XMarkIcon } from "@/components/ui/icons";
 
 // Cari hesap modu disinda anlamsiz olan menu yollari (PREPAID bayilere
-// gosterilmez — sidebar bunlari filtreler).
-const OPEN_ACCOUNT_ONLY = new Set(["/bayi/ekstre", "/bayi/toplu-siparis"]);
+// gösterilmez — sidebar bunlari filtreler).
+const OPEN_ACCOUNT_ONLY = new Set(["/bayi/toplu-siparis"]);
 
 const NAV_ITEMS = [
   {
@@ -24,19 +24,10 @@ const NAV_ITEMS = [
   },
   {
     href: "/bayi/siparisler",
-    label: "Siparislerim",
+    label: "Siparişlerim",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-      </svg>
-    ),
-  },
-  {
-    href: "/bayi/iskontolar",
-    label: "Iskontolarim",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 14.25 15 8.25m-6 0h.008v.008H9V8.25Zm6 6h.008v.008H15v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
       </svg>
     ),
   },
@@ -59,36 +50,21 @@ const NAV_ITEMS = [
     ),
   },
   {
-    href: "/bayi/ekstre",
-    label: "Cari Ekstre",
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-      </svg>
-    ),
-  },
-  {
     href: "/bayi/toplu-siparis",
-    label: "Toplu Siparis",
+    label: "Toplu Sipariş",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 0 1-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-1.5A1.125 1.125 0 0 1 18 18.375M20.625 4.5H3.375m17.25 0c.621 0 1.125.504 1.125 1.125M20.625 4.5h-1.5C18.504 4.5 18 5.004 18 5.625m3.75 0v1.5c0 .621-.504 1.125-1.125 1.125M3.375 4.5c-.621 0-1.125.504-1.125 1.125M3.375 4.5h1.5C5.496 4.5 6 5.004 6 5.625m-3.75 0v1.5c0 .621.504 1.125 1.125 1.125m0 0h1.5m-1.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m1.5-3.75C5.496 8.25 6 7.746 6 7.125v-1.5M4.875 8.25C5.496 8.25 6 8.754 6 9.375v1.5m0-5.25v5.25m0 0C6 11.496 5.496 12 4.875 12M18 18.375v-1.5c0-.621-.504-1.125-1.125-1.125m1.125 2.625c0-.621.504-1.125 1.125-1.125M18 18.375c0 .621.504 1.125 1.125 1.125m-13.5 0h1.5m-1.5 0C5.496 19.5 6 18.996 6 18.375m0 0v-1.5c0-.621-.504-1.125-1.125-1.125M6 18.375c0 .621-.504 1.125-1.125 1.125" />
       </svg>
     ),
   },
-  // "Urunler" linki kaldirildi — sidebar altindaki "Magazaya Git" ile ayni
+  // "Ürünler" linki kaldirildi — sidebar altindaki "Magazaya Git" ile ayni
   // isi yapiyordu, navigasyon kalabaligini azaltiyoruz.
 ];
 
 interface DealerSidebarProps {
-  balance?: number;
-  creditLimit?: number;
   paymentTerms?: "OPEN_ACCOUNT" | "PREPAID";
   companyName?: string;
-}
-
-function fmt(n: number): string {
-  return n.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
 }
 
 /**
@@ -96,8 +72,6 @@ function fmt(n: number): string {
  * callback'i drawer'da link tiklaninca otomatik kapanma için.
  */
 function DealerNavBody({
-  balance,
-  creditLimit,
   paymentTerms,
   companyName,
   onNavigate,
@@ -110,9 +84,6 @@ function DealerNavBody({
     (item) => !(isPrepaid && OPEN_ACCOUNT_ONLY.has(item.href))
   );
 
-  const remaining = Math.max(0, (creditLimit ?? 0) - (balance ?? 0));
-  const percent = (creditLimit ?? 0) > 0 ? Math.min(100, ((balance ?? 0) / (creditLimit ?? 1)) * 100) : 0;
-
   return (
     <div className="p-4 flex-1 overflow-y-auto">
       <div className="flex items-center gap-2 px-3 py-2 mb-2">
@@ -124,32 +95,10 @@ function DealerNavBody({
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-brand-black">{companyName || "Bayi Paneli"}</p>
           <p className="text-[10px] text-gray-500 uppercase tracking-wider">
-            {paymentTerms === "PREPAID" ? "Pesin Odeme" : "Acik Hesap"}
+            {paymentTerms === "PREPAID" ? "Pesin Ödeme" : "Acik Hesap"}
           </p>
         </div>
       </div>
-
-      {paymentTerms === "OPEN_ACCOUNT" && (creditLimit ?? 0) > 0 && (
-        <div className="mb-4 rounded-xl border border-gray-200 bg-gradient-to-br from-emerald-50 to-white p-3">
-          <div className="mb-1.5 flex items-baseline justify-between text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-            <span>Kalan Limit</span>
-            <span className="text-emerald-700">{fmt(remaining)} ₺</span>
-          </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-            <div
-              className={cn(
-                "h-full rounded-full transition-all",
-                percent > 85 ? "bg-rose-500" : percent > 60 ? "bg-amber-500" : "bg-emerald-500"
-              )}
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-          <div className="mt-1.5 flex items-baseline justify-between text-[11px] text-gray-500">
-            <span>Borc {fmt(balance ?? 0)} ₺</span>
-            <span>Limit {fmt(creditLimit ?? 0)} ₺</span>
-          </div>
-        </div>
-      )}
 
       <nav className="space-y-1">
         {navItems.map((item) => {
@@ -189,7 +138,7 @@ function DealerNavBody({
           className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
         >
           <ArrowRightOnRectangleIcon className="h-5 w-5" />
-          Cikis Yap
+          Çıkış Yap
         </button>
       </div>
     </div>

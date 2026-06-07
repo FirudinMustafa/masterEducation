@@ -6,11 +6,11 @@ import { runCronJob } from "@/lib/cron-runner";
 export const dynamic = "force-dynamic";
 
 /**
- * Suresi gecmis PENDING odeme oturumlarini EXPIRED'e cevirir.
- * PaymentSession.expiresAt < NOW olan kayitlari isaretler.
+ * Suresi gecmis PENDING ödeme oturumlarini EXPIRED'e çevirir.
+ * PaymentSession.expiresAt < NOW olan kayıtlari isaretler.
  *
- * NOT: Stok geri yukleme islemini yapmiyoruz — `payments/mock/confirm`
- * `failure` pathi siparis CANCELLED'a alindiginda zaten stok dondurur.
+ * NOT: Stok geri yükleme islemini yapmiyoruz — `payments/mock/confirm`
+ * `failure` pathi sipariş CANCELLED'a alindiginda zaten stok dondurur.
  * Burada sadece "asili kalmis" oturumlari isaretliyoruz ki UI'da expired
  * gorulsun ve raporlama dogru olsun.
  */

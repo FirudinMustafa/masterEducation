@@ -8,16 +8,13 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   KolaybiError,
   _resetTokenCache,
-  _resetMockState,
   getAccessToken,
-  isMockMode,
 } from "@/lib/adapters/kolaybi";
 
 describe("KolayBi security", () => {
   const originalEnv = { ...process.env };
   beforeEach(() => {
     _resetTokenCache();
-    _resetMockState();
   });
   afterEach(() => {
     // env restore
@@ -32,7 +29,6 @@ describe("KolayBi security", () => {
       process.env.KOLAYBI_BASE_URL = "http://insecure.example.com";
       process.env.KOLAYBI_API_KEY = "test";
       process.env.KOLAYBI_CHANNEL = "test";
-      delete process.env.KOLAYBI_MOCK;
 
       // Yapılan istek başlamadan baseUrl() throw etmeli — gerçek fetch'e
       // ulaşılmasın diye internal helper kullanan getAccessToken üstünden test.
@@ -100,17 +96,6 @@ describe("KolayBi security", () => {
       const body = err.body as Record<string, unknown>;
       expect(typeof body.description).toBe("string");
       expect((body.description as string).length).toBeLessThan(700);
-    });
-  });
-
-  describe("Concurrent token refresh (mutex)", () => {
-    it("isMockMode picks up KOLAYBI_MOCK env", () => {
-      process.env.KOLAYBI_MOCK = "true";
-      expect(isMockMode()).toBe(true);
-      process.env.KOLAYBI_MOCK = "false";
-      expect(isMockMode()).toBe(false);
-      delete process.env.KOLAYBI_MOCK;
-      expect(isMockMode()).toBe(false);
     });
   });
 });

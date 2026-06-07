@@ -6,16 +6,16 @@ type OrderForExport = Order & {
 };
 
 const HEADERS = [
-  "Siparis No",
+  "Sipariş No",
   "Tarih",
   "Musteri",
   "Email",
   "Bayi",
   "Vergi No",
-  "Odeme",
+  "Ödeme",
   "Durum",
   "Ara Toplam",
-  "Iskonto",
+  "İskonto",
   "KDV",
   "Net (KDV Haric)",
   "Kargo",
@@ -67,13 +67,13 @@ export function ordersToCsv(orders: OrderForExport[]): string {
 }
 
 const ITEM_HEADERS = [
-  "Siparis No",
+  "Sipariş No",
   "Tarih",
   "ISBN",
-  "Urun",
+  "Ürün",
   "Adet",
   "Birim Fiyat",
-  "Iskonto %",
+  "İskonto %",
   "KDV %",
   "KDV Tutar",
   "Satir Toplam",

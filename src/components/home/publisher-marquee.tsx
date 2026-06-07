@@ -17,7 +17,7 @@ export function PublisherMarquee({ publishers }: Props) {
     <section className="relative border-y border-neutral-200/70 bg-gradient-to-r from-neutral-50 via-white to-neutral-50 py-8">
       <div className="mb-4 text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
-          Calistigimiz Yayinevleri
+          Calistigimiz Yayınevleri
         </p>
       </div>
       <div className="relative overflow-hidden">

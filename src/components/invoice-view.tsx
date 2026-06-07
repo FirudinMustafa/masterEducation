@@ -1,9 +1,9 @@
 import type { OrderStatus, PaymentMethod, PaymentStatus } from "@prisma/client";
-import { formatPrice } from "@/lib/utils";
 import {
   ORDER_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
   BRAND,
+  LEGAL_SELLER,
 } from "@/lib/constants";
 import { PrintButtons } from "@/components/invoice-print";
 
@@ -47,29 +47,13 @@ interface InvoiceViewProps {
   order: InvoiceOrder;
   mode: "invoice" | "delivery-note";
   backHref: string;
-  /**
-   * Fiyat/tutar/KDV sütunları ve toplamlar yalnız bu true iken gösterilir.
-   * Admin görünümünde true (default); müşteri/bayi görünümünde false geçilir —
-   * fiyatlar sistem genelinde müşteri/bayiden gizlenir.
-   */
-  showPrices?: boolean;
 }
 
-export function InvoiceView({ order, mode, backHref, showPrices = true }: InvoiceViewProps) {
+export function InvoiceView({ order, mode, backHref }: InvoiceViewProps) {
   // "FATURA" yazmiyoruz — gercek e-Arsiv entegrasyonu yapilana kadar bu
   // ekran sadece sipariş kayıt çıkışidir (yasal baglayiciligi yoktur).
   const title = mode === "invoice" ? "SIPARIS OZETI" : "TESLIM FISI";
-
-  // Aggregate VAT breakdown by rate
-  const vatBreakdown = new Map<number, { base: number; vat: number }>();
-  for (const item of order.items) {
-    const existing = vatBreakdown.get(item.vatRate) ?? { base: 0, vat: 0 };
-    existing.base += item.lineTotal - item.vatAmount;
-    existing.vat += item.vatAmount;
-    vatBreakdown.set(item.vatRate, existing);
-  }
-
-  const netBeforeShipping = order.subtotal - order.discountTotal;
+  const isDeliveryNote = mode === "delivery-note";
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8 bg-white">
@@ -81,24 +65,44 @@ export function InvoiceView({ order, mode, backHref, showPrices = true }: Invoic
         }
       `}</style>
 
-      <PrintButtons backHref={backHref} pdfHref={`/api/orders/${order.id}/pdf`} />
+      <PrintButtons
+        backHref={backHref}
+        pdfHref={
+          isDeliveryNote
+            ? `/api/orders/${order.id}/teslim-fisi/pdf`
+            : `/api/orders/${order.id}/pdf`
+        }
+      />
 
       <div className="border border-gray-300 p-8 text-sm">
         {/* Header */}
         <div className="flex items-start justify-between border-b border-gray-300 pb-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-brand-black">{BRAND.name}</h1>
-            <p className="text-gray-600 mt-1">{BRAND.email}</p>
-            <p className="text-gray-600">{BRAND.phone}</p>
-            <p className="text-gray-600">{BRAND.address}</p>
-            {(BRAND.taxOffice || BRAND.taxNumber) && (
-              <p className="text-gray-600 mt-1 text-xs">
-                {BRAND.taxOffice && <>VD: {BRAND.taxOffice}</>}
-                {BRAND.taxOffice && BRAND.taxNumber && " · "}
-                {BRAND.taxNumber && <>VKN: {BRAND.taxNumber}</>}
+          {isDeliveryNote ? (
+            <div className="max-w-md">
+              <h1 className="text-lg font-bold text-brand-black">
+                {LEGAL_SELLER.title}
+              </h1>
+              <p className="text-gray-600 mt-1 text-xs">{LEGAL_SELLER.address}</p>
+              <p className="text-gray-600 text-xs">
+                Vergi Dairesi: {LEGAL_SELLER.taxOffice} · VKN: {LEGAL_SELLER.taxNumber}
               </p>
-            )}
-          </div>
+              <p className="text-gray-600 text-xs">Tel: {LEGAL_SELLER.phone}</p>
+            </div>
+          ) : (
+            <div>
+              <h1 className="text-2xl font-bold text-brand-black">{BRAND.name}</h1>
+              <p className="text-gray-600 mt-1">{BRAND.email}</p>
+              <p className="text-gray-600">{BRAND.phone}</p>
+              <p className="text-gray-600">{BRAND.address}</p>
+              {(BRAND.taxOffice || BRAND.taxNumber) && (
+                <p className="text-gray-600 mt-1 text-xs">
+                  {BRAND.taxOffice && <>VD: {BRAND.taxOffice}</>}
+                  {BRAND.taxOffice && BRAND.taxNumber && " · "}
+                  {BRAND.taxNumber && <>VKN: {BRAND.taxNumber}</>}
+                </p>
+              )}
+            </div>
+          )}
           <div className="text-right">
             <p className="text-xl font-bold">{title}</p>
             <p className="text-gray-600 mt-1">
@@ -184,59 +188,7 @@ export function InvoiceView({ order, mode, backHref, showPrices = true }: Invoic
           </tbody>
         </table>
 
-        {/* Totals — only on invoice, and only when prices are visible */}
-        {showPrices && mode === "invoice" && (
-          <div className="flex justify-end">
-            <table className="text-sm w-80">
-              <tbody>
-                <tr>
-                  <td className="py-1 text-gray-600">Ara Toplam</td>
-                  <td className="py-1 text-right">
-                    {formatPrice(order.subtotal)}
-                  </td>
-                </tr>
-                {order.discountTotal > 0 && (
-                  <tr>
-                    <td className="py-1 text-gray-600">İskonto</td>
-                    <td className="py-1 text-right text-emerald-700">
-                      -{formatPrice(order.discountTotal)}
-                    </td>
-                  </tr>
-                )}
-                <tr>
-                  <td className="py-1 text-gray-600">Net Mal Bedeli</td>
-                  <td className="py-1 text-right">
-                    {formatPrice(netBeforeShipping - order.vatTotal)}
-                  </td>
-                </tr>
-                {[...vatBreakdown.entries()]
-                  .sort((a, b) => a[0] - b[0])
-                  .map(([rate, v]) => (
-                    <tr key={rate}>
-                      <td className="py-1 text-gray-600">
-                        KDV %{rate} ({formatPrice(v.base)})
-                      </td>
-                      <td className="py-1 text-right">
-                        {formatPrice(v.vat)}
-                      </td>
-                    </tr>
-                  ))}
-                <tr>
-                  <td className="py-1 text-gray-600">Kargo</td>
-                  <td className="py-1 text-right">
-                    {formatPrice(order.shippingCost)}
-                  </td>
-                </tr>
-                <tr className="border-t-2 border-gray-300 font-bold text-base">
-                  <td className="py-2">GENEL TOPLAM</td>
-                  <td className="py-2 text-right">
-                    {formatPrice(order.total)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
+        {/* Fiyat/toplam bölümü kaldırıldı — çıktıda tutar gösterilmez (2026-06-08). */}
 
         {order.note && (
           <div className="mt-6 pt-4 border-t border-gray-200 text-xs text-gray-600">
@@ -245,11 +197,56 @@ export function InvoiceView({ order, mode, backHref, showPrices = true }: Invoic
           </div>
         )}
 
-        <div className="mt-8 pt-4 border-t border-gray-200 text-xs text-gray-500 text-center">
-          Bu belge siparişinizin kayıt ozetidir. Resmi e-Arsiv / e-Fatura
-          belgeniz siparişiniz onaylandiktan sonra ayrica email adresinize
-          iletilir.
-        </div>
+        {isDeliveryNote && (
+          <>
+            <div className="mt-6 border border-gray-300 rounded p-4">
+              <p className="font-semibold text-gray-700 uppercase text-xs mb-3">
+                Sevkiyat Bilgileri
+              </p>
+              <div className="space-y-3 text-sm">
+                {[
+                  "Teslim Şekli",
+                  "Araç Plakası",
+                  "Dorse Plakası",
+                  "Şoför Adı Soyadı",
+                  "Şoför TC No",
+                ].map((label) => (
+                  <div key={label} className="flex items-end gap-3">
+                    <span className="w-32 shrink-0 text-gray-600">{label}</span>
+                    <span className="flex-1 border-b border-gray-400 h-5" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-10 grid grid-cols-2 gap-8">
+              <div>
+                <p className="font-semibold text-gray-700 text-sm mb-12">
+                  Teslim Eden
+                </p>
+                <p className="border-t border-gray-700 pt-1 text-xs text-gray-500">
+                  Ad Soyad / İmza
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-700 text-sm mb-12">
+                  Teslim Alan
+                </p>
+                <p className="border-t border-gray-700 pt-1 text-xs text-gray-500">
+                  Ad Soyad / İmza
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+
+        {!isDeliveryNote && (
+          <div className="mt-8 pt-4 border-t border-gray-200 text-xs text-gray-500 text-center">
+            Bu belge siparişinizin kayıt ozetidir. Resmi e-Arsiv / e-Fatura
+            belgeniz siparişiniz onaylandiktan sonra ayrica email adresinize
+            iletilir.
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
-import { formatPrice } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Odeme Basarili",
+  title: "Ödeme Başarıli",
   robots: { index: false, follow: false },
 };
 
@@ -49,10 +48,10 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
           </svg>
         </div>
         <h1 className="text-2xl font-display font-bold text-brand-black mb-2">
-          Odemeniz onaylandi
+          Ödemeniz onaylandi
         </h1>
         <p className="text-sm text-brand-muted">
-          Siparisinizi aldik. Onay detaylari asagida.
+          Siparişinizi aldik. Onay detaylari asagida.
         </p>
       </div>
 
@@ -60,20 +59,14 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-3 mb-6">
           <div className="flex justify-between items-center pb-3 border-b border-gray-100">
             <span className="text-xs uppercase tracking-wider text-gray-500">
-              Siparis No
+              Sipariş No
             </span>
             <span className="font-mono font-semibold text-brand-black">
               {order.orderNumber}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Tutar</span>
-            <span className="font-semibold">
-              {formatPrice(Number(order.total))}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Odeme</span>
+            <span className="text-gray-500">Ödeme</span>
             <span>
               {order.paymentMethod === "CREDIT_CARD" ? "Kredi Karti" : "Acik Hesap"}
             </span>
@@ -88,12 +81,12 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
       )}
 
       <div className="rounded-xl border border-brand-gold-light bg-amber-50/60 p-4 text-sm space-y-2 mb-6">
-        <p className="font-semibold text-brand-black">Siradaki adimlar</p>
+        <p className="font-semibold text-brand-black">Siradaki adımlar</p>
         <ul className="space-y-1.5 text-brand-muted">
           <li className="flex gap-2">
             <span className="text-brand-gold-dark">1.</span>
             <span>
-              Siparis detaylari{" "}
+              Sipariş detaylari{" "}
               {order?.user?.email ? (
                 <strong>{order.user.email}</strong>
               ) : (
@@ -105,7 +98,7 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
           <li className="flex gap-2">
             <span className="text-brand-gold-dark">2.</span>
             <span>
-              Siparisiniz 1-2 is gunu icinde hazirlanip kargoya verilecektir.
+              Siparişiniz 1-2 is günu icinde hazirlanip kargoya verilecektir.
             </span>
           </li>
           <li className="flex gap-2">
@@ -116,9 +109,9 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
                 href="/hesabim/siparislerim"
                 className="text-brand-gold-dark hover:underline font-medium"
               >
-                Siparislerim
+                Siparişlerim
               </Link>{" "}
-              sayfasinda ve email&apos;de gorebilirsiniz.
+              sayfasinda ve email&apos;de görebilirsiniz.
             </span>
           </li>
         </ul>
@@ -135,7 +128,7 @@ export default async function PaymentSuccessPage({ searchParams }: PageProps) {
           href="/hesabim/siparislerim"
           className="px-5 py-2.5 bg-white border border-gray-200 rounded-lg font-medium hover:bg-gray-50"
         >
-          Siparislerimi Gor
+          Siparişlerimi Gor
         </Link>
       </div>
     </div>

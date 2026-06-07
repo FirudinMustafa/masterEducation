@@ -51,25 +51,7 @@ import * as kolaybi from "@/lib/adapters/kolaybi";
   );
 
   // ─── 2. Adapter behavior ───
-  if (kolaybi.isMockMode()) {
-    console.log("\n#2 Adapter MOCK mode testleri");
-    check("isMockMode() = true", kolaybi.isMockMode() === true);
-    check("isOperational() = true (mock'la)", kolaybi.isOperational() === true);
-    // Mock mode'da authedFetch synthetic data döndürmeli, error fırlatmamalı
-    try {
-      const r = (await kolaybi.authedFetch("/kolaybi/v1/products", {
-        method: "POST",
-        body: { name: "probe" },
-      })) as { data: { id: number } };
-      check("authedFetch mock synthetic ID döndürür", typeof r.data.id === "number");
-    } catch (err) {
-      check("authedFetch mock'ta error fırlatmadı", false, err instanceof Error ? err.message : String(err));
-    }
-
-    console.log("\n  Mock mode aktif — sandbox probe geçti, mock akış hazır.");
-    console.log(`\nÖzet: ${pass}/${total}`);
-    process.exit(fail.length > 0 ? 1 : 0);
-  } else if (!kolaybi.isConfigured()) {
+  if (!kolaybi.isConfigured()) {
     console.log("\n#2 Adapter DRYRUN testleri");
     check("isConfigured() = false (env yok)", kolaybi.isConfigured() === false);
     try {

@@ -20,7 +20,7 @@ async function loadOwnReview(reviewId: string, userId: string) {
 export async function PATCH(req: NextRequest, ctx: RouteCtx) {
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.json({ error: "Giris gerekli." }, { status: 401 });
+    return NextResponse.json({ error: "Giriş gerekli." }, { status: 401 });
   }
   const { id } = await ctx.params;
   const review = await loadOwnReview(id, session.user.id);
@@ -58,13 +58,13 @@ export async function PATCH(req: NextRequest, ctx: RouteCtx) {
     metadata: { reviewId: id, rating: parsed.data.rating },
   });
 
-  return NextResponse.json({ id: updated.id, message: "Yorumunuz guncellendi." });
+  return NextResponse.json({ id: updated.id, message: "Yorumunuz güncellendi." });
 }
 
 export async function DELETE(_req: NextRequest, ctx: RouteCtx) {
   const session = await auth();
   if (!session?.user) {
-    return NextResponse.json({ error: "Giris gerekli." }, { status: 401 });
+    return NextResponse.json({ error: "Giriş gerekli." }, { status: 401 });
   }
   const { id } = await ctx.params;
   const review = await loadOwnReview(id, session.user.id);

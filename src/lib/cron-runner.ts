@@ -7,7 +7,7 @@ import { BRAND } from "@/lib/constants";
  *
  * `await sendEmail` kullaniyoruz — fire-and-forget queueEmail Vercel'de
  * fonksiyon kapanmadan once gonderilemeyebilir. Cron failure mailinin
- * kacirilmamasi onemli; ekstra latency gormezden gelinir (cron zaten async).
+ * kacirilmamasi önemli; ekstra latency gormezden gelinir (cron zaten async).
  *
  * Hatayi yakalar, mail yollar, sonra yeniden frrlatir — Vercel loglari ve
  * error_logs hala gercegi gormeli.

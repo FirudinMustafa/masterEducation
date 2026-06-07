@@ -21,24 +21,24 @@ export const metadata: Metadata = {
     process.env.NEXTAUTH_URL ?? "https://mastereducation.com.tr"
   ),
   title: {
-    default: "Master Education | Egitim Materyalleri & Yabanci Dil Kitaplari",
+    default: "Master Education | Eğitim Materyalleri & Yabanci Dil Kitaplari",
     template: "%s | Master Education",
   },
   description:
-    "Egitim materyalleri ve yabanci dil kitaplari icin guvenilir adresiniz. ELT, DaF, MEB ve daha fazlasi. Toptan ve perakende satis.",
+    "Eğitim materyalleri ve yabanci dil kitaplari icin guvenilir adresiniz. ELT, DaF, MEB ve daha fazlasi. Toptan ve perakende satis.",
   openGraph: {
     type: "website",
     locale: "tr_TR",
     siteName: "Master Education",
-    title: "Master Education | Egitim Materyalleri",
+    title: "Master Education | Eğitim Materyalleri",
     description:
-      "Egitim materyalleri ve yabanci dil kitaplari icin guvenilir adresiniz.",
+      "Eğitim materyalleri ve yabanci dil kitaplari icin guvenilir adresiniz.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Master Education",
     description:
-      "Egitim materyalleri ve yabanci dil kitaplari icin guvenilir adresiniz.",
+      "Eğitim materyalleri ve yabanci dil kitaplari icin guvenilir adresiniz.",
   },
   robots: {
     index: true,

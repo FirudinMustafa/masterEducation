@@ -22,9 +22,9 @@ interface Props {
   onDone: () => void;
 }
 
-// Admin "bir bayiye 100 urune iskonto ver" akisi:
-//   1) Yayinevi/kategori/ISBN ile filtrele
-//   2) Checkbox ile sec (sayfa bazli veya "tumunu sec")
+// Admin "bir bayiye 100 ürüne iskonto ver" akisi:
+//   1) Yayınevi/kategori/ISBN ile filtrele
+//   2) Checkbox ile seç (sayfa bazli veya "tümunu seç")
 //   3) Tek bir yuzde gir (veya her satir icin inline yuzde)
 //   4) Kaydet → PRODUCT scope kurallari upsert.
 export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
@@ -98,7 +98,7 @@ export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
       const avg = pcts.reduce((a, b) => a + b, 0) / pcts.length;
       return `${selected.size} secili · ort %${avg.toFixed(1)}`;
     }
-    return `${selected.size} urune %${pct || 0} uygulanacak`;
+    return `${selected.size} ürüne %${pct || 0} uygulanacak`;
   }, [selected, pct, perRowMode, perRowPct]);
 
   async function save() {
@@ -115,7 +115,7 @@ export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
       items.push({ productId: id, discountPct: value });
     }
     if (items.length === 0) {
-      setError("Kaydedilecek urun yok (yuzdeleri kontrol edin).");
+      setError("Kaydedilecek ürün yok (yuzdeleri kontrol edin).");
       return;
     }
     setSaving(true);
@@ -127,11 +127,11 @@ export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
     setSaving(false);
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Kayit basarisiz.");
+      setError(data.error ?? "Kayıt başarısız.");
       return;
     }
     const data = (await res.json()) as { upserted: number };
-    toast.success(`${data.upserted} urune iskonto atandi`);
+    toast.success(`${data.upserted} ürüne iskonto atandi`);
     setSelected(new Set());
     setPerRowPct({});
     setPct("");
@@ -141,20 +141,20 @@ export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="font-semibold text-brand-black mb-1">Toplu Urun Iskontosu</h3>
+        <h3 className="font-semibold text-brand-black mb-1">Toplu Ürün İskontosu</h3>
         <p className="text-xs text-gray-500 mb-4">
-          Yayinevi veya ISBN ile filtreleyin, listeden urunleri isaretleyin ve hepsine ayni yuzdeyi verin — ya da her urune farkli yuzde girin.
+          Yayınevi veya ISBN ile filtreleyin, listeden ürünleri isaretleyin ve hepsine ayni yuzdeyi verin — ya da her ürüne farkli yuzde girin.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
           <label className="block">
-            <span className="block text-xs font-medium text-gray-500 mb-1">Yayinevi</span>
+            <span className="block text-xs font-medium text-gray-500 mb-1">Yayınevi</span>
             <select
               value={publisherId}
               onChange={(e) => setPublisherId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
             >
-              <option value="">Tum yayinevleri</option>
+              <option value="">Tüm yayınevleri</option>
               {publishers.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -164,7 +164,7 @@ export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
           </label>
           <label className="block md:col-span-2">
             <span className="block text-xs font-medium text-gray-500 mb-1">
-              Urun ara (ad veya ISBN)
+              Ürün ara (ad veya ISBN)
             </span>
             <input
               type="text"
@@ -179,9 +179,9 @@ export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs text-gray-500">
             {loading
-              ? "Yukleniyor..."
+              ? "Yükleniyor..."
               : rows.length > 0
-                ? `${rows.length} urun bulundu (ilk 200)`
+                ? `${rows.length} ürün bulundu (ilk 200)`
                 : "Sonuc yok"}
           </span>
           {rows.length > 0 && (
@@ -189,7 +189,7 @@ export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
               onClick={toggleAll}
               className="text-xs text-brand-gold-dark hover:underline cursor-pointer"
             >
-              {selected.size === rows.length ? "Secimi kaldir" : "Tumunu sec"}
+              {selected.size === rows.length ? "Secimi kaldir" : "Tümunu seç"}
             </button>
           )}
         </div>
@@ -197,14 +197,14 @@ export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
         <div className="border border-gray-200 rounded-lg max-h-[400px] overflow-y-auto">
           {rows.length === 0 ? (
             <p className="p-6 text-sm text-gray-400 text-center">
-              Listeyi gormek icin yayinevi secin veya ISBN ile arayin.
+              Listeyi gormek icin yayınevi secin veya ISBN ile arayin.
             </p>
           ) : (
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
                 <tr>
                   <th className="p-2 w-8"></th>
-                  <th className="text-left p-2 text-xs font-semibold text-gray-500">Urun</th>
+                  <th className="text-left p-2 text-xs font-semibold text-gray-500">Ürün</th>
                   <th className="text-left p-2 text-xs font-semibold text-gray-500 w-24">ISBN</th>
                   <th className="text-right p-2 text-xs font-semibold text-gray-500 w-20">Fiyat</th>
                   {perRowMode && (
@@ -266,14 +266,14 @@ export function DiscountBulkPicker({ dealerId, publishers, onDone }: Props) {
 
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="font-semibold text-brand-black">Iskonto Uygula</h4>
+          <h4 className="font-semibold text-brand-black">İskonto Uygula</h4>
           <label className="flex items-center gap-2 text-xs text-gray-600">
             <input
               type="checkbox"
               checked={perRowMode}
               onChange={(e) => setPerRowMode(e.target.checked)}
             />
-            Her urune farkli yuzde ver
+            Her ürüne farkli yuzde ver
           </label>
         </div>
 

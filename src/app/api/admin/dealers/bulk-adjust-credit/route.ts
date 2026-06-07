@@ -11,7 +11,7 @@ const MAX_IDS = 500;
 const bodySchema = z.object({
   dealerIds: z.array(z.string().min(1)).min(1).max(MAX_IDS),
   mode: z.enum(["set", "percent_increase", "percent_decrease", "fixed_increase", "fixed_decrease"]),
-  value: z.number().min(0).max(9_999_999),
+  value: z.number().min(0).max(20_000_000),
   minLimit: z.number().min(0).optional(),
   dryRun: z.boolean().optional().default(false),
 });
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
   });
 
   // E12 — Limit gercekten degisenlere bildirim. Mod="set" ile mevcutla
-  // ayni hedefe gidenleri atla (kasti "no-op" mail gurultusu olusmasin).
+  // ayni hedefe gidenleri atla (kasti "no-op" mail gurultusu oluşmasin).
   after(() => {
     for (const u of updates) {
       if (u.current === u.next) continue;

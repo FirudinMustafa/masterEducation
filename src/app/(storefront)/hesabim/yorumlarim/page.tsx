@@ -27,7 +27,7 @@ export default async function MyReviewsPage() {
           slug: true,
           name: true,
           images: {
-            orderBy: { displayOrder: "asc" },
+            orderBy: [{ displayOrder: "asc" }, { pictureId: "asc" }],
             take: 1,
             select: { filename: true },
           },
@@ -65,7 +65,7 @@ export default async function MyReviewsPage() {
           href="/hesabim"
           className="text-sm font-medium text-neutral-600 hover:text-neutral-900"
         >
-          ← Hesabim
+          ← Hesabım
         </Link>
       </div>
 
@@ -78,7 +78,7 @@ export default async function MyReviewsPage() {
             href="/urunler"
             className="mt-4 inline-block rounded-lg bg-brand-gold px-5 py-2 text-sm font-semibold text-neutral-800 hover:bg-brand-gold-dark"
           >
-            Urunlere gozat
+            Ürünlere gözat
           </Link>
         </div>
       ) : (

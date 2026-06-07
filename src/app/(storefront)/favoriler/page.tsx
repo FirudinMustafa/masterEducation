@@ -5,6 +5,7 @@ import { useWishlistStore } from "@/stores/wishlist-store";
 import { useCartStore } from "@/stores/cart-store";
 import { toast } from "@/stores/toast-store";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useCanOrder, ensureCanOrder } from "@/lib/use-can-order";
 import { ProductGrid } from "@/components/products/product-grid";
 import {
   HeartIcon,
@@ -19,12 +20,14 @@ export default function WishlistPage() {
   const items = hydrated ? itemsRaw : [];
   const clear = useWishlistStore((s) => s.clear);
   const addItem = useCartStore((s) => s.addItem);
+  const canOrder = useCanOrder();
 
   if (!hydrated) {
     return <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6" />;
   }
 
   function addAllToCart() {
+    if (!ensureCanOrder(canOrder)) return;
     let added = 0;
     items.forEach((p) => {
       if (p.stockQuantity <= 0) return;
@@ -44,8 +47,8 @@ export default function WishlistPage() {
       );
       added += 1;
     });
-    if (added > 0) toast.success(`${added} urun sepete eklendi`);
-    else toast.warning("Eklenebilecek stokta urun yok");
+    if (added > 0) toast.success(`${added} ürün sepete eklendi`);
+    else toast.warning("Eklenebilecek stokta ürün yok");
   }
 
   if (items.length === 0) {
@@ -58,13 +61,13 @@ export default function WishlistPage() {
           Favori listeniz bos
         </h1>
         <p className="mt-2 text-sm text-neutral-500">
-          Begendiginiz urunlerin kalp ikonuna tiklayarak favorilerinize ekleyin.
+          Begendiginiz ürünlerin kalp ikonuna tiklayarak favorilerinize ekleyin.
         </p>
         <Link
           href="/urunler"
           className="mt-6 inline-flex items-center gap-2 rounded-xl bg-brand-gold px-6 py-3 text-sm font-bold text-neutral-800 shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md"
         >
-          Urunlere Gozat
+          Ürünlere Gözat
           <ArrowRightIcon className="h-4 w-4" />
         </Link>
       </div>
@@ -80,7 +83,7 @@ export default function WishlistPage() {
             Favorilerim
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
-            {items.length} urun listenizde
+            {items.length} ürün listenizde
           </p>
         </div>
         <div className="flex gap-2">
@@ -89,7 +92,7 @@ export default function WishlistPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-brand-gold px-4 py-2.5 text-sm font-bold text-neutral-800 shadow-sm transition-all hover:bg-brand-gold-dark hover:shadow-md cursor-pointer"
           >
             <ShoppingCartIcon className="h-4 w-4" />
-            Tumunu Sepete Ekle
+            Tümunu Sepete Ekle
           </button>
           <button
             onClick={() => {

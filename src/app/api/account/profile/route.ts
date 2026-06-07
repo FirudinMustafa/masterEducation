@@ -6,11 +6,23 @@ import { profileUpdateSchema, flattenZodError } from "@/lib/validations";
 import { logAudit } from "@/lib/audit";
 import { issueEmailVerificationToken } from "@/lib/email-verification";
 import { queueEmail, templateEmailChanged } from "@/lib/email";
+import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-client-ip";
 
 export async function PATCH(req: Request) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Yetkisiz." }, { status: 401 });
+  }
+
+  // Spam koruma: profil/email degisikligi saatte 10 ile sinirli — saldirgan
+  // sessionı calsa bile sonsuz email-change denemesi yapamasin.
+  const rl = rateLimit(`profile-update:${session.user.id}`, 10, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Cok fazla profil guncelleme denemesi. Lutfen bir sure sonra tekrar deneyin." },
+      { status: 429 }
+    );
   }
 
   const json = await req.json().catch(() => ({}));
@@ -24,13 +36,13 @@ export async function PATCH(req: Request) {
 
   const { name, phone, email, currentPassword } = parsed.data;
 
-  // Email degisiyorsa baska bir kullanicida bu email olmasin.
+  // Email degisiyorsa baska bir kullanıcıda bu email olmasin.
   const current = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { email: true, emailVerified: true, passwordHash: true },
   });
   if (!current) {
-    return NextResponse.json({ error: "Kullanici bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Kullanıcı bulunamadi." }, { status: 404 });
   }
 
   // Account takeover engeli: email değişimi current password zorunlu.
@@ -38,7 +50,7 @@ export async function PATCH(req: Request) {
   if (email !== current.email) {
     if (!currentPassword) {
       return NextResponse.json(
-        { error: "Email degisikligi icin mevcut sifrenizi girmelisiniz." },
+        { error: "Email degisikligi icin mevcut şifrenizi girmelisiniz." },
         { status: 400 }
       );
     }
@@ -52,7 +64,7 @@ export async function PATCH(req: Request) {
         metadata: { source: "email-change-attempt-bad-password" },
       });
       return NextResponse.json(
-        { error: "Mevcut sifre dogru degil." },
+        { error: "Mevcut şifre dogru degil." },
         { status: 403 }
       );
     }
@@ -60,7 +72,7 @@ export async function PATCH(req: Request) {
     const dup = await prisma.user.findUnique({ where: { email } });
     if (dup && dup.id !== session.user.id) {
       return NextResponse.json(
-        { error: "Bu email adresi baska bir hesapta kayitli." },
+        { error: "Bu email adresi baska bir hesapta kayıtli." },
         { status: 409 }
       );
     }
@@ -90,16 +102,14 @@ export async function PATCH(req: Request) {
   if (emailChanged) {
     const userId = session.user.id;
     const oldEmail = current.email;
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      null;
+    // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali).
+    const ip = getClientIp(req.headers);
     const ipShort = ip ? ip.slice(0, 64) : null;
     const userName = updated.name;
     after(async () => {
       await issueEmailVerificationToken(userId, userName, email);
 
-      // E9 — Eski adrese guvenlik uyarisi + yeni adrese hosgeldin.
+      // E9 — Eski adrese guvenlik uyarısi + yeni adrese hoşgeldin.
       const when = new Date();
       const oldNotice = templateEmailChanged({
         name: userName,

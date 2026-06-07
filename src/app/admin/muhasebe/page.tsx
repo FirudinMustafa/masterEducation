@@ -62,7 +62,7 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
     <div className="max-w-5xl space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold text-brand-black">Muhasebe</h1>
-        <p className="text-sm text-gray-500 mt-1">Siparis ve cari ozeti</p>
+        <p className="text-sm text-gray-500 mt-1">Sipariş ve cari ozeti</p>
       </div>
 
       <form
@@ -97,7 +97,7 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
           href={exportUrl("orders", "xlsx")}
           className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50"
         >
-          Siparisler Excel
+          Siparişler Excel
         </a>
         <a
           href={exportUrl("items", "xlsx")}
@@ -114,16 +114,16 @@ export default async function AdminAccountingPage({ searchParams }: PageProps) {
       </form>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat label="Siparis Sayisi" value={String(totals._count._all)} />
+        <Stat label="Sipariş Sayısi" value={String(totals._count._all)} />
         <Stat label="Ara Toplam" value={formatPrice(Number(totals._sum.subtotal ?? 0))} />
-        <Stat label="Iskonto" value={formatPrice(Number(totals._sum.discountTotal ?? 0))} />
+        <Stat label="İskonto" value={formatPrice(Number(totals._sum.discountTotal ?? 0))} />
         <Stat label="Ciro" value={formatPrice(Number(totals._sum.total ?? 0))} />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h2 className="font-semibold text-brand-black mb-3">Acik Hesap</h2>
         <p className="text-sm text-gray-600">
-          {openAccount._count._all} siparis — Toplam:{" "}
+          {openAccount._count._all} sipariş — Toplam:{" "}
           <strong>{formatPrice(Number(openAccount._sum.total ?? 0))}</strong>
         </p>
       </div>

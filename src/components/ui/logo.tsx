@@ -14,14 +14,14 @@ interface LogoProps {
   href?: string | null;
 }
 
-// Logo boyutu — yeni logo 804×438 (~1.835:1 aspect ratio). Width:height bu
+// Logo boyutu — logo 4096×1461 (~2.80:1 aspect ratio). Width:height bu
 // orana göre ayarlanır, böylece görsel ezilmez.
 const SIZES = {
-  sm: { w: 64, h: 35 },
-  md: { w: 88, h: 48 },
-  lg: { w: 112, h: 61 },
-  xl: { w: 144, h: 78 },
-  "2xl": { w: 192, h: 105 },
+  sm: { w: 126, h: 45 },
+  md: { w: 168, h: 60 },
+  lg: { w: 224, h: 80 },
+  xl: { w: 280, h: 100 },
+  "2xl": { w: 364, h: 130 },
 } as const;
 
 export function Logo({

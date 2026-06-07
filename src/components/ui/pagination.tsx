@@ -39,7 +39,7 @@ export function Pagination({ currentPage, totalPages, baseUrl, searchParams = {}
           href={buildUrl(currentPage - 1)}
           className="px-3 py-2 text-sm rounded-lg hover:bg-brand-warm-gray transition-colors"
         >
-          Onceki
+          Önceki
         </Link>
       )}
       {pages.map((page, i) =>

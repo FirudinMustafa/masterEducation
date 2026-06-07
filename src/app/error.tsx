@@ -42,7 +42,7 @@ export default function ErrorBoundary({
         </svg>
       </div>
       <h1 className="text-2xl font-display font-bold text-brand-black mb-2">
-        Bir sorun olustu
+        Bir sorun oluştu
       </h1>
       <p className="text-brand-muted mb-6">
         Beklenmedik bir hata alindi. Sorun ekibimize iletildi.

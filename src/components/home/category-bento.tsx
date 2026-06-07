@@ -25,9 +25,9 @@ export function CategoryBento({ categories }: Props) {
     <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
       <SectionHeading
         eyebrow="Kategoriler"
-        title="Dilinize gore kesfedin"
+        title="Dilinize göre kesfedin"
         subtitle="Seviyenize ve hedefinize uygun materyaller"
-        link={{ href: "/urunler", label: "Tum Urunler" }}
+        link={{ href: "/urunler", label: "Tüm Ürünler" }}
       />
 
       {/* Bento grid — desktop: 4 cols x 3 rows, mobile: stacked */}
@@ -122,7 +122,7 @@ function BentoTile({
                 variant === "hero" ? "text-sm text-neutral-300" : "text-xs text-neutral-600"
               }`}
             >
-              {cat.count.toLocaleString("tr-TR")} urun
+              {cat.count.toLocaleString("tr-TR")} ürün
             </p>
             <ArrowRightIcon
               className={`h-4 w-4 transition-transform group-hover:translate-x-1 ${

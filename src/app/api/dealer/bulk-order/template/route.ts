@@ -14,11 +14,11 @@ export async function GET() {
 
   const wb = createBrandedWorkbook();
 
-  buildBrandedSheet(wb, "Siparis", {
-    title: "Toplu Siparis Sablonu",
+  buildBrandedSheet(wb, "Sipariş", {
+    title: "Toplu Sipariş Sablonu",
     subtitle: `Bayi: ${session.user.name ?? ""}  ·  ${new Date().toLocaleDateString("tr-TR")}`,
     intro:
-      "Asagidaki formati koruyarak satirlari doldurun. ISBN ve miktar zorunlu alanlardir. Bulunamayan urunler ve stok yetersizligi yuklemeden sonra raporlanir.",
+      "Asagidaki formati koruyarak satirlari doldurun. ISBN ve miktar zorunlu alanlardir. Bulunamayan ürünler ve stok yetersizligi yüklemeden sonra raporlanir.",
     columns: [
       { header: "ISBN", key: "sku", width: 22 },
       { header: "Adet", key: "quantity", width: 10, numFmt: "0" },
@@ -30,17 +30,17 @@ export async function GET() {
     ],
   });
 
-  buildBrandedSheet(wb, "Aciklama", {
+  buildBrandedSheet(wb, "Açıklama", {
     title: "Kullanim Rehberi",
-    subtitle: "Toplu siparis sablon aciklamasi",
+    subtitle: "Toplu sipariş sablon açıklamasi",
     columns: [
       { header: "Kolon", key: "col", width: 20 },
-      { header: "Aciklama", key: "desc", width: 70 },
+      { header: "Açıklama", key: "desc", width: 70 },
     ],
     rows: [
-      { col: "ISBN", desc: "Urun ISBN'i. Sitemizdeki urun detay sayfasinda veya iskonto Excel'inizde bulabilirsiniz." },
+      { col: "ISBN", desc: "Ürün ISBN'i. Sitemizdeki ürün detay sayfasinda veya iskonto Excel'inizde bulabilirsiniz." },
       { col: "Adet", desc: "1 veya daha fazla. Stok miktarindan fazla olursa ilgili satir reddedilir." },
-      { col: "Not", desc: "Opsiyonel. Siparis notunuza eklenmez; sadece sizin icin." },
+      { col: "Not", desc: "Opsiyonel. Sipariş notunuza eklenmez; sadece sizin icin." },
     ],
   });
 

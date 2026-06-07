@@ -17,7 +17,7 @@ export function authorizeCronRequest(req: NextRequest):
     return { ok: false, status: 401, reason: "MISSING_BEARER" };
   }
   const token = auth.slice("Bearer ".length).trim();
-  // Sabit-zamanli karsilastirma
+  // Sabit-zamanli karşılaştırma
   if (
     token.length !== env.CRON_SECRET.length ||
     !timingSafeEq(token, env.CRON_SECRET)

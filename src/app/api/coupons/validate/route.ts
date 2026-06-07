@@ -4,6 +4,7 @@ import { evaluateCoupon } from "@/lib/coupons";
 import { flattenZodError } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
+import { getClientIp } from "@/lib/get-client-ip";
 
 const schema = z.object({
   code: z.string().min(1).max(40),
@@ -12,15 +13,13 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali).
+  const ip = getClientIp(req.headers);
   // Brute-force kupon kodu denemeye karsi: saatte 20 dogrulama / IP.
   const rl = rateLimit(`coupon-validate:${ip}`, 20, 60 * 60 * 1000);
   if (!rl.allowed) {
     return NextResponse.json(
-      { error: "Cok fazla kupon denemesi. Bir sure sonra tekrar deneyin." },
+      { error: "Çok fazla kupon denemesi. Bir sure sonra tekrar deneyin." },
       { status: 429 }
     );
   }
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
     shippingCost: parsed.data.shippingCost,
   });
 
-  // Basarisiz denemeleri audit et — KVKK uyumlu sekilde sadece kod + IP.
+  // Başarısız denemeleri audit et — KVKK uyumlu sekilde sadece kod + IP.
   if (!result.ok) {
     logAudit({
       actorId: null,

@@ -4,7 +4,7 @@ import * as path from "path";
 
 /**
  * Master Education markali Excel dosyalari icin ortak yardimci.
- * Logo + renk + font + footer her template'te tutarli cikar.
+ * Logo + renk + font + footer her template'te tutarli çıkar.
  */
 
 // Brand palette (globals.css ile senkron)
@@ -69,7 +69,7 @@ export function createBrandedWorkbook(creator = BRAND_NAME): ExcelJS.Workbook {
  *
  * Layout:
  *   Satir 1-5  : logo + marka adi + alt baslik
- *   Satir 6    : (opsiyonel) giris metni
+ *   Satir 6    : (opsiyonel) giriş metni
  *   Satir 7    : kolon basliklari (gold background)
  *   Satir 8+   : veri
  */
@@ -123,7 +123,7 @@ export function setupBrandedSheet(
   const subCell = sheet.getCell("B3");
   subCell.value =
     opts.subtitle ??
-    `Olusturma tarihi: ${new Date().toLocaleDateString("tr-TR")}`;
+    `Oluşturma tarihi: ${new Date().toLocaleDateString("tr-TR")}`;
   subCell.font = { name: "Calibri", size: 10, color: { argb: BRAND.textMid } };
   subCell.alignment = { vertical: "middle", horizontal: "left" };
 
@@ -216,7 +216,7 @@ export function appendBrandedRows<T extends Record<string, unknown>>(
 }
 
 /**
- * Sheet'in sonuna marka footer'i ekler (iletisim bilgisi).
+ * Sheet'in sonuna marka footer'i ekler (iletişim bilgisi).
  */
 export function appendBrandedFooter(sheet: ExcelJS.Worksheet): void {
   const totalCols = sheet.columns.length;
@@ -231,7 +231,7 @@ export function appendBrandedFooter(sheet: ExcelJS.Worksheet): void {
 
 /**
  * Tek sefer cagri ile tam bir branded sheet (baslik + intro + header + veri +
- * footer) olusturmak icin yardimci.
+ * footer) oluşturmak icin yardimci.
  */
 export function buildBrandedSheet<T extends Record<string, unknown>>(
   wb: ExcelJS.Workbook,
@@ -247,15 +247,29 @@ export function buildBrandedSheet<T extends Record<string, unknown>>(
   return sheet;
 }
 
+/**
+ * Excel response builder.
+ *
+ * HTTP headerlari Latin-1 kabul eder; Turkce karakterler (s, g, c, u, o, i)
+ * Response constructor'da ByteString hatasi firlatir. RFC 5987 'filename*='
+ * direktifi ile ASCII filename fallback + UTF-8 ozgun isim verilir.
+ *
+ * Geriye uyumluluk: utf8Filename verilmezse filename parametresi her iki yere
+ * de yazilir (cagrilari kirma).
+ */
 export function excelResponse(
   buffer: ArrayBuffer,
   filename: string,
+  utf8Filename?: string,
 ): Response {
+  const ascii = filename;
+  const utf8 = utf8Filename ?? filename;
+  const cd = `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(utf8)}`;
   return new Response(buffer, {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": cd,
     },
   });
 }

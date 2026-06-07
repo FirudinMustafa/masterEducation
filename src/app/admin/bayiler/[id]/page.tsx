@@ -140,7 +140,7 @@ export default async function AdminDealerDetailPage({ params }: PageProps) {
           </dl>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="font-semibold text-brand-black mb-3">Kullanici</h2>
+          <h2 className="font-semibold text-brand-black mb-3">Kullanıcı</h2>
           <dl className="space-y-2 text-sm">
             <Row label="Ad" value={dealer.user.name} />
             <Row label="Email" value={dealer.user.email} />
@@ -150,10 +150,10 @@ export default async function AdminDealerDetailPage({ params }: PageProps) {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="font-semibold text-brand-black mb-3">Odeme & Cari Durum</h2>
+        <h2 className="font-semibold text-brand-black mb-3">Ödeme & Cari Durum</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <Stat
-            label="Odeme Modu"
+            label="Ödeme Modu"
             value={
               dealer.paymentTerms === "PREPAID"
                 ? "Pesin (KK / Havale)"
@@ -242,11 +242,11 @@ export default async function AdminDealerDetailPage({ params }: PageProps) {
 
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-brand-black">Son Siparisler</h2>
-          <span className="text-xs text-gray-500">{dealer.user.orders.length} siparis</span>
+          <h2 className="font-semibold text-brand-black">Son Siparişler</h2>
+          <span className="text-xs text-gray-500">{dealer.user.orders.length} sipariş</span>
         </div>
         {dealer.user.orders.length === 0 ? (
-          <p className="text-sm text-gray-500">Henuz siparis yok.</p>
+          <p className="text-sm text-gray-500">Henuz sipariş yok.</p>
         ) : (
           <ul className="divide-y divide-gray-100">
             {dealer.user.orders.map((o) => (
@@ -269,7 +269,7 @@ export default async function AdminDealerDetailPage({ params }: PageProps) {
 
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-brand-black">Iskonto Kurallari</h2>
+          <h2 className="font-semibold text-brand-black">İskonto Kurallari</h2>
           <Link
             href={`/admin/iskontolar?bayi=${dealer.id}`}
             className="text-sm text-brand-gold-dark hover:underline"

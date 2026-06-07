@@ -138,10 +138,7 @@ export function SpotlightFeature({ products, eyebrow, title, italicWord }: Props
                   <p className="font-display text-2xl font-black leading-tight tracking-tight sm:text-3xl md:text-4xl lg:text-5xl">
                     {hero.name}
                   </p>
-                  <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-5">
-                    <p className="font-display text-2xl font-black text-brand-gold sm:text-3xl">
-                      {hero.price.toLocaleString("tr-TR")} ₺
-                    </p>
+                  <div className="mt-5 flex items-center justify-end border-t border-white/10 pt-5">
                     <span className="flex items-center gap-2 text-sm font-bold transition-all group-hover:gap-3 group-hover:text-brand-gold">
                       Detay
                       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-gold text-neutral-950 transition-transform group-hover:rotate-45">
@@ -187,10 +184,7 @@ export function SpotlightFeature({ products, eyebrow, title, italicWord }: Props
                     <p className="mt-1 line-clamp-2 font-display text-lg font-black leading-tight tracking-tight">
                       {p.name}
                     </p>
-                    <div className="mt-2.5 flex items-center justify-between">
-                      <p className="font-display text-lg font-black text-brand-gold">
-                        {p.price.toLocaleString("tr-TR")} ₺
-                      </p>
+                    <div className="mt-2.5 flex items-center justify-end">
                       <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:text-brand-gold" />
                     </div>
                   </div>

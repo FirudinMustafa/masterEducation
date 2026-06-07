@@ -57,8 +57,11 @@ export async function GET() {
     components.db = "error";
   }
 
-  // Email — Resend / SMTP env var presence
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  // Email — Resend HTTP API (öncelikli) veya SMTP env var presence
+  if (
+    process.env.RESEND_API_KEY ||
+    (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
+  ) {
     components.email = "ok";
   }
 

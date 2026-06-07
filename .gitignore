@@ -63,6 +63,7 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 /coverage/
+/qa-run/
 
 # Local env scratch (.env.example haricinde — yukarıda zaten yakalanıyor)
 

@@ -12,8 +12,8 @@ const bodySchema = z.object({
 });
 
 /**
- * Toplu ürün silme — siparis referansi olan urunler "soft" (isPublished=false,
- * stok=0), olmayan urunler "hard" (cascade) silinir. Tek tek DELETE endpoint'i
+ * Toplu ürün silme — sipariş referansi olan ürünler "soft" (isPublished=false,
+ * stok=0), olmayan ürünler "hard" (cascade) silinir. Tek tek DELETE endpoint'i
  * ile ayni mantik, transaction icinde uygulanir.
  */
 export async function POST(req: NextRequest) {
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   }
   const { productIds } = parsed.data;
 
-  // Hangi ID'ler siparis referansi taşıyor — tek query
+  // Hangi ID'ler sipariş referansi taşıyor — tek query
   const orderRefs = await prisma.orderItem.groupBy({
     by: ["productId"],
     where: { productId: { in: productIds } },

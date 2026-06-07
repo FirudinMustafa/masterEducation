@@ -17,14 +17,14 @@ const schema = z.object({
  * KVKK hesap silme akisi.
  *
  * Strateji:
- *   - Siparis gecmisi olanlar: email, name, phone anonimize — satirlar DB'de
+ *   - Sipariş gecmisi olanlar: email, name, phone anonimize — satirlar DB'de
  *     kalir (muhasebe kaydini bozmamak icin) ama tanimlayici bilgi gider.
  *     User row isPublished-benzeri "silinmis" duruma getirilir: email
  *     `deleted-<hash>@example.invalid` formatinda, password hash random.
- *   - Siparisi olmayanlar: kaskad silme (addresses, reviews, cartItems,
+ *   - Siparişi olmayanlar: kaskad silme (addresses, reviews, cartItems,
  *     passwordResetTokens; dealer record ON DELETE CASCADE).
  *
- * Admin silemez (son admin korumasi gibi). Gelen kullanici kendi sifresini
+ * Admin silemez (son admin korumasi gibi). Gelen kullanıcı kendi şifresini
  * dogrulamali ve "HESABIMI SIL" yazmali (tipografi korumasi).
  */
 export async function POST(req: Request) {
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     },
   });
   if (!user) {
-    return NextResponse.json({ error: "Kullanici bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Kullanıcı bulunamadi." }, { status: 404 });
   }
 
   // Admin kendi hesabini silemez.
@@ -61,13 +61,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // Onaylanmis bayi ise once admin ile iletisime gecsin — cari bakiye
+  // Onaylanmis bayi ise once admin ile iletişime gecsin — cari bakiye
   // sebebiyle kendi kendine silme riski var.
   if (user.dealer && user.dealer.status === "APPROVED") {
     return NextResponse.json(
       {
         error:
-          "Onayli bayi hesaplari dogrudan silinemez. Cari kapatma icin destek ile iletisime gecin.",
+          "Onaylı bayi hesaplari dogrudan silinemez. Cari kapatma icin destek ile iletişime gecin.",
       },
       { status: 403 }
     );
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
   const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
   if (!ok) {
-    return NextResponse.json({ error: "Sifre dogru degil." }, { status: 403 });
+    return NextResponse.json({ error: "Şifre dogru degil." }, { status: 403 });
   }
 
   const hasOrders = user._count.orders > 0;
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, strategy: "anonymize" });
   }
 
-  // Siparisi yok → tam silme (cascade)
+  // Siparişi yok → tam silme (cascade)
   const originalEmail = user.email;
   await prisma.user.delete({ where: { id: user.id } });
 

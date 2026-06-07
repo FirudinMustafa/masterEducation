@@ -36,28 +36,28 @@ export function UserMenu() {
   }
 
   if (!session?.user) {
-    // Mobile: yalnız ikon (kullanici menu'ya tiklayinca giris/kayit drawer'inda
-    // erisilebilir + AuthShell sayfalari direkt link). Desktop: ikon + Kayit pill.
+    // Mobile: yalnız ikon (kullanıcı menu'ya tiklayinca giriş/kayit drawer'inda
+    // erisilebilir + AuthShell sayfalari direkt link). Desktop: ikon + Kayıt pill.
     return (
       <div className="flex items-center gap-2">
         <Link
           href="/giris"
           className="hidden items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-neutral-700 hover:text-neutral-900 md:inline-flex"
         >
-          <UserIcon className="h-4 w-4" /> Giris
+          <UserIcon className="h-4 w-4" /> Bayi Girişi
         </Link>
         <Link
           href="/giris"
-          aria-label="Giris yap"
+          aria-label="Bayi girişi"
           className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 hover:bg-neutral-100 md:hidden"
         >
           <UserIcon className="h-5 w-5" />
         </Link>
         <Link
-          href="/kayit"
+          href="/bayi-basvuru"
           className="hidden items-center gap-1.5 rounded-full bg-neutral-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-neutral-700 transition-colors md:inline-flex"
         >
-          Kayit Ol
+          Bayi Başvuru
         </Link>
       </div>
     );
@@ -66,11 +66,11 @@ export function UserMenu() {
   const role = session.user.role;
   const panelHref = role === "ADMIN" ? "/admin" : role === "DEALER" ? "/bayi" : null;
   const panelLabel =
-    role === "ADMIN" ? "Yonetim Paneli" : role === "DEALER" ? "Bayi Paneli" : null;
+    role === "ADMIN" ? "Yönetim Paneli" : role === "DEALER" ? "Bayi Paneli" : null;
   const PanelIcon = role === "ADMIN" ? ShieldCheckIcon : BuildingStorefrontIcon;
   const isPriv = role === "ADMIN" || role === "DEALER";
 
-  // Yonetim Paneli pill yalniz ADMIN icin (DEALER icin tum bayi UI elementleri
+  // Yönetim Paneli pill yalniz ADMIN icin (DEALER icin tüm bayi UI elementleri
   // istek uzerine kaldirildi — bayi /bayi URL'sini dogrudan kullanir).
   const showAdminPill = role === "ADMIN" && panelHref && panelLabel;
 
@@ -107,7 +107,7 @@ export function UserMenu() {
           {(session.user.name ?? session.user.email ?? "?").charAt(0).toUpperCase()}
         </span>
         <span className="hidden max-w-[120px] truncate text-sm font-medium text-neutral-800 sm:inline">
-          {session.user.name ?? "Hesabim"}
+          {session.user.name ?? "Hesabım"}
         </span>
         <ChevronDownIcon className={cn("h-3.5 w-3.5 text-neutral-500 transition-transform", open && "rotate-180")} />
       </button>
@@ -126,12 +126,12 @@ export function UserMenu() {
                 role === "CUSTOMER" && "bg-sky-100 text-sky-700"
               )}
             >
-              {role === "ADMIN" ? "Yonetici" : role === "DEALER" ? "Bayi" : "Musteri"}
+              {role === "ADMIN" ? "Yönetici" : role === "DEALER" ? "Bayi" : "Musteri"}
             </span>
           </div>
           <div className="p-2">
-            {/* Panel linki — ADMIN ve DEALER icin dropdown icinde gosterilir.
-                Storefront header'inda gozukmuyor (kullanici tarafindan kaldirildi),
+            {/* Panel linki — ADMIN ve DEALER icin dropdown icinde gösterilir.
+                Storefront header'inda gözukmuyor (kullanıcı tarafindan kaldirildi),
                 fakat profil dropdown'i bayinin kendi paneline donus yolu olmali. */}
             {panelHref && panelLabel && (
               <Link
@@ -150,10 +150,10 @@ export function UserMenu() {
               </Link>
             )}
             <Link href="/hesabim" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
-              Hesabim
+              Hesabım
             </Link>
             <Link href="/hesabim/siparislerim" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
-              Siparislerim
+              Siparişlerim
             </Link>
             <Link href="/hesabim/adresler" onClick={() => setOpen(false)} className="block rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50">
               Adreslerim
@@ -168,7 +168,7 @@ export function UserMenu() {
               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 cursor-pointer"
             >
               <ArrowRightOnRectangleIcon className="h-4 w-4" />
-              Cikis Yap
+              Çıkış Yap
             </button>
           </div>
         </div>

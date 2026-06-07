@@ -28,7 +28,7 @@ export default async function EmailVerifyPage({ searchParams }: PageProps) {
           href="/hesabim"
           className="inline-flex px-5 py-2.5 bg-brand-gold text-brand-black font-semibold rounded-lg hover:bg-brand-gold-dark"
         >
-          Hesabima git
+          Hesabıma git
         </Link>
       </div>
     );

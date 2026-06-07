@@ -1,7 +1,34 @@
 # Master Education — Production Runbook
 
-> Son güncelleme: 2026-05-06 (Bölüm 3)
+> Son güncelleme: 2026-05-18 (Deployment topolojisi eklendi)
 > Hedef kitle: deploy/incident yetkilisi (geliştirici, sistem yöneticisi).
+
+## 0. Deployment Topolojisi
+
+**Hedef altyapı (2026-05-18 itibariyle):**
+
+- **Host:** Hostinger KVM 4 VPS (IP: 76.13.56.103)
+- **Domain:** mastereducation.com.tr
+- **Eş-yerleşim:** Aynı VPS'te `okultedarigi.com` üretim ortamı zaten çalışıyor. **Master Education ile karışmamalı; o uygulamaya hiçbir koşulda dokunulmaz.**
+- **Mimarî:** nginx reverse proxy ön planda → arka tarafta her uygulama kendi PM2 sürecinde dinler:
+  - `okultedarigi` — port mevcut konfigürasyonda
+  - `master-education` — port 3001 (placeholder, ilk deploy'da netleşir)
+- **Postgres:** Her iki uygulama VPS'in **paylaşımlı PostgreSQL** instance'ını kullanır, **ayrı veritabanları** ile (`mastereducation_prod` planlanan ad).
+- **PM2 cluster mode KAPALI:** Master Education tek Node.js process olarak ayağa kalkar (`instances: 1`, `exec_mode: 'fork'`). Bunun sonucu:
+  - Memory-based rate-limit (`src/lib/rate-limit.ts` memoryAdapter) **bu topoloji için yeterlidir** — çoklu instance senkron sorunu yok.
+  - Upstash Redis entegrasyonu (F-0005) **kod tarafında hazır** ancak **aktivasyona gerek yok**. PM2 cluster veya çoklu VPS'e geçilirse yalnızca env değişkenleri (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`) eklemek yeterli (adapter env-based switch).
+
+**Kararlar:**
+
+| Konu | Karar | Gerekçe |
+|---|---|---|
+| Vercel deploy | İptal | VPS'e geçildi (mevcut altyapı kullanımı) |
+| PM2 cluster | Kapalı | Single instance; karmaşıklık eklemiyor |
+| Upstash Redis | Sonraya bırakıldı | Memory rate-limit single-instance için bypass-safe |
+| Postgres | Paylaşımlı VPS PG | Ayrı DB user/db; ek altyapı maliyeti yok |
+| SSL | Let's Encrypt | Certbot + nginx; otomatik renew |
+
+> İlk deploy ve config detayları için `docs/DEPLOY_VPS.md` (yazılacak — Tur 3 Görev 4).
 
 ## 1. Pre-deploy checklist (canlıya çıkış ön koşulu)
 
@@ -32,7 +59,6 @@ Aşağıdaki anahtarlar **production env'de mutlaka set olmalı**:
 | `SENTRY_DSN` | `https://<key>@<host>/<id>` | https://sentry.io |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob token | `vercel env pull` |
 | `ENABLE_MOCK_PAYMENTS` | **boş olmalı** | prod'da kapalı |
-| `KOLAYBI_MOCK` | **boş olmalı** | prod'da kapalı |
 
 ### 1.2 Admin parolası
 

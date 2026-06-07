@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
   ]);
 
   if (!product) {
-    return NextResponse.json({ error: "Urun bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Ürün bulunamadi." }, { status: 404 });
   }
 
   const productInput = {
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   const best = pickBestRule(productInput, rules);
   const pricing = calculateDealerPrice(productInput, rules);
 
-  // Tum uygulanabilir kurallari raporla — hangisi secildi, hangileri eldi?
+  // Tüm uygulanabilir kurallari raporla — hangisi secildi, hangileri eldi?
   const allApplicable = rules
     .filter((r) => pickBestRule(productInput, [r]) !== null)
     .map((r) => ({

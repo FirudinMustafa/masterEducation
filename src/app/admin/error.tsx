@@ -40,10 +40,10 @@ export default function AdminErrorBoundary({
         </svg>
       </div>
       <h1 className="text-xl font-display font-bold text-brand-black mb-2">
-        Yonetim panelinde hata
+        Yönetim panelinde hata
       </h1>
       <p className="text-brand-muted mb-5 text-sm">
-        Bu islem sirasinda beklenmedik bir hata olustu. Sorun otomatik olarak
+        Bu islem sirasinda beklenmedik bir hata oluştu. Sorun otomatik olarak
         kaydedildi.
       </p>
       {error.digest && (

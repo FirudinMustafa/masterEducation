@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { logError } from "@/lib/error-log";
 import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/get-client-ip";
 
 const schema = z.object({
   message: z.string().min(1).max(4000),
@@ -12,10 +13,8 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // SECURITY: trusted-proxy last-hop (raw XFF bypass'a kapali, QA 2026-05-18).
+  const ip = getClientIp(req.headers);
   // Protect the endpoint from abuse — we do not want a buggy client to
   // flood our DB.
   const rl = rateLimit(`client-error:${ip}`, 30, 60_000);

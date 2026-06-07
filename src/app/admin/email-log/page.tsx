@@ -51,11 +51,11 @@ export default async function AdminEmailLogPage({ searchParams }: PageProps) {
   const totalPages = Math.ceil(total / perPage);
 
   const filters = [
-    { value: "", label: "Tumu" },
+    { value: "", label: "Tümu" },
     { value: "SENT", label: "Gonderildi" },
     { value: "DRYRUN", label: "Dryrun (SMTP yok)" },
     { value: "DRYRUN_SANDBOX", label: "Sandbox engelli" },
-    { value: "FAILED", label: "Basarisiz" },
+    { value: "FAILED", label: "Başarısız" },
   ];
 
   const sandboxCount = countByStatus.DRYRUN_SANDBOX ?? 0;
@@ -68,7 +68,7 @@ export default async function AdminEmailLogPage({ searchParams }: PageProps) {
           Email Log
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Toplam {total} kayit · SENT: {countByStatus.SENT ?? 0} · DRYRUN:{" "}
+          Toplam {total} kayıt · SENT: {countByStatus.SENT ?? 0} · DRYRUN:{" "}
           {countByStatus.DRYRUN ?? 0} · SANDBOX: {sandboxCount} · FAILED: {failedCount}
         </p>
       </div>
@@ -90,9 +90,9 @@ export default async function AdminEmailLogPage({ searchParams }: PageProps) {
             >
               Resend dashboard
             </a>
-            &apos;dan kendi domain&apos;inizi (mastereducation.com.tr) DKIM/SPF kayitlari
+            &apos;dan kendi domain&apos;inizi (mastereducation.com.tr) DKIM/SPF kayıtlari
             ile dogrulayin, sonra <code className="rounded bg-amber-100 px-1 py-0.5 text-[12px]">.env</code> dosyasinda{" "}
-            <code className="rounded bg-amber-100 px-1 py-0.5 text-[12px]">SMTP_FROM</code>&apos;u guncelleyin.
+            <code className="rounded bg-amber-100 px-1 py-0.5 text-[12px]">SMTP_FROM</code>&apos;u güncelleyin.
           </p>
         </div>
       )}
@@ -150,7 +150,7 @@ export default async function AdminEmailLogPage({ searchParams }: PageProps) {
             {logs.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-8 text-center text-gray-500">
-                  Kayit yok.
+                  Kayıt yok.
                 </td>
               </tr>
             )}
@@ -188,7 +188,7 @@ export default async function AdminEmailLogPage({ searchParams }: PageProps) {
                   href={`/admin/email-log?sayfa=${page - 1}${statusFilter ? `&durum=${statusFilter}` : ""}${search ? `&ara=${search}` : ""}`}
                   className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
                 >
-                  Onceki
+                  Önceki
                 </Link>
               )}
               {page < totalPages && (

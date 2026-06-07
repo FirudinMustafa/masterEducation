@@ -13,10 +13,10 @@ export const dynamic = "force-dynamic";
 
 /**
  * E17 — Dusuk stok daily digest. LOW_STOCK_THRESHOLD altinda olan
- * yayinda urunleri tek mail icinde admin'e raporlar. Vercel Cron
- * onerilen siklik: gunde 1 (08:00 UTC).
+ * yayinda ürünleri tek mail icinde admin'e raporlar. Vercel Cron
+ * onerilen siklik: günde 1 (08:00 UTC).
  *
- * Sadece publishedOnly: yayinda olmayan urunler raporlanmaz (hazir
+ * Sadece publishedOnly: yayinda olmayan ürünler raporlanmaz (hazir
  * olmayan envanteri tetiklemenin anlami yok).
  */
 export async function GET(req: NextRequest) {
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
         { stockQuantity: "asc" },
         { name: "asc" },
       ],
-      // En kritikleri liste basinda — template ilk 50'yi gosterir.
+      // En kritikleri liste basinda — template ilk 50'yi gösterir.
       take: 200,
     });
 

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   });
   if (existingByName) {
     return NextResponse.json(
-      { error: "Bu adla bir yayinevi zaten var." },
+      { error: "Bu adla bir yayınevi zaten var." },
       { status: 409 }
     );
   }
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
   const base = slugify(parsed.data.name);
   if (!base) {
     return NextResponse.json(
-      { error: "Yayinevi adi gecerli bir slug uretmedi." },
+      { error: "Yayınevi adi gecerli bir slug uretmedi." },
       { status: 400 }
     );
   }

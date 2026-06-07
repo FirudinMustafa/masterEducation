@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/api-auth";
 import { logAudit } from "@/lib/audit";
-import { productImageBlobKey } from "@/lib/images";
+import { logError } from "@/lib/error-log";
+import { storeProductImage } from "@/lib/product-image-storage";
 
 const ALLOWED_MIME = new Set([
   "image/jpeg",
@@ -39,7 +39,7 @@ export async function POST(
   const { id } = await context.params;
   const product = await prisma.product.findUnique({ where: { id } });
   if (!product) {
-    return NextResponse.json({ error: "Urun bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Ürün bulunamadi." }, { status: 404 });
   }
 
   const formData = await req.formData().catch(() => null);
@@ -70,12 +70,25 @@ export async function POST(
   const filename = `${product.id.slice(-8)}-${crypto
     .randomBytes(6)
     .toString("hex")}.${ext}`;
-  await put(productImageBlobKey(filename), bytes, {
-    access: "public",
-    addRandomSuffix: false,
-    contentType: file.type,
-    cacheControlMaxAge: 60 * 60 * 24 * 365, // 1 yıl — filename hashed, immutable
-  });
+
+  // Depolama: Blob token varsa Vercel Blob, yoksa yerel disk (VPS). Hata
+  // sessizce yutulmamalı — aksi halde "görsel kaydolmuyor" gibi görünüyordu.
+  try {
+    await storeProductImage(filename, bytes, file.type);
+  } catch (err) {
+    logError({
+      source: "api",
+      message: `Ürün görseli depolanamadı: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+      stack: err instanceof Error ? err.stack : null,
+      metadata: { productId: id, filename },
+    });
+    return NextResponse.json(
+      { error: "Görsel depolanamadı. Depolama yapılandırmasını kontrol edin." },
+      { status: 500 }
+    );
+  }
 
   // Next pictureId unique per product.
   const maxPic = await prisma.productImage.aggregate({

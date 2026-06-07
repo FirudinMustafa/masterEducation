@@ -42,7 +42,7 @@ export function ProductImagesManager({
       error?: string;
     };
     if (!res.ok) {
-      setError(data.error ?? "Yukleme basarisiz.");
+      setError(data.error ?? "Yükleme başarısız.");
       return;
     }
     if (data.id && data.filename && typeof data.displayOrder === "number") {
@@ -97,7 +97,7 @@ export function ProductImagesManager({
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-brand-black">Gorseller</h2>
         <label className="px-3 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark cursor-pointer">
-          {uploading ? "Yukleniyor..." : "Gorsel Ekle"}
+          {uploading ? "Yükleniyor..." : "Gorsel Ekle"}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"

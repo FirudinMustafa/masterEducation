@@ -194,14 +194,14 @@ export function ProductReviews({
     // Deferred auth — stash draft, open login modal, rely on the post-login
     // effect above to auto-submit. User experience: they click "Gonder", see
     // the login modal, finish signup/login, land back on this page, and a
-    // success toast appears saying their review was submitted.
+    // success toast appears sayıng their review was submitted.
     if (!canReview) {
       const draft: PendingReview = { rating, title, comment };
       writeDraft(productId, draft);
       openLoginGate({
-        title: "Yorumunuzu Gondermek Icin Giris",
+        title: "Yorumunuzu Gondermek Icin Giriş",
         description:
-          "Yazdiklarinizi kaydettik — giris yaptiktan sonra otomatik gonderilecek.",
+          "Yazdiklarinizi kaydettik — giriş yaptiktan sonra otomatik gonderilecek.",
       });
       return;
     }
@@ -244,7 +244,7 @@ export function ProductReviews({
                 Henuz yorum yok
               </p>
               <p className="text-xs text-neutral-500">
-                Ilk yorumu siz yazin, puan olustursun
+                Ilk yorumu siz yazin, puan oluştursun
               </p>
             </div>
           )}
@@ -330,7 +330,7 @@ export function ProductReviews({
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ornegin: Cok kaliteli!"
+              placeholder="Ornegin: Çok kaliteli!"
               className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
             />
           </label>
@@ -347,7 +347,7 @@ export function ProductReviews({
               rows={4}
               minLength={3}
               maxLength={2000}
-              placeholder="Urunu tarif edin, neyi begendiginizi veya begenmediginizi paylasin."
+              placeholder="Ürünu tarif edin, neyi begendiginizi veya begenmediginizi paylasin."
               className="w-full resize-none rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
             />
             <div className="mt-1 text-right text-[11px] text-neutral-400">
@@ -366,7 +366,7 @@ export function ProductReviews({
                   onClick={cancelEdit}
                   className="rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50 cursor-pointer"
                 >
-                  Iptal
+                  İptal
                 </button>
               )}
               <button

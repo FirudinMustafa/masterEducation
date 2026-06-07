@@ -27,7 +27,7 @@ export async function PATCH(
   const { id } = await context.params;
   const existing = await prisma.publisher.findUnique({ where: { id } });
   if (!existing) {
-    return NextResponse.json({ error: "Yayinevi bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Yayınevi bulunamadi." }, { status: 404 });
   }
 
   const json = await req.json().catch(() => ({}));
@@ -46,14 +46,14 @@ export async function PATCH(
     });
     if (nameConflict && nameConflict.id !== id) {
       return NextResponse.json(
-        { error: "Bu adla bir yayinevi zaten var." },
+        { error: "Bu adla bir yayınevi zaten var." },
         { status: 409 }
       );
     }
     const base = slugify(parsed.data.name);
     if (!base) {
       return NextResponse.json(
-        { error: "Yayinevi adi gecerli bir slug uretmedi." },
+        { error: "Yayınevi adi gecerli bir slug uretmedi." },
         { status: 400 }
       );
     }
@@ -97,8 +97,8 @@ export async function DELETE(
       {
         error:
           productCount > 0
-            ? `Bu yayinevinin ${productCount} urunu var. Baska yayinevine tasiyin veya ?force=1 ile iliskisini kirarak silin.`
-            : `Bu yayinevine bagli ${discountCount} iskonto kurali var. Kurallari silin veya ?force=1 kullanin.`,
+            ? `Bu yayınevinin ${productCount} ürünu var. Baska yayınevine tasiyin veya ?force=1 ile iliskisini kirarak silin.`
+            : `Bu yayınevine bagli ${discountCount} iskonto kurali var. Kurallari silin veya ?force=1 kullanin.`,
         productCount,
         discountCount,
       },
@@ -106,8 +106,8 @@ export async function DELETE(
     );
   }
 
-  // Force delete: urunlerin publisherId'sini null yap, iskonto kurallarini sil,
-  // yayinevini sil.
+  // Force delete: ürünlerin publisherId'sini null yap, iskonto kurallarini sil,
+  // yayınevini sil.
   await prisma.$transaction([
     ...(productCount > 0
       ? [

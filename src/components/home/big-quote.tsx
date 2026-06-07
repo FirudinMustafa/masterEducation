@@ -31,7 +31,7 @@ export function BigQuote() {
           className="font-display text-3xl font-black leading-[1.1] tracking-[-0.025em] text-neutral-950 sm:text-5xl md:text-6xl lg:text-7xl"
           style={{ fontFamily: "var(--font-jakarta)" }}
         >
-          Egitim materyali sadece bir{" "}
+          Eğitim materyali sadece bir{" "}
           <span
             className="italic"
             style={{
@@ -68,7 +68,7 @@ export function BigQuote() {
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-neutral-700">
             Master Education
           </p>
-          <p className="text-xs text-neutral-500">2026 — Egitim Yayinciliginin Gelecegi</p>
+          <p className="text-xs text-neutral-500">2026 — Eğitim Yayinciliginin Gelecegi</p>
         </div>
       </div>
     </section>

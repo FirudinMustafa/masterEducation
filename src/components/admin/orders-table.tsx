@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/utils";
 import { ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/constants";
 import type { OrderStatus, PaymentMethod } from "@prisma/client";
 import { OrdersBulkStatusModal, type BulkPatch } from "./orders-bulk-status-modal";
+import { ConfirmDialog } from "./confirm-dialog";
 import { toast } from "@/stores/toast-store";
 
 export interface OrderRow {
@@ -14,6 +15,8 @@ export interface OrderRow {
   orderNumber: string;
   customerName: string;
   customerEmail: string;
+  dealerCompanyName: string | null;
+  schoolName: string | null;
   itemCount: number;
   paymentMethod: PaymentMethod;
   status: OrderStatus;
@@ -41,6 +44,17 @@ export function OrdersTable({ orders }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [resultPopup, setResultPopup] = useState<{
+    tone: "success" | "default";
+    message: string;
+  } | null>(null);
+  // Kalıcı silme onayı (tekli veya toplu).
+  const [deleteTarget, setDeleteTarget] = useState<
+    | { kind: "single"; id: string; label: string }
+    | { kind: "bulk"; ids: string[] }
+    | null
+  >(null);
+  const [deleting, setDeleting] = useState(false);
 
   const allChecked = useMemo(
     () => orders.length > 0 && orders.every((o) => selected.has(o.id)),
@@ -88,15 +102,63 @@ export function OrdersTable({ orders }: Props) {
     if (failed.length > 0) {
       const msg = `${data.succeeded ?? 0}/${data.total ?? 0} başarılı, ${failed.length} sipariş atlandı (${failed[0]?.error}…).`;
       setInfo(msg);
-      toast.warning("Kısmen tamamlandı", msg);
+      setResultPopup({ tone: "default", message: msg });
     } else {
       const msg = `${data.succeeded ?? 0} sipariş güncellendi.`;
       setInfo(msg);
-      toast.success("Sipariş güncellendi", msg);
+      setResultPopup({ tone: "success", message: msg });
     }
+    // Sayfa yenilemesi sonuç pop-up'ı kapatılınca yapılır (refresh'in pop-up
+    // altında çalışıp "ekran donuyor" hissi vermemesi için).
     setShowModal(false);
     setSelected(new Set());
-    startTransition(() => router.refresh());
+  }
+
+  async function runDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      const res =
+        deleteTarget.kind === "single"
+          ? await fetch(`/api/admin/orders/${deleteTarget.id}`, {
+              method: "DELETE",
+            })
+          : await fetch("/api/admin/orders/bulk-delete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ orderIds: deleteTarget.ids }),
+            });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        succeeded?: number;
+        failed?: { id: string; error: string }[];
+      };
+      if (!res.ok) {
+        const msg = data.error ?? "Silme başarısız.";
+        setError(msg);
+        toast.error("Silme başarısız", msg);
+        setDeleting(false);
+        setDeleteTarget(null);
+        return;
+      }
+      const count = deleteTarget.kind === "single" ? 1 : data.succeeded ?? 0;
+      const skipped = data.failed?.length ?? 0;
+      toast.success(
+        "Silindi",
+        `${count} sipariş kalıcı olarak silindi${
+          skipped > 0 ? `, ${skipped} atlandı` : ""
+        }.`
+      );
+      setSelected(new Set());
+      setDeleteTarget(null);
+      setDeleting(false);
+      startTransition(() => router.refresh());
+    } catch {
+      setError("Silme başarısız.");
+      toast.error("Silme başarısız", "Beklenmedik bir hata oluştu.");
+      setDeleting(false);
+    }
   }
 
   return (
@@ -126,7 +188,8 @@ export function OrdersTable({ orders }: Props) {
                   {o.orderNumber}
                 </p>
                 <p className="truncate text-xs text-gray-500">
-                  {o.customerName} · {o.customerEmail}
+                  {o.dealerCompanyName || o.customerName}
+                  {o.schoolName ? ` · ${o.schoolName}` : ""}
                 </p>
               </div>
               <span className="shrink-0 font-bold text-brand-black">
@@ -177,6 +240,9 @@ export function OrdersTable({ orders }: Props) {
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
                     Musteri
                   </th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
+                    Okul
+                  </th>
                   <th className="text-center p-3 text-xs font-semibold text-gray-500 uppercase">
                     Ürün
                   </th>
@@ -191,6 +257,9 @@ export function OrdersTable({ orders }: Props) {
                   </th>
                   <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">
                     Tarih
+                  </th>
+                  <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">
+                    İşlem
                   </th>
                 </tr>
               </thead>
@@ -222,12 +291,17 @@ export function OrdersTable({ orders }: Props) {
                     <td className="p-3">
                       <div>
                         <p className="font-medium text-brand-black">
-                          {o.customerName}
+                          {o.dealerCompanyName || o.customerName}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {o.customerEmail}
+                          {o.dealerCompanyName
+                            ? o.customerName
+                            : o.customerEmail}
                         </p>
                       </div>
+                    </td>
+                    <td className="p-3 text-gray-600">
+                      {o.schoolName || "—"}
                     </td>
                     <td className="p-3 text-center text-gray-600">
                       {o.itemCount}
@@ -248,6 +322,20 @@ export function OrdersTable({ orders }: Props) {
                     </td>
                     <td className="p-3 text-right text-gray-500 text-xs">
                       {new Date(o.createdAt).toLocaleDateString("tr-TR")}
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={() =>
+                          setDeleteTarget({
+                            kind: "single",
+                            id: o.id,
+                            label: o.orderNumber,
+                          })
+                        }
+                        className="text-xs font-medium text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                      >
+                        Sil
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -272,13 +360,24 @@ export function OrdersTable({ orders }: Props) {
                 Secimi temizle
               </button>
             </div>
-            <button
-              onClick={() => setShowModal(true)}
-              disabled={pending}
-              className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
-            >
-              Toplu Durum / Kargo
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() =>
+                  setDeleteTarget({ kind: "bulk", ids: [...selected] })
+                }
+                disabled={pending}
+                className="px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-semibold hover:bg-rose-700 disabled:opacity-50 cursor-pointer"
+              >
+                Kalıcı Sil
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                disabled={pending}
+                className="px-4 py-2 bg-brand-gold text-brand-black rounded-lg text-sm font-semibold hover:bg-brand-gold-dark disabled:opacity-50 cursor-pointer"
+              >
+                Toplu Durum / Kargo
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -291,6 +390,38 @@ export function OrdersTable({ orders }: Props) {
           pending={pending}
         />
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Siparişi kalıcı sil"
+        tone="danger"
+        busy={deleting}
+        confirmLabel="Kalıcı Sil"
+        cancelLabel="Vazgeç"
+        message={
+          deleteTarget?.kind === "single"
+            ? `"${deleteTarget.label}" siparişi ve tüm bağlı kayıtları kalıcı olarak silinecek. Bu işlem geri alınamaz.`
+            : `Seçili ${
+                deleteTarget?.kind === "bulk" ? deleteTarget.ids.length : 0
+              } sipariş kalıcı olarak silinecek. Bu işlem geri alınamaz.`
+        }
+        onConfirm={runDelete}
+        onCancel={() => {
+          if (!deleting) setDeleteTarget(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={resultPopup !== null}
+        title={resultPopup?.tone === "success" ? "İşlem tamamlandı" : "Kısmen tamamlandı"}
+        tone={resultPopup?.tone === "success" ? "success" : "default"}
+        message={resultPopup?.message}
+        confirmLabel="Tamam"
+        onConfirm={() => {
+          setResultPopup(null);
+          startTransition(() => router.refresh());
+        }}
+      />
     </>
   );
 }

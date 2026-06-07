@@ -8,7 +8,7 @@ import { hashToken } from "@/lib/token-hash";
 const TTL_MS = 60 * 60 * 1000;
 
 /**
- * Kullaniciya yeni bir email dogrulama token'i yayinlar, eski kullanilmamis
+ * Kullanıcıya yeni bir email dogrulama token'i yayinlar, eski kullanilmamis
  * tokenlari invalidate eder ve email queue'ya ekler. Dogrulama linki
  * NEXTAUTH_URL / olmazsa localhost:3000 base alinir.
  */
@@ -20,7 +20,7 @@ export async function issueEmailVerificationToken(
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + TTL_MS);
   // Atomik: eski tokenlari invalidate + yeni token create tek transaction'da.
-  // Iki paralel cagri olursa race window'da iki gecerli token olusmaz.
+  // Iki paralel cagri olursa race window'da iki gecerli token oluşmaz.
   // DB'de SHA-256 hash; email URL'inde plain. DB breach durumunda saldırgan
   // hash'leri tersine çeviremez.
   await prisma.$transaction([

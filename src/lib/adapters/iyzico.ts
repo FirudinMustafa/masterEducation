@@ -260,12 +260,33 @@ class MockIyzicoAdapter implements IyzicoAdapter {
       providerToken: `MOCK-${input.paymentId}`,
     };
   }
-  verifyCallback(): boolean {
-    // Mock'ta signature yok — mevcut MAGIC_OTP akışı zaten 403 ile prod'da kapalı.
-    return process.env.NODE_ENV !== "production";
+  verifyCallback(payload: IyzicoCallbackPayload): boolean {
+    // Mock deterministic HMAC verification — test fixtures use MOCK_TEST_SECRET.
+    const MOCK_TEST_SECRET = "iyzico-mock-test-secret-2026";
+    const expected = crypto
+      .createHmac("sha1", MOCK_TEST_SECRET)
+      .update(`${payload.paymentId}${payload.conversationId}`)
+      .digest("base64");
+    const given = payload.signature || "";
+    if (expected.length !== given.length) return false;
+    try {
+      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(given));
+    } catch {
+      return false;
+    }
   }
-  verifyWebhookSignature(): boolean {
-    return process.env.NODE_ENV !== "production";
+  verifyWebhookSignature(rawBody: string, signature: string): boolean {
+    const MOCK_TEST_SECRET = "iyzico-mock-test-secret-2026";
+    const expected = crypto
+      .createHmac("sha256", MOCK_TEST_SECRET)
+      .update(rawBody)
+      .digest("hex");
+    if (expected.length !== signature.length) return false;
+    try {
+      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+    } catch {
+      return false;
+    }
   }
   async refund(input: { paymentId: string; amount: number }) {
     return { ok: true as const, refundId: `MOCK-REFUND-${input.paymentId}` };

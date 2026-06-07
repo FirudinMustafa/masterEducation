@@ -6,15 +6,15 @@ import { slugify } from "@/lib/utils";
 import { logAudit } from "@/lib/audit";
 
 /**
- * Admin toplu urun yukleme.
+ * Admin toplu ürün yükleme.
  *
  *  - `dryRun=1`: Dosyayi parse + validate et, veritabanina dokunma. Preview icin.
- *  - normal:    Tum satirlar gecerliyse tek transaction'da insert. Bir satir hata
+ *  - normal:    Tüm satirlar gecerliyse tek transaction'da insert. Bir satir hata
  *               verirse hicbir sey yazilmaz (all-or-nothing).
  *
- * Kolon dogrulamalari ve yayinevi/kategori name → id cevirme burada yapilir.
+ * Kolon dogrulamalari ve yayınevi/kategori name → id çevirme burada yapilir.
  * `nopId` tekillik kontrolu DB'den yapilir (unique index'e de takilacak ama
- * preview'da gozukmesi icin).
+ * preview'da gözukmesi icin).
  */
 
 interface ParsedRow {
@@ -94,9 +94,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const sheet = wb.getWorksheet("Urunler") ?? wb.worksheets[0];
+  const sheet = wb.getWorksheet("Ürünler") ?? wb.worksheets[0];
   if (!sheet) {
-    return NextResponse.json({ error: "'Urunler' sayfasi bulunamadi." }, { status: 400 });
+    return NextResponse.json({ error: "'Ürünler' sayfasi bulunamadi." }, { status: 400 });
   }
 
   // Header auto-detect (branded template row 6-7, clean template row 1).
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
     if (!nopIdRaw) continue; // bos satir
 
     // Branded footer'da nopId hucresi "info@..." gibi merged bir yazi olur.
-    // Parse edilemeyen nopId'leri (footer / ornek aciklama) sessizce atla.
+    // Parse edilemeyen nopId'leri (footer / ornek açıklama) sessizce atla.
     const nopId = Number(nopIdRaw);
     if (!Number.isInteger(nopId) || nopId <= 0) continue;
 
@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
 
     if (!name) rowErrors.push("name bos olamaz.");
     if (!sku) rowErrors.push("sku bos olamaz.");
-    if (!Number.isFinite(price) || price < 0) rowErrors.push("price gecerli bir sayi olmali.");
+    if (!Number.isFinite(price) || price < 0) rowErrors.push("price gecerli bir sayı olmali.");
     if (oldPrice !== null && (!Number.isFinite(oldPrice) || oldPrice < 0)) rowErrors.push("oldPrice gecersiz.");
     if (!Number.isFinite(vatRate) || vatRate < 0 || vatRate > 100) rowErrors.push("vatRate 0-100 arasi olmali.");
     if (!Number.isInteger(stockQuantity) || stockQuantity < 0) rowErrors.push("stockQuantity tamsayi olmali.");
@@ -217,7 +217,7 @@ export async function POST(req: NextRequest) {
       rowErrors.push(`sku '${sku}' dosyada birden fazla kez kullanilmis.`);
 
     if (publisherName && !pubByName.has(publisherName.toLowerCase())) {
-      rowErrors.push(`Yayinevi bulunamadi: '${publisherName}'`);
+      rowErrors.push(`Yayınevi bulunamadi: '${publisherName}'`);
     }
     if (categoryName && !catByName.has(categoryName.toLowerCase())) {
       rowErrors.push(`Kategori bulunamadi: '${categoryName}'`);
@@ -292,7 +292,7 @@ export async function POST(req: NextRequest) {
   // Slug collision icin dosya ici benzersiz hale getir
   const slugCounts = new Map<string, number>();
   const dataToInsert = rows.map((r) => {
-    const base = slugify(r.name) || `urun-${r.nopId}`;
+    const base = slugify(r.name) || `ürün-${r.nopId}`;
     const count = slugCounts.get(base) ?? 0;
     slugCounts.set(base, count + 1);
     const slug = count === 0 ? base : `${base}-${count + 1}`;
@@ -340,7 +340,7 @@ export async function POST(req: NextRequest) {
 
     if ("error" in result) {
       return NextResponse.json(
-        { error: `Insert basarisiz: ${result.error}` },
+        { error: `Insert başarısız: ${result.error}` },
         { status: 500 }
       );
     }
@@ -398,7 +398,7 @@ export async function POST(req: NextRequest) {
 
   if ("error" in upsertResult) {
     return NextResponse.json(
-      { error: `Upsert basarisiz: ${upsertResult.error}` },
+      { error: `Upsert başarısız: ${upsertResult.error}` },
       { status: 500 }
     );
   }

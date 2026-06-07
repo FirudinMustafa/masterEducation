@@ -70,7 +70,7 @@ export default async function AdminDashboardPage() {
 
   const statCards = [
     {
-      label: "Toplam Urun",
+      label: "Toplam Ürün",
       value: stats.totalProducts.toLocaleString("tr-TR"),
       color: "bg-blue-50 text-blue-700",
       icon: (
@@ -81,7 +81,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/urunler",
     },
     {
-      label: "Toplam Siparis",
+      label: "Toplam Sipariş",
       value: stats.totalOrders.toLocaleString("tr-TR"),
       sub: stats.pendingOrders > 0 ? `${stats.pendingOrders} bekleyen` : undefined,
       color: "bg-green-50 text-green-700",
@@ -160,11 +160,11 @@ export default async function AdminDashboardPage() {
                 />
               </svg>
               <h2 className="font-semibold text-amber-900">
-                Stok Uyarisi
+                Stok Uyarısi
               </h2>
               {stats.outOfStockCount > 0 && (
                 <span className="text-xs text-red-700 font-medium">
-                  · {stats.outOfStockCount} urun stokta yok
+                  · {stats.outOfStockCount} ürün stokta yok
                 </span>
               )}
             </div>
@@ -172,12 +172,12 @@ export default async function AdminDashboardPage() {
               href="/admin/urunler"
               className="text-sm text-amber-700 hover:underline font-medium"
             >
-              Tum urunler &rarr;
+              Tüm ürünler &rarr;
             </Link>
           </div>
           {stats.lowStockProducts.length === 0 ? (
             <p className="p-5 text-sm text-gray-500">
-              Az kalan urun yok. {stats.outOfStockCount} urun stokta olmadigi icin
+              Az kalan ürün yok. {stats.outOfStockCount} ürün stokta olmadigi icin
               satistan dusurulmus durumda.
             </p>
           ) : (
@@ -206,19 +206,19 @@ export default async function AdminDashboardPage() {
       {/* Recent Orders */}
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="font-semibold text-brand-black">Son Siparisler</h2>
+          <h2 className="font-semibold text-brand-black">Son Siparişler</h2>
           <Link href="/admin/siparisler" className="text-sm text-brand-gold-dark hover:underline font-medium">
-            Tumu &rarr;
+            Tümu &rarr;
           </Link>
         </div>
         {stats.recentOrders.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 text-sm">Henuz siparis yok.</div>
+          <div className="p-8 text-center text-gray-500 text-sm">Henuz sipariş yok.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Siparis No</th>
+                  <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Sipariş No</th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Musteri</th>
                   <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">Durum</th>
                   <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">Tutar</th>

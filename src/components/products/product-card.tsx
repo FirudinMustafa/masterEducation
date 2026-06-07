@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ProductSummary } from "@/types/product";
 import { useHydrated } from "@/lib/use-hydrated";
+import { useCanOrder, ensureCanOrder } from "@/lib/use-can-order";
 import { QuickViewModal } from "./quick-view-modal";
 
 interface Props {
@@ -36,6 +37,7 @@ export function ProductCard({ product }: Props) {
   const inCompareRaw = useCompareStore((s) => s.has(product.id));
   const inWishlist = hydrated && inWishlistRaw;
   const inCompare = hydrated && inCompareRaw;
+  const canOrder = useCanOrder();
 
   const inStock = product.stockQuantity > 0;
   const lowStock = inStock && product.stockQuantity <= 5;
@@ -43,10 +45,6 @@ export function ProductCard({ product }: Props) {
     product.dealerPrice != null && product.dealerPrice < product.price
       ? product.dealerPrice
       : product.price;
-  const discountPct =
-    product.oldPrice && product.oldPrice > product.price
-      ? Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)
-      : null;
   const hasRating =
     product.avgRating != null &&
     product.reviewCount != null &&
@@ -55,6 +53,7 @@ export function ProductCard({ product }: Props) {
   function onAdd(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (!ensureCanOrder(canOrder)) return;
     if (!inStock) return;
     addItem({
       id: product.id,
@@ -73,16 +72,16 @@ export function ProductCard({ product }: Props) {
     e.stopPropagation();
     const added = toggleWishlist(product);
     if (added) toast.success("Favorilere eklendi", product.name);
-    else toast.info("Favorilerden cikarildi", product.name);
+    else toast.info("Favorilerden çıkarildi", product.name);
   }
 
   function onToggleCompare(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     const res = toggleCompare(product);
-    if (res === "added") toast.success("Karsilastirmaya eklendi", product.name);
-    else if (res === "removed") toast.info("Karsilastirmadan cikarildi", product.name);
-    else if (res === "limit") toast.warning("En fazla 4 urun karsilastirabilirsiniz");
+    if (res === "added") toast.success("Karşılaştırmaya eklendi", product.name);
+    else if (res === "removed") toast.info("Karşılaştırmadan çıkarildi", product.name);
+    else if (res === "limit") toast.warning("En fazla 4 ürün karşılaştırabilirsiniz");
   }
 
   function onQuickView(e: React.MouseEvent) {
@@ -109,16 +108,6 @@ export function ProductCard({ product }: Props) {
 
           {/* Top-left badges */}
           <div className="absolute left-2 top-2 flex flex-col gap-1">
-            {discountPct && (
-              <span className="rounded-md bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                -%{discountPct}
-              </span>
-            )}
-            {product.dealerDiscountPct && product.dealerDiscountPct > 0 && (
-              <span className="rounded-md bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                Bayi -%{product.dealerDiscountPct}
-              </span>
-            )}
             {lowStock && (
               <span className="rounded-md bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
                 Son {product.stockQuantity}
@@ -143,12 +132,12 @@ export function ProductCard({ product }: Props) {
             <ActionBtn
               active={inCompare}
               onClick={onToggleCompare}
-              label="Karsilastir"
+              label="Karşılaştır"
               activeClass="bg-sky-50 text-sky-600 ring-sky-200"
             >
               <ScaleIcon className="h-4 w-4" />
             </ActionBtn>
-            <ActionBtn onClick={onQuickView} label="Hizli bakis">
+            <ActionBtn onClick={onQuickView} label="Hızlı bakis">
               <EyeIcon className="h-4 w-4" />
             </ActionBtn>
           </div>

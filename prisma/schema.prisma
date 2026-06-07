@@ -178,9 +178,12 @@ model Product {
   stockQuantity Int      @default(0)
 
   publisherId String?
-  publisher   Publisher? @relation(fields: [publisherId], references: [id])
+  // Yayınevi/kategori silinince ürün silinmez; FK null'a çekilir (ürün
+  // "yayınevsiz/kategorisiz" kalır, listelemeden düşmez). Niyeti açık tutmak
+  // için explicit — Prisma optional ilişki default'u da SetNull.
+  publisher   Publisher? @relation(fields: [publisherId], references: [id], onDelete: SetNull)
   categoryId  String?
-  category    Category?  @relation(fields: [categoryId], references: [id])
+  category    Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   anaTur        String?
   detayTur      String?
@@ -395,6 +398,10 @@ model OrderItem {
   productName String
   productSku  String
 
+  // Sipariş detayı/raporlama OrderItem'ları orderId ile çeker; ürün bazlı
+  // satış raporları productId ile. FK kolonlarına index → büyük tabloda tarama yok.
+  @@index([orderId])
+  @@index([productId])
   @@map("order_items")
 }
 
@@ -424,6 +431,8 @@ model ProductReview {
   @@unique([productId, userId])
   @@index([productId])
   @@index([status])
+  // "Yorumlarım" sayfası ve kullanıcı silme/anonimleştirme userId ile sorgular.
+  @@index([userId])
   // P3-DB-2: admin moderation `WHERE productId=? AND status=PENDING` per-product
   // composite index — listing planlamasında 2 ayrı index intersect yerine 1 scan.
   @@index([productId, status])

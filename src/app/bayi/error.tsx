@@ -43,8 +43,8 @@ export default function DealerErrorBoundary({
         Bayi panelinde hata
       </h1>
       <p className="text-brand-muted mb-5 text-sm">
-        Beklenmedik bir hata olustu. Sorun ekibimize iletildi. Sorun devam
-        ederse iletisim sayfasindan ulasabilirsiniz.
+        Beklenmedik bir hata oluştu. Sorun ekibimize iletildi. Sorun devam
+        ederse iletişim sayfasindan ulasabilirsiniz.
       </p>
       {error.digest && (
         <p className="text-xs text-gray-400 mb-4 font-mono">

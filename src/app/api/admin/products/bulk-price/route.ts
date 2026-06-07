@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Yanlislikla tüm ürünleri etkilememek için en az bir filtre zorunlu (yayınevi, kategori, grup, durum veya seçili ID).",
+          "Yanlislikla tüm ürünleri etkilememek için en az bir filtre zorunlu (yayınevi, kategori, grup, durum veya secili ID).",
       },
       { status: 400 }
     );

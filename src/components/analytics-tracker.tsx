@@ -25,8 +25,8 @@ export function AnalyticsTracker() {
   const pathname = usePathname();
   const [analyticsAllowed, setAnalyticsAllowed] = useState(false);
 
-  // Cerez tercihleri analytics'i kontrol eder. Acik riza yoksa pageview
-  // kayit edilmez. Tercih degisirse anlik yansir.
+  // Çerez tercihleri analytics'i kontrol eder. Acik riza yoksa pageview
+  // kayıt edilmez. Tercih degisirse anlik yansir.
   useEffect(() => {
     const sync = () => setAnalyticsAllowed(readConsent()?.analytics === true);
     sync();

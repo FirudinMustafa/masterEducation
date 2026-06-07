@@ -27,7 +27,7 @@ export async function PATCH(
   const { id } = await context.params;
   const existing = await prisma.product.findUnique({ where: { id } });
   if (!existing) {
-    return NextResponse.json({ error: "Urun bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Ürün bulunamadi." }, { status: 404 });
   }
 
   const json = await req.json().catch(() => ({}));
@@ -46,7 +46,7 @@ export async function PATCH(
     const base = slugify(data.name);
     if (!base) {
       return NextResponse.json(
-        { error: "Urun adi slug olusturmak icin uygun degil." },
+        { error: "Ürün adi slug oluşturmak icin uygun degil." },
         { status: 400 }
       );
     }
@@ -57,7 +57,6 @@ export async function PATCH(
     where: { id },
     data: {
       ...(data.name !== undefined && { name: data.name, slug }),
-      ...(data.nameEn !== undefined && { nameEn: data.nameEn }),
       ...(data.sku !== undefined && { sku: data.sku }),
       ...(data.price !== undefined && { price: data.price }),
       ...(data.oldPrice !== undefined && { oldPrice: data.oldPrice }),
@@ -102,7 +101,7 @@ export async function DELETE(
   const { id } = await context.params;
   const product = await prisma.product.findUnique({ where: { id } });
   if (!product) {
-    return NextResponse.json({ error: "Urun bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Ürün bulunamadi." }, { status: 404 });
   }
 
   const orderItemCount = await prisma.orderItem.count({

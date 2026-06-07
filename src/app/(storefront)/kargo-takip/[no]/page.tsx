@@ -14,8 +14,8 @@ interface PageProps {
 }
 
 /**
- * Privacy: alici adi tamamen gosterilmez (KVKK + tracking no enumeration
- * sonrasi profil olusturma riski). "Ali Veli Demir" → "Ali V. D.".
+ * Privacy: alici adi tamamen gösterilmez (KVKK + tracking no enumeration
+ * sonrasi profil oluşturma riski). "Ali Veli Demir" → "Ali V. D.".
  */
 function maskShippingName(full: string): string {
   const parts = full.trim().split(/\s+/).filter(Boolean);
@@ -24,11 +24,11 @@ function maskShippingName(full: string): string {
   return [parts[0], ...parts.slice(1).map((p) => `${p[0]}.`)].join(" ");
 }
 
-// Gorunum icin, OrderStatus'e paralel 5 adimli takvim. Her adim,
+// Görünum icin, OrderStatus'e paralel 5 adımli takvim. Her adım,
 // ilgili OrderEvent (varsa) tarihiyle doldurulur; yoksa gri kalir.
 const TIMELINE_ORDER: Array<{ type: OrderEventType; label: string }> = [
-  { type: "CREATED", label: "Siparis alindi" },
-  { type: "APPROVED", label: "Siparis onaylandi" },
+  { type: "CREATED", label: "Sipariş alindi" },
+  { type: "APPROVED", label: "Sipariş onaylandi" },
   { type: "PROCESSING", label: "Hazirlaniyor" },
   { type: "SHIPPED", label: "Kargoya verildi" },
   { type: "DELIVERED", label: "Teslim edildi" },
@@ -38,7 +38,7 @@ export default async function TrackingPage({ params }: PageProps) {
   const { no } = await params;
 
   // Brute-force tracking number enumeration korumasi: per-IP saatte 30 sorgu.
-  // Gercek kullanici tipik olarak 1-3 tracking takip eder; 30 yeterli marj.
+  // Gercek kullanıcı tipik olarak 1-3 tracking takip eder; 30 yeterli marj.
   const hdrs = await headers();
   const ip =
     hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -88,7 +88,7 @@ export default async function TrackingPage({ params }: PageProps) {
   );
 
   // Her type icin ilk event'i al (varsa). NOTE'lar timeline'in altinda
-  // ayri bir bolumde gosterilir.
+  // ayri bir bolumde gösterilir.
   const firstEventByType = new Map<OrderEventType, typeof order.events[number]>();
   for (const ev of order.events) {
     if (!firstEventByType.has(ev.type)) {
@@ -122,7 +122,7 @@ export default async function TrackingPage({ params }: PageProps) {
 
         <div className="bg-gray-50 rounded-lg p-4 mb-6 text-sm space-y-1">
           <div className="flex justify-between">
-            <span className="text-gray-500">Siparis No</span>
+            <span className="text-gray-500">Sipariş No</span>
             <span className="font-mono">{order.orderNumber}</span>
           </div>
           <div className="flex justify-between">
@@ -130,7 +130,7 @@ export default async function TrackingPage({ params }: PageProps) {
             <span>{maskShippingName(order.shippingName)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500">Sehir</span>
+            <span className="text-gray-500">Şehir</span>
             <span>{order.shippingCity}</span>
           </div>
           {order.estimatedDeliveryAt && order.status !== "DELIVERED" && (
@@ -169,7 +169,7 @@ export default async function TrackingPage({ params }: PageProps) {
 
         {isCancelled ? (
           <div className="rounded-lg bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
-            Siparis iptal edildi.
+            Sipariş iptal edildi.
             {firstEventByType.get("CANCELLED")?.createdAt && (
               <span className="ml-1 text-rose-600">
                 ({new Date(firstEventByType.get("CANCELLED")!.createdAt).toLocaleString("tr-TR")})
@@ -242,7 +242,7 @@ export default async function TrackingPage({ params }: PageProps) {
         {!carrierUrl && order.trackingCarrier === null && (
           <p className="text-xs text-gray-400 mt-6 text-center">
             Kargo firmasi henuz atanmadi. Atandigi anda bu sayfada link olarak
-            gorunecektir.
+            görünecektir.
           </p>
         )}
       </div>

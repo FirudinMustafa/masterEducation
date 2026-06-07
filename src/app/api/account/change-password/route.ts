@@ -27,13 +27,13 @@ export async function POST(req: Request) {
     select: { passwordHash: true, email: true, name: true },
   });
   if (!user) {
-    return NextResponse.json({ error: "Kullanici bulunamadi." }, { status: 404 });
+    return NextResponse.json({ error: "Kullanıcı bulunamadi." }, { status: 404 });
   }
 
   const ok = await bcrypt.compare(currentPassword, user.passwordHash);
   if (!ok) {
     return NextResponse.json(
-      { error: "Mevcut sifre dogru degil." },
+      { error: "Mevcut şifre dogru degil." },
       { status: 403 }
     );
   }
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     data: { passwordHash: hash },
   });
 
-  // Kullanicinin diger acik password reset tokenlarini iptal et
+  // Kullanıcınin diger acik password reset tokenlarini iptal et
   await prisma.passwordResetToken.updateMany({
     where: { userId: session.user.id, usedAt: null },
     data: { usedAt: new Date() },
@@ -57,11 +57,10 @@ export async function POST(req: Request) {
     entityId: session.user.id,
   });
 
-  // E8 — Sifre degisti guvenlik bildirimi (ATO erken algilamasi).
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    null;
+  // E8 — Şifre degisti guvenlik bildirimi (ATO erken algilamasi).
+  // SECURITY: getClientIp last-hop (raw XFF bypass'a kapali, QA 2026-05-18)
+  const ipResolved = (await import("@/lib/get-client-ip")).getClientIp(req.headers);
+  const ip = ipResolved === "unknown" ? null : ipResolved;
   const userAgent = req.headers.get("user-agent");
   const userEmail = user.email;
   const userName = user.name;
