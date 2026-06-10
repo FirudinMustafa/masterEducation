@@ -10,7 +10,10 @@ import {
   templateInvoiceCancelledAccountingNotice,
 } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
-import { writeLedgerEntry } from "@/lib/ledger";
+import {
+  applyOrderCancelSideEffects,
+  applyOrderReactivateSideEffects,
+} from "@/lib/order-side-effects";
 import { shippingAdapter } from "@/lib/adapters/shipping";
 import { ensureInvoiceForOrder, sendPendingInvoice } from "@/lib/invoice-service";
 import { env } from "@/lib/env";
@@ -152,110 +155,15 @@ export async function POST(
   let cancelledKolaybiDoc: string | null = null;
   try {
     updated = await prisma.$transaction(async (tx) => {
+    // İptal/reaktivasyon yan etkileri ortak helper'da (tekil + bulk route ile
+    // birebir aynı; stok + cari + kupon + fatura zinciri tek kaynaktan).
     if (isCancellingNow) {
-      const items = await tx.orderItem.findMany({
-        where: { orderId: id },
-        select: { productId: true, quantity: true },
-      });
-      for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQuantity: { increment: item.quantity } },
-        });
-      }
-
-      if (order.paymentMethod === "OPEN_ACCOUNT") {
-        const dealer = await tx.dealer.findUnique({
-          where: { userId: order.userId },
-          select: { id: true },
-        });
-        if (dealer) {
-          await writeLedgerEntry(tx, {
-            dealerId: dealer.id,
-            kind: "ORDER_CANCEL_CREDIT",
-            amount: -Number(order.total),
-            orderId: order.id,
-            note: `İptal: ${order.orderNumber}`,
-            createdBy: gate.session.user.id,
-          });
-        }
-      }
-
-      // F-1001: iptal halinde kupon kullanim sayısi geri verilmeli.
-      const redemption = await tx.couponRedemption.findUnique({
-        where: { orderId: id },
-      });
-      if (redemption) {
-        await tx.coupon.update({
-          where: { id: redemption.couponId },
-          data: { usedCount: { decrement: 1 } },
-        });
-        await tx.couponRedemption.delete({ where: { orderId: id } });
-      }
-
-      // Fatura kaydı: iptalde PENDING/FAILED retry'ı durdur (iptal siparişe
-      // fatura aktarılmasın), SENT ise KolayBi'de kayıt zaten oluşmuş →
-      // muhasebe panelden elle iptal etmeli (after() bildirimi).
-      const inv = await tx.invoice.findUnique({
-        where: { orderId: id },
-        select: { status: true, externalId: true },
-      });
-      if (inv && inv.status !== "CANCELLED") {
-        await tx.invoice.update({
-          where: { orderId: id },
-          data: {
-            status: "CANCELLED",
-            errorMessage: `Sipariş iptal edildi: ${order.orderNumber}`,
-          },
-        });
-        if (inv.status === "SENT" && inv.externalId) {
-          cancelledKolaybiDoc = inv.externalId;
-        }
-      }
+      const r = await applyOrderCancelSideEffects(tx, order, gate.session.user.id);
+      cancelledKolaybiDoc = r.cancelledKolaybiDoc;
     }
 
-    // Reaktivasyon (CANCELLED → PENDING): iptaldeki yan etkileri tersine çevir.
-    // Stok tekrar düşülür, açık hesapta kredi tekrar borçlandırılır.
-    // NOT: kupon couponRedemption iptalde silindiği için yeniden uygulanmaz
-    // (couponId kaybolur) — gerekirse admin elle kupon işler.
     if (isReactivating) {
-      const items = await tx.orderItem.findMany({
-        where: { orderId: id },
-        select: { productId: true, quantity: true },
-      });
-      for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQuantity: { decrement: item.quantity } },
-        });
-      }
-
-      if (order.paymentMethod === "OPEN_ACCOUNT") {
-        const dealer = await tx.dealer.findUnique({
-          where: { userId: order.userId },
-          select: { id: true },
-        });
-        if (dealer) {
-          // Kredi limiti aşılırsa CREDIT_LIMIT_EXCEEDED fırlatır → 400 dönülür.
-          await writeLedgerEntry(tx, {
-            dealerId: dealer.id,
-            kind: "ORDER_DEBIT",
-            amount: Number(order.total),
-            orderId: order.id,
-            note: `Reaktivasyon: ${order.orderNumber}`,
-            createdBy: gate.session.user.id,
-            enforceCreditLimit: true,
-          });
-        }
-      }
-
-      // İptalde CANCELLED'a çekilen ama KolayBi'de kaydı OLMAYAN faturayı
-      // tekrar gönderilebilir yap (PENDING). KolayBi kaydı olan (externalId)
-      // dokunulmaz — mükerrer kayıt olmasın, gerekirse panelden elle yönetilir.
-      await tx.invoice.updateMany({
-        where: { orderId: id, status: "CANCELLED", externalId: null },
-        data: { status: "PENDING", errorMessage: null },
-      });
+      await applyOrderReactivateSideEffects(tx, order, gate.session.user.id);
     }
 
     const updatedOrder = await tx.order.update({

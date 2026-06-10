@@ -43,9 +43,11 @@ export async function POST(req: NextRequest) {
       const msg =
         e instanceof Error && e.message === "ORDER_NOT_FOUND"
           ? "Sipariş bulunamadı."
-          : e instanceof Error
-            ? e.message
-            : "Bilinmeyen hata";
+          : e instanceof Error && e.message === "INVOICE_SENT"
+            ? "Faturası kesilmiş (SENT) sipariş silinemez — önce iptal edin."
+            : e instanceof Error
+              ? e.message
+              : "Bilinmeyen hata";
       failed.push({ id: orderId, error: msg });
     }
   }

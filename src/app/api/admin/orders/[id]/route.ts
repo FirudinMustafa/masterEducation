@@ -37,6 +37,15 @@ export async function DELETE(
     if (e instanceof Error && e.message === "ORDER_NOT_FOUND") {
       return NextResponse.json({ error: "Sipariş bulunamadı." }, { status: 404 });
     }
+    if (e instanceof Error && e.message === "INVOICE_SENT") {
+      return NextResponse.json(
+        {
+          error:
+            "KolayBi'ye faturası kesilmiş (SENT) sipariş kalıcı silinemez. Önce siparişi iptal edin (fatura iptal edilir + muhasebe bilgilendirilir).",
+        },
+        { status: 409 }
+      );
+    }
     return NextResponse.json(
       { error: "Sipariş silinemedi." },
       { status: 500 }

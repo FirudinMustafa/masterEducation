@@ -38,6 +38,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // SKU/ISBN tekrarı engeli — DB'de @unique yok (eski veride mükerrer olabilir),
+  // ama YENİ ürün oluştururken çakışmayı uygulama katmanında durdururuz.
+  const skuClash = await prisma.product.findFirst({
+    where: { sku: data.sku },
+    select: { id: true },
+  });
+  if (skuClash) {
+    return NextResponse.json(
+      { error: `Bu ISBN/SKU (${data.sku}) zaten başka bir üründe kayıtlı.` },
+      { status: 409 }
+    );
+  }
+
   const slug = await uniqueSlug(baseSlug);
 
   const maxNopId = await prisma.product.aggregate({ _max: { nopId: true } });

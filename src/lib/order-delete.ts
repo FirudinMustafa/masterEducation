@@ -32,12 +32,38 @@ export async function hardDeleteOrderTx(
   });
   if (!order) throw new Error("ORDER_NOT_FOUND");
 
+  // D1 güvenlik: KolayBi'de kesilmiş (SENT) faturası olan sipariş KALICI
+  // silinemez — yasal kayıt + muhasebe bağı (externalId) korunur. Bu siparişi
+  // silmek için önce iptal edilmeli (fatura CANCELLED'a çekilir + muhasebe
+  // bildirimi gider). Caller bu hatayı yakalayıp anlamlı mesaj döndürmeli.
+  const invoice = await tx.invoice.findUnique({
+    where: { orderId },
+    select: { status: true },
+  });
+  if (invoice && invoice.status === "SENT") {
+    throw new Error("INVOICE_SENT");
+  }
+
   // 1) Stok iadesi (iptal edilmemiş siparişlerde).
   if (order.status !== "CANCELLED") {
     for (const item of order.items) {
       await tx.product.update({
         where: { id: item.productId },
         data: { stockQuantity: { increment: item.quantity } },
+      });
+    }
+
+    // Kupon kullanımını geri ver — yalnız iptal EDİLMEMİŞ siparişte (iptal
+    // zaten usedCount'u düşürmüştür). CouponRedemption satırı order silinince
+    // cascade ile gider; usedCount'u burada elle düzeltiyoruz.
+    const redemption = await tx.couponRedemption.findUnique({
+      where: { orderId },
+      select: { couponId: true },
+    });
+    if (redemption) {
+      await tx.coupon.update({
+        where: { id: redemption.couponId },
+        data: { usedCount: { decrement: 1 } },
       });
     }
   }

@@ -12,6 +12,11 @@ interface DealerActionsProps {
   paymentTerms: DealerPaymentTerms;
   notes: string | null;
   rejectionReason: string | null;
+  companyName: string;
+  taxOffice: string;
+  taxNumber: string;
+  tradeRegNo: string | null;
+  contactPerson: string | null;
 }
 
 export function DealerActions({
@@ -21,6 +26,11 @@ export function DealerActions({
   paymentTerms,
   notes,
   rejectionReason,
+  companyName,
+  taxOffice,
+  taxNumber,
+  tradeRegNo,
+  contactPerson,
 }: DealerActionsProps) {
   const router = useRouter();
   // Tek useBusy: yaklasik-anlik approve+reject+suspend+delete butonlari paylasir,
@@ -31,6 +41,12 @@ export function DealerActions({
   const [termsInput, setTermsInput] = useState<DealerPaymentTerms>(paymentTerms);
   const [notesInput, setNotesInput] = useState(notes ?? "");
   const [reasonInput, setReasonInput] = useState(rejectionReason ?? "");
+  // Firma bilgileri (API zaten PATCH kabul ediyordu; UI eksikti — D5).
+  const [companyNameInput, setCompanyNameInput] = useState(companyName);
+  const [taxOfficeInput, setTaxOfficeInput] = useState(taxOffice);
+  const [taxNumberInput, setTaxNumberInput] = useState(taxNumber);
+  const [tradeRegNoInput, setTradeRegNoInput] = useState(tradeRegNo ?? "");
+  const [contactPersonInput, setContactPersonInput] = useState(contactPerson ?? "");
 
   async function call(path: string, body: Record<string, unknown>) {
     setError(null);
@@ -90,6 +106,11 @@ export function DealerActions({
   const saveDetails = () =>
     run(() =>
       call(`/api/admin/dealers/${dealerId}`, {
+        companyName: companyNameInput.trim(),
+        taxOffice: taxOfficeInput.trim(),
+        taxNumber: taxNumberInput.replace(/\s/g, ""),
+        tradeRegNo: tradeRegNoInput.trim() || null,
+        contactPerson: contactPersonInput.trim() || null,
         paymentTerms: termsInput,
         creditLimit: termsInput === "PREPAID" ? 0 : parseLimitInput(limitInput),
         notes: notesInput || undefined,
@@ -141,6 +162,52 @@ export function DealerActions({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label className="block md:col-span-2">
+          <span className="block text-xs font-medium text-gray-500 mb-1">Firma Adı</span>
+          <input
+            type="text"
+            value={companyNameInput}
+            onChange={(e) => setCompanyNameInput(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-gold"
+          />
+        </label>
+        <label className="block">
+          <span className="block text-xs font-medium text-gray-500 mb-1">Vergi Dairesi</span>
+          <input
+            type="text"
+            value={taxOfficeInput}
+            onChange={(e) => setTaxOfficeInput(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-gold"
+          />
+        </label>
+        <label className="block">
+          <span className="block text-xs font-medium text-gray-500 mb-1">Vergi / TC No</span>
+          <input
+            type="text"
+            value={taxNumberInput}
+            onChange={(e) => setTaxNumberInput(e.target.value)}
+            placeholder="10-11 hane"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono focus:outline-none focus:border-brand-gold"
+          />
+        </label>
+        <label className="block">
+          <span className="block text-xs font-medium text-gray-500 mb-1">Yetkili Kişi</span>
+          <input
+            type="text"
+            value={contactPersonInput}
+            onChange={(e) => setContactPersonInput(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-gold"
+          />
+        </label>
+        <label className="block">
+          <span className="block text-xs font-medium text-gray-500 mb-1">Ticaret Sicil No</span>
+          <input
+            type="text"
+            value={tradeRegNoInput}
+            onChange={(e) => setTradeRegNoInput(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-gold"
+          />
+        </label>
         <label className="block">
           <span className="block text-xs font-medium text-gray-500 mb-1">Ödeme Modu</span>
           <select

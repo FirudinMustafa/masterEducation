@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import {
   applyDealerPricing,
   getSessionPricingContext,
@@ -46,6 +47,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     return NextResponse.json({ error: "Ürün bulunamadi" }, { status: 404 });
   }
 
+  // Fiyat gizleme: ham liste fiyatı (price/oldPrice) yalnız admin'e döner.
+  // Bayiye yalnız kendi iskontolu fiyatı (dealerPrice), public'e hiçbiri.
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN";
+
   const pricingCtx = await getSessionPricingContext();
   const [priced] = applyDealerPricing(
     [
@@ -67,8 +73,8 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     sku: product.sku,
     name: product.name,
     nameEn: product.nameEn,
-    price: Number(product.price),
-    oldPrice: product.oldPrice ? Number(product.oldPrice) : null,
+    price: isAdmin ? Number(product.price) : null,
+    oldPrice: isAdmin && product.oldPrice ? Number(product.oldPrice) : null,
     vatRate: Number(product.vatRate),
     stockQuantity: product.stockQuantity,
     inStock: product.stockQuantity > 0,

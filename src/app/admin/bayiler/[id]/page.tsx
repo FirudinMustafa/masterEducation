@@ -203,6 +203,11 @@ export default async function AdminDealerDetailPage({ params }: PageProps) {
           paymentTerms={dealer.paymentTerms}
           notes={dealer.notes}
           rejectionReason={dealer.rejectionReason}
+          companyName={dealer.companyName}
+          taxOffice={dealer.taxOffice}
+          taxNumber={dealer.taxNumber}
+          tradeRegNo={dealer.tradeRegNo}
+          contactPerson={dealer.contactPerson}
         />
       </div>
 

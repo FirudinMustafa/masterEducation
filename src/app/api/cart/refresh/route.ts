@@ -79,10 +79,16 @@ export async function POST(req: NextRequest) {
   );
   const priceById = new Map(priced.map((p) => [p.id, p]));
 
+  // Fiyat gizleme: yalnız onaylı bayiye fiyat döner (sepet/sipariş matematiği
+  // için gerekli). Public/yetkisiz isteklere fiyat 0 döner — liste fiyatı sızmaz.
+  const isDealer = ctx.dealerId != null;
   const items = products.map((p) => {
     const pricing = priceById.get(p.id);
-    const finalPrice =
-      pricing?.dealerPrice != null ? pricing.dealerPrice : Number(p.price);
+    const finalPrice = !isDealer
+      ? 0
+      : pricing?.dealerPrice != null
+        ? pricing.dealerPrice
+        : Number(p.price);
     return {
       productId: p.id,
       name: p.name,

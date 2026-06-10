@@ -61,6 +61,13 @@ export function OrdersTable({ orders }: Props) {
     [orders, selected]
   );
 
+  // Toplu modalın ulaşılabilir durum geçişlerini hesaplaması için seçili
+  // siparişlerin mevcut durumları.
+  const selectedStatuses = useMemo(
+    () => orders.filter((o) => selected.has(o.id)).map((o) => o.status),
+    [orders, selected]
+  );
+
   function toggleAll() {
     setSelected((prev) => {
       if (allChecked) return new Set();
@@ -385,6 +392,7 @@ export function OrdersTable({ orders }: Props) {
       {showModal && (
         <OrdersBulkStatusModal
           count={selected.size}
+          selectedStatuses={selectedStatuses}
           onClose={() => setShowModal(false)}
           onApply={applyPatch}
           pending={pending}

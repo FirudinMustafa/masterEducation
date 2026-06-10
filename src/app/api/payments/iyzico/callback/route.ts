@@ -9,6 +9,7 @@ import {
 } from "@/lib/email";
 import { env } from "@/lib/env";
 import { BRAND } from "@/lib/constants";
+import { applyOrderCancelSideEffects } from "@/lib/order-side-effects";
 
 /**
  * Iyzico 3DS callback — kullanıcı 3DS popup'ında doğrulamayı bitirdiğinde
@@ -133,15 +134,24 @@ export async function POST(req: NextRequest) {
     // Sadece bu islemde claim eden cagiri stok restore + cancel yapsin (race-safe).
     if (claim.count === 0) return;
 
-    const orderItems = await tx.orderItem.findMany({
-      where: { orderId: paymentSession.orderId },
-      select: { productId: true, quantity: true },
+    // Sipariş zaten iptal edilmişse (örn. REFUND webhook önce geldiyse) yan
+    // etkileri tekrar uygulama — çift stok/kupon iadesi engeli.
+    const orderRow = await tx.order.findUnique({
+      where: { id: paymentSession.orderId },
+      select: { status: true },
     });
-    for (const item of orderItems) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { stockQuantity: { increment: item.quantity } },
-      });
+    if (orderRow && orderRow.status !== "CANCELLED") {
+      await applyOrderCancelSideEffects(
+        tx,
+        {
+          id: paymentSession.order.id,
+          orderNumber: paymentSession.order.orderNumber,
+          paymentMethod: paymentSession.order.paymentMethod,
+          userId: paymentSession.order.userId,
+          total: paymentSession.order.total,
+        },
+        null
+      );
     }
     await tx.order.update({
       where: { id: paymentSession.orderId },

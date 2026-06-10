@@ -69,9 +69,10 @@ export async function POST(req: NextRequest) {
   if (!order) {
     return NextResponse.json({ error: "Sipariş bulunamadi." }, { status: 404 });
   }
-  // Misafir checkout'ta session yok ama orderId yeterli (path query token gibi);
-  // üye ise userId eşleşmesi zorunlu.
-  if (session?.user && session.user.id !== order.userId) {
+  // Dealer-only sistem: misafir checkout YOK. Oturum zorunlu + sahiplik kontrolü
+  // (orderId enumeration'a karşı). Eskiden oturumsuz çağrı orderId ile ödeme
+  // başlatabiliyordu.
+  if (!session?.user || session.user.id !== order.userId) {
     return NextResponse.json({ error: "Yetkisiz." }, { status: 403 });
   }
   if (order.paymentStatus === "PAID") {

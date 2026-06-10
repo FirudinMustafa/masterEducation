@@ -155,7 +155,16 @@ export const adminCreateDealerSchema = z.object({
   district: z.string().max(50).optional().or(z.literal("")).transform((v) => v || null),
   addressLine: z.string().max(500).optional().or(z.literal("")).transform((v) => v || null),
   notes: z.string().max(1000).optional().or(z.literal("")).transform((v) => v || null),
-});
+}).refine(
+  // Adres girildiyse il/ilçe geçerli olmalı (diğer tüm adres yollarıyla aynı
+  // kural). Adres boş bırakılırsa doğrulama yapılmaz (opsiyonel fatura adresi).
+  (v) => {
+    if (v.city && v.district) return isValidLocation(v.city, v.district);
+    if (v.city) return isValidLocation(v.city);
+    return true;
+  },
+  { message: "Il/ilce listesi disinda bir deger.", path: ["city"] }
+);
 
 // Admin kullanıcıya şifre belirler/sıfırlar.
 export const adminSetPasswordSchema = z.object({
@@ -326,15 +335,26 @@ export const orderStatusUpdateSchema = z.object({
   adminNote: z.string().max(500).optional().or(z.literal("")).transform((v) => v || null),
 });
 
-export const discountRuleSchema = z.object({
-  dealerId: z.string().min(1),
-  scope: z.enum(["PRODUCT", "CATEGORY", "PUBLISHER", "DISCOUNT_GROUP", "GLOBAL"]),
-  discountPct: z.number().min(0).max(100),
-  productId: z.string().optional().nullable(),
-  categoryId: z.string().optional().nullable(),
-  publisherId: z.string().optional().nullable(),
-  discountGroup: z.string().optional().nullable(),
-});
+export const discountRuleSchema = z
+  .object({
+    dealerId: z.string().min(1),
+    scope: z.enum(["PRODUCT", "CATEGORY", "PUBLISHER", "DISCOUNT_GROUP", "GLOBAL"]),
+    discountPct: z.number().min(0).max(100),
+    productId: z.string().optional().nullable(),
+    categoryId: z.string().optional().nullable(),
+    publisherId: z.string().optional().nullable(),
+    discountGroup: z.string().optional().nullable(),
+  })
+  // Scope'a uymayan FK'leri temizle — örn. {scope:GLOBAL, productId:x} gibi elle
+  // gönderilen tutarsız satır oluşmasın ve dedupe anahtarı kirlenmesin. (Her scope
+  // yalnız kendi FK'sini taşır; GLOBAL hiçbirini.)
+  .transform((v) => ({
+    ...v,
+    productId: v.scope === "PRODUCT" ? v.productId ?? null : null,
+    categoryId: v.scope === "CATEGORY" ? v.categoryId ?? null : null,
+    publisherId: v.scope === "PUBLISHER" ? v.publisherId ?? null : null,
+    discountGroup: v.scope === "DISCOUNT_GROUP" ? v.discountGroup ?? null : null,
+  }));
 
 // Update şemasında default'lar uygulanmamalı — yoksa `.partial()` ile kombine
 // edildiğinde, alanı göndermeyen PATCH otomatik default'a düşer ve silently

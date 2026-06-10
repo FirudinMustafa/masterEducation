@@ -33,7 +33,6 @@ export async function GET(req: NextRequest) {
         id: true,
         slug: true,
         name: true,
-        price: true,
         publisher: { select: { name: true } },
         images: {
           orderBy: [{ displayOrder: "asc" }, { pictureId: "asc" }],
@@ -61,7 +60,7 @@ export async function GET(req: NextRequest) {
       id: p.id,
       slug: p.slug,
       name: p.name,
-      price: Number(p.price),
+      // Fiyat vitrin/aramada gizli (yalnız admin paneli + muhasebe görür).
       publisherName: p.publisher?.name ?? null,
       imageSrc: p.images[0] ? productImageUrl(p.images[0].filename) : null,
     })),

@@ -11,7 +11,6 @@ interface ProductHit {
   id: string;
   slug: string;
   name: string;
-  price: number;
   publisherName: string | null;
   imageSrc: string | null;
 }

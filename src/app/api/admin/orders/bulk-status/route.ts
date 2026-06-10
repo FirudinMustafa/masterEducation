@@ -8,9 +8,15 @@ import {
   queueEmail,
   templateOrderStatusChanged,
   templateOrderCancelled,
+  templateInvoiceCancelledAccountingNotice,
 } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
-import { writeLedgerEntry } from "@/lib/ledger";
+import {
+  applyOrderCancelSideEffects,
+  applyOrderReactivateSideEffects,
+} from "@/lib/order-side-effects";
+import { canTransition } from "@/lib/order-status";
+import { env } from "@/lib/env";
 
 const MAX_IDS = 500;
 
@@ -135,18 +141,10 @@ export async function POST(req: NextRequest) {
     const statusChanged = status !== undefined && status !== order.status;
 
     // State machine — atlamalı geçiş engelle (PENDING→DELIVERED yasak vb.).
-    // Tek tek admin akışıyla aynı whitelist (single-status route ile uyum).
+    // Tek kaynak @/lib/order-status (tekil form + toplu modal ile uyum).
     // CANCELLED yalnız PENDING'e geri alınabilir (reaktivasyon).
     if (statusChanged && status) {
-      const allowed: Record<typeof order.status, readonly typeof status[]> = {
-        PENDING: ["APPROVED", "CANCELLED"],
-        APPROVED: ["PROCESSING", "CANCELLED"],
-        PROCESSING: ["SHIPPED", "CANCELLED"],
-        SHIPPED: ["DELIVERED", "CANCELLED"],
-        DELIVERED: [],
-        CANCELLED: ["PENDING"],
-      };
-      if (!allowed[order.status].includes(status)) {
+      if (!canTransition(order.status, status)) {
         failed.push({
           id: orderId,
           error: `${order.status} → ${status} geçişi izinli değil.`,
@@ -155,68 +153,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // İptalde KolayBi'de kesilmiş fatura belge no'su (varsa) — muhasebe bildirimi için.
+    let cancelledKolaybiDoc: string | null = null;
     try {
       const updated = await prisma.$transaction(async (tx) => {
+        // İptal/reaktivasyon yan etkileri ortak helper'da (tekil status route ile
+        // birebir aynı: stok + cari + kupon + fatura). Önceki bug: bulk burada
+        // kupon + fatura yan etkilerini atlıyordu.
         if (isCancellingNow) {
-          // Stok geri yükle
-          const items = await tx.orderItem.findMany({
-            where: { orderId },
-            select: { productId: true, quantity: true },
-          });
-          for (const item of items) {
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { stockQuantity: { increment: item.quantity } },
-            });
-          }
-          // Open account ise ledger
-          if (order.paymentMethod === "OPEN_ACCOUNT") {
-            const dealer = await tx.dealer.findUnique({
-              where: { userId: order.userId },
-              select: { id: true },
-            });
-            if (dealer) {
-              await writeLedgerEntry(tx, {
-                dealerId: dealer.id,
-                kind: "ORDER_CANCEL_CREDIT",
-                amount: -Number(order.total),
-                orderId: order.id,
-                note: `İptal: ${order.orderNumber}`,
-                createdBy: gate.session.user.id,
-              });
-            }
-          }
+          const r = await applyOrderCancelSideEffects(
+            tx,
+            order,
+            gate.session.user.id
+          );
+          cancelledKolaybiDoc = r.cancelledKolaybiDoc;
         }
 
-        // Reaktivasyon (CANCELLED → PENDING): iptal yan etkilerini tersine çevir.
         if (isReactivating) {
-          const items = await tx.orderItem.findMany({
-            where: { orderId },
-            select: { productId: true, quantity: true },
-          });
-          for (const item of items) {
-            await tx.product.update({
-              where: { id: item.productId },
-              data: { stockQuantity: { decrement: item.quantity } },
-            });
-          }
-          if (order.paymentMethod === "OPEN_ACCOUNT") {
-            const dealer = await tx.dealer.findUnique({
-              where: { userId: order.userId },
-              select: { id: true },
-            });
-            if (dealer) {
-              await writeLedgerEntry(tx, {
-                dealerId: dealer.id,
-                kind: "ORDER_DEBIT",
-                amount: Number(order.total),
-                orderId: order.id,
-                note: `Reaktivasyon: ${order.orderNumber}`,
-                createdBy: gate.session.user.id,
-                enforceCreditLimit: true,
-              });
-            }
-          }
+          await applyOrderReactivateSideEffects(tx, order, gate.session.user.id);
         }
 
         const upd = await tx.order.update({
@@ -295,6 +249,34 @@ export async function POST(req: NextRequest) {
                   estimatedDeliveryAt: updated.estimatedDeliveryAt,
                 });
           queueEmail({ ...tpl, to: order.user.email });
+        });
+      }
+
+      // İptal edilen siparişin KolayBi'de zaten oluşmuş faturası varsa →
+      // muhasebeye "panelden iptal et" bildirimi (tekil route ile aynı).
+      if (cancelledKolaybiDoc) {
+        const docId = cancelledKolaybiDoc;
+        const { userId, orderNumber } = order;
+        after(async () => {
+          try {
+            const accountingTo = env.ACCOUNTING_EMAIL;
+            if (!accountingTo) return;
+            const dealer = await prisma.dealer.findUnique({
+              where: { userId },
+              select: { companyName: true },
+            });
+            const base =
+              process.env.NEXTAUTH_URL || "https://mastereducation.com.tr";
+            const tpl = templateInvoiceCancelledAccountingNotice({
+              orderNumber,
+              dealerCompany: dealer?.companyName ?? "—",
+              documentId: docId,
+              panelUrl: `${base}/admin/faturalar`,
+            });
+            queueEmail({ ...tpl, to: accountingTo });
+          } catch (err) {
+            console.error("[invoice] cancel notice failed", orderNumber, err);
+          }
         });
       }
     } catch (e) {

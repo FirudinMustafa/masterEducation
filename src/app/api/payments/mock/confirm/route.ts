@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse, after } from "next/server";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { paymentConfirmSchema, flattenZodError } from "@/lib/validations";
 import { mockPaymentsEnabled, env } from "@/lib/env";
@@ -9,6 +8,7 @@ import {
   templatePaymentFailed,
 } from "@/lib/email";
 import { BRAND } from "@/lib/constants";
+import { applyOrderCancelSideEffects } from "@/lib/order-side-effects";
 
 /**
  * Mock 3D Secure confirmation.
@@ -54,6 +54,8 @@ export async function POST(req: NextRequest) {
           orderNumber: true,
           status: true,
           total: true,
+          paymentMethod: true,
+          userId: true,
           shippingName: true,
           user: { select: { email: true, name: true } },
         },
@@ -173,17 +175,23 @@ export async function POST(req: NextRequest) {
       });
       if (claimed.count === 0) throw new Error(RACE_ERROR);
 
-      const items = await tx.orderItem.findMany({
-        where: { orderId: ps.orderId },
-        select: { productId: true, quantity: true },
+      // Sipariş zaten iptal edilmişse çift iade etme (stok/kupon/fatura).
+      const orderRow = await tx.order.findUnique({
+        where: { id: ps.orderId },
+        select: { status: true },
       });
-      for (const item of items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stockQuantity: { increment: item.quantity } as unknown as Prisma.IntFieldUpdateOperationsInput,
+      if (orderRow && orderRow.status !== "CANCELLED") {
+        await applyOrderCancelSideEffects(
+          tx,
+          {
+            id: ps.order.id,
+            orderNumber: ps.order.orderNumber,
+            paymentMethod: ps.order.paymentMethod,
+            userId: ps.order.userId,
+            total: ps.order.total,
           },
-        });
+          null
+        );
       }
       await tx.order.update({
         where: { id: ps.orderId },

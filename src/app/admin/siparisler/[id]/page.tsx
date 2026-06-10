@@ -81,9 +81,23 @@ export default async function AdminOrderDetailPage({ params }: PageProps) {
           >
             Teslim Fisi
           </Link>
+          <a
+            href={`/api/admin/orders/${order.id}/siparis-formu`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium hover:bg-gray-50"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />
+            </svg>
+            Sipariş Formu (Excel)
+          </a>
           <span className="inline-flex px-3 py-1 text-sm font-medium rounded-full bg-gray-100 text-gray-700">
             {PAYMENT_METHOD_LABELS[order.paymentMethod]}
           </span>
+          {order.paymentMethod === "OPEN_ACCOUNT" && (
+            <span className="inline-flex px-3 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-700">
+              Ödeme cari hesaptan takip edilir (ekstre)
+            </span>
+          )}
           <span className="inline-flex px-3 py-1 text-sm font-medium rounded-full bg-amber-100 text-amber-700">
             {ORDER_STATUS_LABELS[order.status]}
           </span>

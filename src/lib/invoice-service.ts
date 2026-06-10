@@ -279,6 +279,21 @@ export async function sendPendingInvoice(invoiceId: string): Promise<{
     return { status: inv.status };
   }
 
+  // Sipariş iptal edildiyse faturayı KolayBi'ye GÖNDERME. Ödeme-iptal yolları
+  // (mock/iyzico callback+webhook) siparişi CANCELLED yapıp faturaya dokunmuyordu;
+  // bu guard sayesinde retry-cron iptal edilmiş siparişin faturasını gerçek
+  // kayıt olarak göndermez. Fatura kaydı da CANCELLED'a çekilir.
+  if (inv.order.status === "CANCELLED") {
+    await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        status: "CANCELLED",
+        errorMessage: "Sipariş iptal edildi — fatura gönderilmedi",
+      },
+    });
+    return { status: "CANCELLED", reason: "order cancelled" };
+  }
+
   // İdempotency: KolayBi'de kayıt zaten oluşmuş (externalId dolu) ama status
   // SENT değilse (önceki denemede createInvoice başarılı olup DB yazımı
   // patlamış olabilir) — TEKRAR createInvoice YAPMA, sadece SENT'e çek.

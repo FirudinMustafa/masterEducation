@@ -225,7 +225,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const netSubtotal = subtotal - discountTotal;
+    // Para alanlarını 2 ondalığa yuvarla — ham float birikimi `123.45000…002`
+    // gibi değerler ve total ≠ subtotal−discount tutarsızlığı yaratıyordu.
+    subtotal = Math.round(subtotal * 100) / 100;
+    discountTotal = Math.round(discountTotal * 100) / 100;
+    const netSubtotal = Math.round((subtotal - discountTotal) * 100) / 100;
     // Kargo kuralları:
     //   - netSubtotal === 0 ise kargo da 0 (bayi %100 iskonto durumu — kullanıcı
     //     "her ürün ücretsiz" beklerken sipariş 29.90 kargo'ya takılmasın)
@@ -242,6 +246,18 @@ export async function POST(req: NextRequest) {
     // Apply coupon if provided.
     let couponDiscount = 0;
     let resolvedCoupon: { id: string; code: string } | null = null;
+    // Bayi siparişlerinde kupon kullanılamaz — B2B fiyatlandırma iskonto
+    // kurallarıyla yapılır; kupon kutusu vitrinde bayiye gizli. Server bunu
+    // zorunlu kılar (UI'ı bypass eden elle istek kuponu B2B fiyatına ekleyemesin).
+    if (couponCode && isDealer) {
+      return NextResponse.json(
+        {
+          error:
+            "Bayi siparişlerinde kupon kullanılamaz (B2B fiyatlandırma iskonto kurallarıyla uygulanır).",
+        },
+        { status: 400 }
+      );
+    }
     if (couponCode) {
       const evalResult = await evaluateCoupon(couponCode, {
         subtotalAfterProductDiscounts: netSubtotal,
@@ -455,7 +471,10 @@ export async function POST(req: NextRequest) {
         total,
         contractsAcceptedAt
       );
-      queueEmail({ ...orderEmail, to: shipping.email });
+      // Sipariş onayı bayinin HESAP e-postasına gider (checkout'ta yazılan
+      // serbest shipping.email'e değil — aksi halde onay maili başka adrese
+      // yönlendirilebiliyordu).
+      queueEmail({ ...orderEmail, to: session.user.email ?? shipping.email });
 
       // E1 — Admin'e yeni sipariş bildirimi. isB2B/isHighValue bayraklari
       // ayri mail uretmez; tek sablonun icinde rozet/banner ile vurgulanir

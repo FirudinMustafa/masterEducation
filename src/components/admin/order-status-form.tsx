@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CargoCarrier, OrderStatus } from "@prisma/client";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import { ALLOWED_NEXT } from "@/lib/order-status";
 import { CARGO_CARRIERS } from "@/lib/cargo-carriers";
 import { useBusy } from "@/lib/hooks/use-busy";
 import { toast } from "@/stores/toast-store";
@@ -19,18 +20,10 @@ interface OrderStatusFormProps {
   adminNote: string | null;
 }
 
-// Backend whitelist'i ile birebir aynı (orders/[id]/status + bulk-status).
-// Admin yanlış geçiş secip 400 almasin diye dropdown sadece izinli sonraki
-// state'leri + mevcut state'i (no-op tracking/note güncelleme icin) gösterir.
-const ALLOWED_NEXT: Record<OrderStatus, readonly OrderStatus[]> = {
-  PENDING: ["APPROVED", "CANCELLED"],
-  APPROVED: ["PROCESSING", "CANCELLED"],
-  PROCESSING: ["SHIPPED", "CANCELLED"],
-  SHIPPED: ["DELIVERED", "CANCELLED"],
-  DELIVERED: [],
-  // Yanlışlıkla iptal edilen sipariş PENDING'e geri alınabilir (reaktivasyon).
-  CANCELLED: ["PENDING"],
-};
+// Durum geçiş whitelist'i artık tek kaynaktan (@/lib/order-status) geliyor —
+// tekil form, toplu modal ve backend route aynı ALLOWED_NEXT'i paylaşır.
+// Dropdown sadece izinli sonraki state'leri + mevcut state'i (no-op
+// tracking/note güncelleme icin) gösterir.
 
 const CARRIER_KEYS: CargoCarrier[] = [
   "ARAS",

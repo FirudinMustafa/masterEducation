@@ -40,6 +40,20 @@ export async function PATCH(
   }
   const data = parsed.data;
 
+  // SKU/ISBN tekrarı engeli — değiştiyse başka üründe kayıtlı mı kontrol et.
+  if (data.sku !== undefined && data.sku !== existing.sku) {
+    const skuClash = await prisma.product.findFirst({
+      where: { sku: data.sku, id: { not: id } },
+      select: { id: true },
+    });
+    if (skuClash) {
+      return NextResponse.json(
+        { error: `Bu ISBN/SKU (${data.sku}) zaten başka bir üründe kayıtlı.` },
+        { status: 409 }
+      );
+    }
+  }
+
   // Re-slugify if name changed.
   let slug = existing.slug;
   if (data.name && data.name !== existing.name) {

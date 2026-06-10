@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { OrderStatus, CargoCarrier } from "@prisma/client";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
+import { reachableTargets, applicableCount } from "@/lib/order-status";
 import { ConfirmDialog } from "./confirm-dialog";
 
 export type BulkPatch = {
@@ -12,14 +13,6 @@ export type BulkPatch = {
   estimatedDeliveryAt?: string | null;
   adminNote?: string;
 };
-
-const STATUS_OPTIONS: OrderStatus[] = [
-  "APPROVED",
-  "PROCESSING",
-  "SHIPPED",
-  "DELIVERED",
-  "CANCELLED",
-];
 
 const CARRIER_OPTIONS: CargoCarrier[] = [
   "ARAS",
@@ -49,18 +42,37 @@ const CARRIER_LABELS: Record<CargoCarrier, string> = {
 
 interface Props {
   count: number;
+  /** Seçili siparişlerin mevcut durumları — ulaşılabilir hedefleri hesaplamak için. */
+  selectedStatuses: OrderStatus[];
   onClose: () => void;
   onApply: (patch: BulkPatch) => Promise<void> | void;
   pending: boolean;
 }
 
-export function OrdersBulkStatusModal({ count, onClose, onApply, pending }: Props) {
+export function OrdersBulkStatusModal({
+  count,
+  selectedStatuses,
+  onClose,
+  onApply,
+  pending,
+}: Props) {
   const [status, setStatus] = useState<OrderStatus | "">("");
   const [carrier, setCarrier] = useState<CargoCarrier | "">("");
   const [carrierName, setCarrierName] = useState("");
   const [eta, setEta] = useState("");
   const [adminNote, setAdminNote] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Seçili siparişlerin durumlarına göre gerçekten ulaşılabilir hedefler.
+  // Backend aynı state-machine'i uygular; bu liste UI'ı onunla hizalar.
+  const statusOptions = useMemo(
+    () => reachableTargets(selectedStatuses),
+    [selectedStatuses],
+  );
+
+  // Seçilen hedefe kaç sipariş geçebilir / kaçı atlanır (karışık seçim uyarısı).
+  const applicable = status ? applicableCount(selectedStatuses, status) : 0;
+  const skipped = status ? count - applicable : 0;
 
   function buildPatch(): BulkPatch | null {
     const patch: BulkPatch = {};
@@ -101,15 +113,35 @@ export function OrdersBulkStatusModal({ count, onClose, onApply, pending }: Prop
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as OrderStatus | "")}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
+            disabled={statusOptions.length === 0}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
           >
             <option value="">— Değişiklik yok —</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {ORDER_STATUS_LABELS[s] || s}
-              </option>
-            ))}
+            {statusOptions.map((s) => {
+              const n = applicableCount(selectedStatuses, s);
+              return (
+                <option key={s} value={s}>
+                  {ORDER_STATUS_LABELS[s] || s}
+                  {n < count ? ` (${n}/${count})` : ""}
+                </option>
+              );
+            })}
           </select>
+          {statusOptions.length === 0 ? (
+            <span className="mt-1 block text-[11px] text-gray-400">
+              Seçili siparişler için uygulanabilir durum geçişi yok (ör. hepsi
+              teslim edilmiş). Kargo/not güncelleyebilirsiniz.
+            </span>
+          ) : status && skipped > 0 ? (
+            <span className="mt-1 block text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+              {applicable} siparişe uygulanacak, <strong>{skipped}</strong> sipariş
+              bu geçişe uygun olmadığı için atlanacak.
+            </span>
+          ) : status ? (
+            <span className="mt-1 block text-[11px] text-green-700">
+              {applicable} siparişin tümüne uygulanacak.
+            </span>
+          ) : null}
         </label>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
