@@ -27,8 +27,22 @@ function localUploadDir(): string {
   );
 }
 
+/**
+ * Depolama, GÖSTERİM ile hizalı olmalıdır. `productImageUrl()` (lib/images.ts)
+ * yalnız `NEXT_PUBLIC_BLOB_BASE_URL` set iken Blob URL'i (`${BASE}/products/...`)
+ * üretir; aksi halde `/images/products/...` (yerel disk) döndürür.
+ *
+ * 🐛 Eski hata: storage yalnız BLOB_READ_WRITE_TOKEN'a bakıyordu. Token set ama
+ * base URL set DEĞİL olunca → yeni görsel Blob'a yazılıyor ama URL diske bakıyor →
+ * görsel 404 ("yüklendi ama görünmüyor"). Çözüm: Blob'u YALNIZCA her iki env de
+ * set iken kullan; aksi halde yerel disk (URL ile birebir uyumlu).
+ */
+function useBlob(): boolean {
+  return Boolean(BLOB_TOKEN && process.env.NEXT_PUBLIC_BLOB_BASE_URL);
+}
+
 export function productImageStorageDriver(): "blob" | "local" {
-  return BLOB_TOKEN ? "blob" : "local";
+  return useBlob() ? "blob" : "local";
 }
 
 /**

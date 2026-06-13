@@ -69,3 +69,4 @@ next-env.d.ts
 
 .vercel
 .env*.local
+dev.local.log

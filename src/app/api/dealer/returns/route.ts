@@ -61,6 +61,33 @@ export async function POST(req: NextRequest) {
   }
 
   const itemMap = new Map(order.items.map((it) => [it.id, it]));
+
+  // MÜKERRER İADE ENGELİ: bu siparişten daha önce oluşturulmuş bekleyen/onaylı
+  // iadelerde ürün bazında zaten iade edilen/talep edilen adetler. Aynı kalem
+  // sınırsız iade edilmesin → kalan = sipariş adedi − (önceki + bu taleptekiler).
+  const priorReturns = await prisma.return.findMany({
+    where: { orderId, status: { in: ["PENDING", "APPROVED"] } },
+    select: { items: { select: { productId: true, quantity: true } } },
+  });
+  const alreadyReturned = new Map<string, number>();
+  for (const r of priorReturns) {
+    for (const it of r.items) {
+      alreadyReturned.set(
+        it.productId,
+        (alreadyReturned.get(it.productId) ?? 0) + it.quantity
+      );
+    }
+  }
+  // Sipariş kaleminde ürün bazında toplam adet (aynı ürün birden çok satırda olabilir).
+  const orderedByProduct = new Map<string, number>();
+  for (const it of order.items) {
+    orderedByProduct.set(
+      it.productId,
+      (orderedByProduct.get(it.productId) ?? 0) + it.quantity
+    );
+  }
+  const requestedByProduct = new Map<string, number>();
+
   const returnItems: Prisma.ReturnItemCreateManyReturnInput[] = [];
   let totalAmount = 0;
 
@@ -72,14 +99,21 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (reqItem.quantity > orderItem.quantity) {
+    const pid = orderItem.productId;
+    const ordered = orderedByProduct.get(pid) ?? orderItem.quantity;
+    const prior = alreadyReturned.get(pid) ?? 0;
+    const reqSoFar = requestedByProduct.get(pid) ?? 0;
+    if (prior + reqSoFar + reqItem.quantity > ordered) {
+      const remaining = Math.max(0, ordered - prior - reqSoFar);
       return NextResponse.json(
         {
-          error: `"${orderItem.productName}" için iade adedi sipariş adedini (${orderItem.quantity}) aşamaz.`,
+          error: `"${orderItem.productName}" için iade edilebilir kalan adet: ${remaining} (sipariş ${ordered}, daha önce iade/talep ${prior + reqSoFar}).`,
         },
         { status: 400 }
       );
     }
+    requestedByProduct.set(pid, reqSoFar + reqItem.quantity);
+
     const unitPrice = Number(orderItem.unitPrice);
     const lineTotal = unitPrice * reqItem.quantity;
     totalAmount += lineTotal;

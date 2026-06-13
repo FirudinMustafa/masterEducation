@@ -10,11 +10,17 @@ interface FilterOption {
 }
 
 /**
- * Admin ürün listesi filtre çubuğu — butonsuz/anlık.
- * Arama kutusuna yazıldıkça (debounce ~300ms), stok min/max ve kategori/yayınevi
- * dropdown'ları değiştikçe URL paramları (`ara`, `stokMin`, `stokMax`, `kategori`,
- * `yayinevi`) güncellenir; sunucu bileşeni yeniden render olur. Filtre değişince
- * sayfa 1'e döner (sayfa paramı düşürülür).
+ * Admin ürün listesi filtre çubuğu — butonsuz/anlık ve BAĞIMSIZ filtreler.
+ *
+ * Kategori ve Yayınevi select'leri seçilir seçilmez (debounce'suz) uygulanır ve
+ * her biri DİĞERLERİNDEN BAĞIMSIZDIR: sadece kategori seçmek tek başına filtreler;
+ * yayınevi seçmek şart değildir. Arama ve stok min/max alanları yazılırken
+ * debounce'lu (~300ms) güncellenir. Her filtre değişiminde mevcut diğer paramlar
+ * korunur ve sayfa 1'e dönülür.
+ *
+ * Not: kategori/yayinevi değerleri ayrı state'te TUTULMAZ; doğrudan URL'den
+ * (useSearchParams) okunur ve anında yazılır — böylece eski "state senkron/debounce
+ * birleşmesi" yüzünden tek filtrenin işlememesi sorunu ortadan kalkar.
  */
 export function ProductsFilterBar({
   categories,
@@ -28,13 +34,31 @@ export function ProductsFilterBar({
   const sp = useSearchParams();
   const [pending, startTransition] = useTransition();
 
+  // Metin/sayısal alanlar debounce'lu olduğundan state'te tutulur.
   const [ara, setAra] = useState(sp.get("ara") ?? "");
   const [stokMin, setStokMin] = useState(sp.get("stokMin") ?? "");
   const [stokMax, setStokMax] = useState(sp.get("stokMax") ?? "");
-  const [kategori, setKategori] = useState(sp.get("kategori") ?? "");
-  const [yayinevi, setYayinevi] = useState(sp.get("yayinevi") ?? "");
 
-  // Mount'ta URL'i tekrar yazıp sayfayı sıfırlamamak için ilk çalıştırmayı atla.
+  // Kategori/yayınevi doğrudan URL'den — anında uygulanır.
+  const kategori = sp.get("kategori") ?? "";
+  const yayinevi = sp.get("yayinevi") ?? "";
+
+  // Mevcut URL paramlarını koruyarak verilen güncellemeleri uygular; boş değer
+  // ilgili paramı kaldırır ("Tümü"). Filtre değişince sayfa 1'e döner.
+  function navigate(updates: Record<string, string>) {
+    const params = new URLSearchParams(sp.toString());
+    for (const [k, v] of Object.entries(updates)) {
+      if (v && v.trim()) params.set(k, v.trim());
+      else params.delete(k);
+    }
+    params.delete("sayfa");
+    const qs = params.toString();
+    startTransition(() =>
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    );
+  }
+
+  // Arama + stok aralığı: yazarken her tuşta navigate etmemek için debounce.
   const first = useRef(true);
   useEffect(() => {
     if (first.current) {
@@ -42,20 +66,11 @@ export function ProductsFilterBar({
       return;
     }
     const t = setTimeout(() => {
-      const params = new URLSearchParams();
-      if (ara.trim()) params.set("ara", ara.trim());
-      if (stokMin.trim()) params.set("stokMin", stokMin.trim());
-      if (stokMax.trim()) params.set("stokMax", stokMax.trim());
-      if (kategori) params.set("kategori", kategori);
-      if (yayinevi) params.set("yayinevi", yayinevi);
-      const qs = params.toString();
-      startTransition(() =>
-        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
-      );
+      navigate({ ara, stokMin, stokMax });
     }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ara, stokMin, stokMax, kategori, yayinevi]);
+  }, [ara, stokMin, stokMax]);
 
   return (
     <div className="mb-6 flex flex-wrap items-end gap-3">
@@ -77,7 +92,7 @@ export function ProductsFilterBar({
         </label>
         <select
           value={kategori}
-          onChange={(e) => setKategori(e.target.value)}
+          onChange={(e) => navigate({ kategori: e.target.value })}
           className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold"
         >
           <option value="">Tümü</option>
@@ -95,7 +110,7 @@ export function ProductsFilterBar({
         </label>
         <select
           value={yayinevi}
-          onChange={(e) => setYayinevi(e.target.value)}
+          onChange={(e) => navigate({ yayinevi: e.target.value })}
           className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-gold/40 focus:border-brand-gold"
         >
           <option value="">Tümü</option>

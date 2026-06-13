@@ -12,6 +12,7 @@ export interface ProductRow {
   name: string;
   sku: string;
   publisherName: string | null;
+  categoryName: string | null;
   price: number;
   stockQuantity: number;
   isPublished: boolean;
@@ -214,6 +215,9 @@ export function ProductsTable({ products, categories, publishers }: Props) {
                 <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
                   Yayınevi
                 </th>
+                <th className="text-left p-3 text-xs font-semibold text-gray-500 uppercase">
+                  Kategori
+                </th>
                 <th className="text-right p-3 text-xs font-semibold text-gray-500 uppercase">
                   Fiyat
                 </th>
@@ -255,6 +259,9 @@ export function ProductsTable({ products, categories, publishers }: Props) {
                   </td>
                   <td className="p-3 text-gray-600">
                     {product.publisherName || "-"}
+                  </td>
+                  <td className="p-3 text-gray-600">
+                    {product.categoryName || "-"}
                   </td>
                   <td className="p-3 text-right font-medium">
                     {formatPrice(product.price)}

@@ -17,12 +17,19 @@ function localUploadDir(): string {
   );
 }
 
+// Depolama ile gösterim hizalı olmalı (bkz. product-image-storage.ts): Blob'u
+// yalnız NEXT_PUBLIC_BLOB_BASE_URL set iken kullan, aksi halde yerel disk —
+// yoksa banner Blob'a yüklenir ama URL diske bakar → 404.
+function useBlob(): boolean {
+  return Boolean(BLOB_TOKEN && process.env.NEXT_PUBLIC_BLOB_BASE_URL);
+}
+
 export async function storeBannerImage(
   filename: string,
   bytes: Buffer,
   contentType: string,
 ): Promise<void> {
-  if (BLOB_TOKEN) {
+  if (useBlob()) {
     await put(bannerImageBlobKey(filename), bytes, {
       access: "public",
       addRandomSuffix: false,

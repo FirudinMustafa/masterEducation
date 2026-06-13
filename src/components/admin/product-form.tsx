@@ -380,6 +380,7 @@ export function ProductForm({
             value={form.description}
             onChange={(e) => update("description", e.target.value)}
             rows={5}
+            maxLength={4000}
             placeholder="Ürün detay sayfasında gösterilecek açıklama..."
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
           />

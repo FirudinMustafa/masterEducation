@@ -77,15 +77,33 @@ export function BannerManager({ banners }: { banners: BannerItem[] }) {
     startTransition(() => router.refresh());
   }
 
-  function move(id: string, dir: -1 | 1) {
+  async function move(id: string, dir: -1 | 1) {
     const idx = banners.findIndex((b) => b.id === id);
     const swapIdx = idx + dir;
     if (idx < 0 || swapIdx < 0 || swapIdx >= banners.length) return;
     const a = banners[idx];
     const b = banners[swapIdx];
-    // İki banner'ın displayOrder'ını takas et.
-    patch(a.id, { displayOrder: b.displayOrder });
-    patch(b.id, { displayOrder: a.displayOrder });
+    // İki PATCH'i SIRALI (await) yap — yarış olmasın, displayOrder takası tutarlı
+    // olsun (eski hata: iki fire-and-forget PATCH yarışıp aynı order'da kalabiliyordu).
+    const r1 = await fetch(`/api/admin/banners/${a.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayOrder: b.displayOrder }),
+    });
+    if (!r1.ok) {
+      toast.error("Sıralama değiştirilemedi");
+      return;
+    }
+    const r2 = await fetch(`/api/admin/banners/${b.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayOrder: a.displayOrder }),
+    });
+    if (!r2.ok) {
+      toast.error("Sıralama değiştirilemedi");
+      return;
+    }
+    startTransition(() => router.refresh());
   }
 
   return (
