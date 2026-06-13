@@ -14,7 +14,6 @@ import {
   applyOrderCancelSideEffects,
   applyOrderReactivateSideEffects,
 } from "@/lib/order-side-effects";
-import { ALLOWED_NEXT } from "@/lib/order-status";
 import { shippingAdapter } from "@/lib/adapters/shipping";
 import { ensureInvoiceForOrder, sendPendingInvoice } from "@/lib/invoice-service";
 import { env } from "@/lib/env";
@@ -83,25 +82,17 @@ export async function POST(
   } = parsed.data;
   const isCancellingNow = status === "CANCELLED" && order.status !== "CANCELLED";
   const wasCancelled = order.status === "CANCELLED";
-  // Reaktivasyon: yanlışlıkla iptal edilen sipariş PENDING'e geri alınır.
+  // Reaktivasyon: İptal/İade'den herhangi bir aktif duruma geçiş (serbest seçim).
   // İptal sırasında yapılan stok iadesi + kredi iadesi tersine çevrilir.
-  const isReactivating = wasCancelled && status === "PENDING";
+  const isReactivating = wasCancelled && status !== "CANCELLED";
   const isShippingNow =
     status === "SHIPPED" && order.status !== "SHIPPED";
   const isDeliveringNow =
     status === "DELIVERED" && order.status !== "DELIVERED";
   const statusChanged = status !== order.status;
 
-  // State machine: yalnız izin verilen sonraki state'lere geçiş kabul.
-  // Aynı state'e PATCH (sadece tracking/note güncelleme) izinli.
-  if (statusChanged && !ALLOWED_NEXT[order.status].includes(status)) {
-    return NextResponse.json(
-      {
-        error: `${order.status} durumundan ${status} durumuna gecis yapilamaz. Izin verilen sonraki durumlar: ${ALLOWED_NEXT[order.status].join(", ") || "—"}`,
-      },
-      { status: 400 }
-    );
-  }
+  // Serbest durum seçimi: admin herhangi bir duruma geçebilir (geçiş whitelist'i
+  // kaldırıldı). Bütünlük yan-etki tetikleyicileriyle korunur (iptal/reaktivasyon).
 
   // Auto-generate tracking label on SHIPPED transition if admin didn't provide one.
   // Bu, ileride gercek kargo API entegrasyonu (Shipentegra) icin dokunus

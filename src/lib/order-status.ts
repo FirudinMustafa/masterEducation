@@ -58,6 +58,26 @@ export const DISPLAY_STATUSES: readonly DisplayStatus[] = [
   { key: "iptal-iade", label: "İptal/İade", codes: ["CANCELLED"] },
 ];
 
+/** Bir durum kodunun ait olduğu görünüm kovası. */
+export function bucketForStatus(status: OrderStatus): DisplayStatus {
+  return (
+    DISPLAY_STATUSES.find((d) => d.codes.includes(status)) ?? DISPLAY_STATUSES[0]
+  );
+}
+
+/** Her kovanın kanonik (DB'ye yazılacak) kodu — codes[0]. */
+export function canonicalCode(bucket: DisplayStatus): OrderStatus {
+  return bucket.codes[0];
+}
+
+/**
+ * Durum seçiminin tam listesi (6 kovanın kanonik kodları, kanonik sırada).
+ * Admin tekil/toplu güncellemede HER duruma elle geçebilir (okultedarigim gibi).
+ */
+export const ALL_TARGET_STATUSES: readonly OrderStatus[] = DISPLAY_STATUSES.map(
+  (d) => d.codes[0]
+);
+
 /**
  * Bir filtre parametresini (`durum`) iç enum kodları listesine çevirir.
  * Kabul edilenler: kova anahtarı (örn. "gelen") veya ham enum kodu (örn.
@@ -73,27 +93,26 @@ export function resolveStatusFilter(durum: string): OrderStatus[] | null {
   return byCode ? byCode.codes : null;
 }
 
-export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
-  return ALLOWED_NEXT[from].includes(to);
-}
-
 /**
- * Verilen mevcut durumlar kümesinden ulaşılabilen tüm hedef durumların
- * birleşimi (kanonik sırada). Toplu modal sadece bunları gösterir — hiçbir
- * siparişin ulaşamayacağı hedef listeye girmez.
+ * Serbest durum modeli (2026-06-14): admin herhangi bir duruma elle geçebilir.
+ * Eski sıralı kısıt kaldırıldı (okultedarigim davranışı). ALLOWED_NEXT yalnızca
+ * "doğal akış" referansı olarak kalır. Veri bütünlüğü geçişin TİPİNE bağlı
+ * yan-etkilerle korunur: → İptal/İade'de stok/cari iade; İptal/İade'den çıkışta
+ * reaktivasyon (stok/cari geri yükleme) — bkz. order-side-effects.ts ve route'lar.
  */
-export function reachableTargets(current: readonly OrderStatus[]): OrderStatus[] {
-  const set = new Set<OrderStatus>();
-  for (const s of current) {
-    for (const t of ALLOWED_NEXT[s]) set.add(t);
-  }
-  return STATUS_ORDER.filter((s) => set.has(s));
+export function canTransition(_from: OrderStatus, _to: OrderStatus): boolean {
+  return true;
 }
 
-/** Belirli bir hedefe kaç sipariş geçebilir (geri kalanı backend atlar). */
+/** Toplu/tekil seçim: tüm kovaların kanonik kodları (serbest seçim). */
+export function reachableTargets(_current: readonly OrderStatus[]): OrderStatus[] {
+  return [...ALL_TARGET_STATUSES];
+}
+
+/** Serbest seçimde hedefe tüm seçili siparişler uygulanabilir. */
 export function applicableCount(
   current: readonly OrderStatus[],
-  to: OrderStatus,
+  _to: OrderStatus,
 ): number {
-  return current.filter((s) => canTransition(s, to)).length;
+  return current.length;
 }

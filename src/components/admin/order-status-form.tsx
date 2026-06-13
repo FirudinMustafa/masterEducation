@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CargoCarrier, OrderStatus } from "@prisma/client";
 import { ORDER_STATUS_LABELS } from "@/lib/constants";
-import { ALLOWED_NEXT } from "@/lib/order-status";
+import { DISPLAY_STATUSES, bucketForStatus } from "@/lib/order-status";
 import { CARGO_CARRIERS } from "@/lib/cargo-carriers";
 import { useBusy } from "@/lib/hooks/use-busy";
 import { useErrorScroll } from "@/lib/hooks/use-error-scroll";
@@ -21,10 +21,10 @@ interface OrderStatusFormProps {
   adminNote: string | null;
 }
 
-// Durum geçiş whitelist'i artık tek kaynaktan (@/lib/order-status) geliyor —
-// tekil form, toplu modal ve backend route aynı ALLOWED_NEXT'i paylaşır.
-// Dropdown sadece izinli sonraki state'leri + mevcut state'i (no-op
-// tracking/note güncelleme icin) gösterir.
+// Serbest durum seçimi (okultedarigim modeli): dropdown 6 durum kovasının
+// tamamını gösterir, admin herhangi birine geçebilir. Veri bütünlüğü backend'de
+// geçiş tipine bağlı yan-etkilerle korunur (iptal → iade; iptalden çıkış →
+// reaktivasyon).
 
 const CARRIER_KEYS: CargoCarrier[] = [
   "ARAS",
@@ -62,7 +62,15 @@ export function OrderStatusForm({
   const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
   const errorRef = useErrorScroll(error);
-  const [newStatus, setNewStatus] = useState<OrderStatus>(status);
+  // Serbest seçim: kullanıcı 6 durum kovasından birini seçer. Mevcut durumun
+  // kovası ön-seçili. Aynı kova seçilirse mevcut kod korunur (örn. APPROVED'ı
+  // gereksiz yere PENDING'e çevirmemek için); farklı kova → kanonik kod.
+  const [bucketKey, setBucketKey] = useState(bucketForStatus(status).key);
+  const chosenBucket =
+    DISPLAY_STATUSES.find((d) => d.key === bucketKey) ?? DISPLAY_STATUSES[0];
+  const newStatus: OrderStatus = chosenBucket.codes.includes(status)
+    ? status
+    : chosenBucket.codes[0];
   const [tracking, setTracking] = useState(trackingNumber ?? "");
   const [carrier, setCarrier] = useState<CargoCarrier | "">(
     trackingCarrier ?? "",
@@ -76,7 +84,7 @@ export function OrderStatusForm({
   // Depodan teslimde harici kargo takibi yoktur — takip no alanı gizlenir
   // ve gönderimde boş geçilir.
   const isWarehouse = carrier === "DEPODAN_TESLIM";
-  const isReactivating = status === "CANCELLED" && newStatus === "PENDING";
+  const isReactivating = status === "CANCELLED" && newStatus !== "CANCELLED";
 
   function submit() {
     return run(async () => {
@@ -120,28 +128,21 @@ export function OrderStatusForm({
       <label className="block">
         <span className="block text-xs font-medium text-gray-500 mb-1">Durum</span>
         <select
-          value={newStatus}
-          onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
-          disabled={ALLOWED_NEXT[status].length === 0}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-gold bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
+          value={bucketKey}
+          onChange={(e) => setBucketKey(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-brand-gold bg-white"
         >
-          {/* Mevcut state — no-op (sadece tracking/note güncelleme) */}
-          <option value={status}>{ORDER_STATUS_LABELS[status]}</option>
-          {ALLOWED_NEXT[status].map((s) => (
-            <option key={s} value={s}>
-              {ORDER_STATUS_LABELS[s]}
+          {/* 6 durum kovasının tamamı — serbest seçim (okultedarigim modeli) */}
+          {DISPLAY_STATUSES.map((d) => (
+            <option key={d.key} value={d.key}>
+              {d.label}
             </option>
           ))}
         </select>
-        {ALLOWED_NEXT[status].length === 0 && (
-          <span className="mt-1 block text-[11px] text-gray-400">
-            Teslim edilmiş — final durum.
-          </span>
-        )}
-        {status === "CANCELLED" && (
+        {status === "CANCELLED" && bucketKey !== "iptal-iade" && (
           <span className="mt-1 block text-[11px] text-amber-600">
-            İptal/İade edilmiş — durumu Gelen Sipariş yapıp geri alabilirsiniz
-            (stok ve kredi tersine çevrilir).
+            İptal/İade edilmiş bir siparişi geri alıyorsunuz — stok tekrar düşülecek
+            ve açık hesapta kredi yeniden borçlandırılacak.
           </span>
         )}
       </label>

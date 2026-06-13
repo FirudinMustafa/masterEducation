@@ -133,8 +133,9 @@ export async function POST(req: NextRequest) {
     const isCancellingNow =
       status === "CANCELLED" && order.status !== "CANCELLED";
     const wasCancelled = order.status === "CANCELLED";
-    // Reaktivasyon: yanlışlıkla iptal edilen sipariş PENDING'e geri alınır.
-    const isReactivating = wasCancelled && status === "PENDING";
+    // Reaktivasyon: İptal/İade'den herhangi bir aktif duruma geçiş (serbest seçim).
+    const isReactivating =
+      wasCancelled && status !== undefined && status !== "CANCELLED";
     const isShippingNow =
       status === "SHIPPED" && order.status !== "SHIPPED";
     const isDeliveringNow =
