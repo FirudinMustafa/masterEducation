@@ -28,12 +28,58 @@ interface ParsedRow {
   stockQuantity: number;
   publisherName: string | null;
   categoryName: string | null;
-  anaTur: string | null;
+  description: string | null;
   productType: string | null;
   language: string | null;
   discountGroup: string | null;
   nameEn: string | null;
   isPublished: boolean;
+}
+
+/**
+ * Şablon başlıkları Türkçeleştirildi (2026-06-13). Eski İngilizce başlıklarla
+ * geriye dönük uyum için her kanonik alan birden çok başlık varyantını kabul
+ * eder. Başlıklar normalize edilir (küçük harf, TR karakter sadeleştirme).
+ */
+const HEADER_ALIASES: Record<string, string[]> = {
+  nopId: ["nopid", "sira no", "sıra no", "no", "urun no", "ürün no"],
+  name: ["name", "urun adi", "ürün adı", "ad", "urun"],
+  sku: ["sku", "isbn", "barkod", "urun kodu", "ürün kodu"],
+  price: ["price", "indirimli fiyat", "fiyat", "satis fiyati"],
+  oldPrice: ["oldprice", "ust fiyat", "üst fiyat", "eski fiyat", "liste fiyati"],
+  vatRate: ["vatrate", "kdv", "kdv %", "kdv orani"],
+  stockQuantity: ["stockquantity", "stok", "stok adedi", "adet"],
+  publisher: ["publisher", "yayinevi", "yayınevi"],
+  category: ["category", "kategori"],
+  description: ["description", "urun aciklamasi", "ürün açıklaması", "aciklama", "açıklama", "anatur"],
+  productType: ["producttype", "urun tipi", "ürün tipi", "tip"],
+  language: ["language", "dil"],
+  discountGroup: ["discountgroup", "iskonto grubu", "iskonto"],
+  nameEn: ["nameen", "ingilizce ad"],
+  isPublished: ["ispublished", "yayinda", "yayında"],
+};
+
+function normalizeHeaderCell(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/ı/g, "i")
+    .replace(/İ/g, "i")
+    .replace(/ş/g, "s")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c")
+    .replace(/\s+/g, " ");
+}
+
+/** Bir başlık hücresini kanonik alan adına çevirir (yoksa null). */
+function canonicalHeader(raw: string): string | null {
+  const n = normalizeHeaderCell(raw);
+  for (const [canonical, aliases] of Object.entries(HEADER_ALIASES)) {
+    if (aliases.includes(n)) return canonical;
+  }
+  return null;
 }
 
 interface RowError {
@@ -100,47 +146,45 @@ export async function POST(req: NextRequest) {
   }
 
   // Header auto-detect (branded template row 6-7, clean template row 1).
-  // 'sku' basligi 'isbn' olarak da kabul edilir (geriye donuk uyum).
+  // Başlıklar Türkçe veya eski İngilizce olabilir; canonicalHeader() ile
+  // kanonik alan adına normalize edilir.
   let headerRowNum = -1;
-  const headers: string[] = [];
+  // Sütun index'i → kanonik alan adı (eşleşmeyen sütunlar null).
+  let headers: (string | null)[] = [];
   for (let r = 1; r <= Math.min(15, sheet.rowCount); r++) {
-    const candidate: string[] = [];
+    const candidate: (string | null)[] = [];
     sheet.getRow(r).eachCell((cell, col) => {
-      candidate[col - 1] = cellStr(cell.value);
+      candidate[col - 1] = canonicalHeader(cellStr(cell.value));
     });
-    const hasSkuCol =
-      candidate.includes("sku") || candidate.includes("isbn");
     if (
       candidate.includes("nopId") &&
       candidate.includes("name") &&
-      hasSkuCol
+      candidate.includes("sku")
     ) {
       headerRowNum = r;
-      for (let i = 0; i < candidate.length; i++) headers[i] = candidate[i] ?? "";
+      headers = candidate;
       break;
     }
   }
   if (headerRowNum < 0) {
     return NextResponse.json(
-      { error: "Basliklarda 'nopId', 'name', 'sku' (veya 'isbn') zorunlu (ilk 15 satirda bulunamadi)." },
+      { error: "Basliklarda 'Sıra No', 'Ürün Adı', 'ISBN' (veya eski 'nopId', 'name', 'sku/isbn') zorunlu (ilk 15 satirda bulunamadi)." },
       { status: 400 }
     );
   }
 
   const idx = (name: string) => headers.indexOf(name);
-  // sku basligi yoksa isbn'i kullan
-  const skuCol = idx("sku") >= 0 ? idx("sku") : idx("isbn");
   const cols = {
     nopId: idx("nopId"),
     name: idx("name"),
-    sku: skuCol,
+    sku: idx("sku"),
     price: idx("price"),
     oldPrice: idx("oldPrice"),
     vatRate: idx("vatRate"),
     stockQuantity: idx("stockQuantity"),
     publisher: idx("publisher"),
     category: idx("category"),
-    anaTur: idx("anaTur"),
+    description: idx("description"),
     productType: idx("productType"),
     language: idx("language"),
     discountGroup: idx("discountGroup"),
@@ -242,7 +286,7 @@ export async function POST(req: NextRequest) {
       stockQuantity,
       publisherName: publisherName || null,
       categoryName: categoryName || null,
-      anaTur: cols.anaTur >= 0 ? cellStr(row.getCell(cols.anaTur + 1).value) || null : null,
+      description: cols.description >= 0 ? cellStr(row.getCell(cols.description + 1).value) || null : null,
       productType: cols.productType >= 0 ? cellStr(row.getCell(cols.productType + 1).value) || null : null,
       language: cols.language >= 0 ? cellStr(row.getCell(cols.language + 1).value) || null : null,
       discountGroup: cols.discountGroup >= 0 ? cellStr(row.getCell(cols.discountGroup + 1).value) || null : null,
@@ -316,7 +360,7 @@ export async function POST(req: NextRequest) {
       stockQuantity: r.stockQuantity,
       publisherId,
       categoryId,
-      anaTur: r.anaTur,
+      description: r.description,
       productType: r.productType,
       language: r.language,
       discountGroup: r.discountGroup,
@@ -376,7 +420,7 @@ export async function POST(req: NextRequest) {
               stockQuantity: d.stockQuantity,
               publisherId: d.publisherId,
               categoryId: d.categoryId,
-              anaTur: d.anaTur,
+              description: d.description,
               productType: d.productType,
               language: d.language,
               discountGroup: d.discountGroup,

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
 import type { Metadata } from "next";
-import type { OrderEventType } from "@prisma/client";
+import type { OrderEventType, OrderStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { carrierLabel, carrierTrackingUrl } from "@/lib/cargo-carriers";
 import { rateLimit } from "@/lib/rate-limit";
@@ -260,7 +260,7 @@ export default async function TrackingPage({ params }: PageProps) {
 }
 
 function mapStatusToEventType(
-  status: "PENDING" | "APPROVED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED",
+  status: OrderStatus,
 ): OrderEventType {
   switch (status) {
     case "PENDING":
@@ -270,6 +270,9 @@ function mapStatusToEventType(
     case "PROCESSING":
       return "PROCESSING";
     case "SHIPPED":
+      return "SHIPPED";
+    // Teslim edilemeyen sipariş takvimde "Kargoya verildi" adımında kalır.
+    case "UNDELIVERED":
       return "SHIPPED";
     case "DELIVERED":
       return "DELIVERED";

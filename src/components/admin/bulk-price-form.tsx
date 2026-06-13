@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
+import { useErrorScroll } from "@/lib/hooks/use-error-scroll";
 
 type Mode =
   | "set"
@@ -64,6 +65,7 @@ export function BulkPriceForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useErrorScroll(error);
   const [info, setInfo] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewResp | null>(null);
 
@@ -153,7 +155,7 @@ export function BulkPriceForm({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div ref={errorRef} className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       )}

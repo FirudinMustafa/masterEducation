@@ -38,9 +38,11 @@ export type AuditAction =
   | "CATEGORY_CREATE"
   | "CATEGORY_UPDATE"
   | "CATEGORY_DELETE"
+  | "CATEGORY_MERGE"
   | "PUBLISHER_CREATE"
   | "PUBLISHER_UPDATE"
   | "PUBLISHER_DELETE"
+  | "PUBLISHER_MERGE"
   | "DEALER_PAYMENT"
   | "DEALER_ADJUSTMENT"
   | "DEALER_DOCUMENT_UPLOAD"
@@ -73,7 +75,13 @@ export type AuditAction =
   | "INVOICE_FAIL"
   | "KVKK_APPLICATION_SUBMITTED"
   | "USER_CONSENT_GIVEN"
-  | "ORDER_CONTRACTS_ACCEPTED";
+  | "ORDER_CONTRACTS_ACCEPTED"
+  | "RETURN_CREATE"
+  | "RETURN_APPROVE"
+  | "RETURN_REJECT"
+  | "BANNER_CREATE"
+  | "BANNER_UPDATE"
+  | "BANNER_DELETE";
 
 export type AuditEntity =
   | "dealer"
@@ -86,6 +94,8 @@ export type AuditEntity =
   | "coupon"
   | "review"
   | "invoice"
+  | "return"
+  | "banner"
   | "system"
   | "kvkk_application"
   | "consent";

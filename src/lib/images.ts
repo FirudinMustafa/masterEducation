@@ -28,3 +28,20 @@ export function productImageUrl(filename: string): string {
 export function productImageBlobKey(filename: string): string {
   return `products/${filename}`;
 }
+
+/**
+ * Ana sayfa banner görselleri — ürün görselleriyle aynı mantık, `banners/`
+ * prefix'i altında. Blob env'i yoksa lokal `/images/banners/`.
+ */
+export function bannerImageUrl(filename: string): string {
+  if (!filename) return "";
+  const base = process.env.NEXT_PUBLIC_BLOB_BASE_URL?.replace(/\/+$/, "");
+  if (base) {
+    return `${base}/banners/${filename}`;
+  }
+  return `/images/banners/${filename}`;
+}
+
+export function bannerImageBlobKey(filename: string): string {
+  return `banners/${filename}`;
+}

@@ -18,7 +18,8 @@ async function getStats() {
   ] = await Promise.all([
     prisma.product.count({ where: { isPublished: true } }),
     prisma.order.count(),
-    prisma.order.count({ where: { status: "PENDING" } }),
+    // "Gelen Sipariş" kovası (PENDING + APPROVED).
+    prisma.order.count({ where: { status: { in: ["PENDING", "APPROVED"] } } }),
     prisma.dealer.count(),
     prisma.dealer.count({ where: { status: "PENDING" } }),
     prisma.order.findMany({
@@ -244,9 +245,9 @@ export default async function AdminDashboardPage() {
                     </td>
                     <td className="p-3">
                       <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                        order.status === "PENDING" ? "bg-amber-100 text-amber-700" :
-                        order.status === "APPROVED" ? "bg-blue-100 text-blue-700" :
+                        order.status === "PENDING" || order.status === "APPROVED" ? "bg-amber-100 text-amber-700" :
                         order.status === "SHIPPED" ? "bg-purple-100 text-purple-700" :
+                        order.status === "UNDELIVERED" ? "bg-orange-100 text-orange-700" :
                         order.status === "DELIVERED" ? "bg-green-100 text-green-700" :
                         order.status === "CANCELLED" ? "bg-red-100 text-red-700" :
                         "bg-gray-100 text-gray-700"

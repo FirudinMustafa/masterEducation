@@ -32,6 +32,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: "/bayi/iade",
+    label: "İadelerim",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+      </svg>
+    ),
+  },
+  {
     href: "/bayi/belgeler",
     label: "Belgelerim",
     icon: (

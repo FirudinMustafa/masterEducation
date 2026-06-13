@@ -80,8 +80,7 @@ export async function PATCH(
       }),
       ...(data.publisherId !== undefined && { publisherId: data.publisherId }),
       ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
-      ...(data.anaTur !== undefined && { anaTur: data.anaTur }),
-      ...(data.detayTur !== undefined && { detayTur: data.detayTur }),
+      ...(data.description !== undefined && { description: data.description }),
       ...(data.language !== undefined && { language: data.language }),
       ...(data.productType !== undefined && { productType: data.productType }),
       ...(data.discountGroup !== undefined && {

@@ -23,8 +23,8 @@ type Field =
   | "discountGroup";
 
 const FIELD_LABELS: Record<Field, string> = {
-  price: "Fiyat (TL)",
-  oldPrice: "Eski Fiyat (TL)",
+  price: "İndirimli Fiyat (TL)",
+  oldPrice: "Üst Fiyat (TL)",
   vatRate: "KDV (%)",
   stockQuantity: "Stok",
   categoryId: "Kategori",

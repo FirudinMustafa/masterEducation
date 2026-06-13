@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { isValidLocation } from "@/lib/turkey-locations";
 
+// Zod varsayılan hata mesajlarını Türkçeleştir (2026-06-13). Özel mesaj verilen
+// alanlar değişmez; mesajsız alanlar (min/max/tip hataları) artık İngilizce yerine
+// Türkçe döner. validations.ts tüm API route'larca import edildiği için bu global
+// ayar her yerde uygulanır.
+z.config(z.locales.tr());
+
 /**
  * F-0015: Ortak şifre kurallari — tüm şifre alanlari ayni minimum gucle.
  * (Mevcut DB kullanıcılarinin şifreleri etkilenmez; sadece yeni/degisen
@@ -303,7 +309,7 @@ export const dealerStatusUpdateSchema = z.object({
 );
 
 export const orderStatusUpdateSchema = z.object({
-  status: z.enum(["PENDING", "APPROVED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"]),
+  status: z.enum(["PENDING", "APPROVED", "PROCESSING", "SHIPPED", "UNDELIVERED", "DELIVERED", "CANCELLED"]),
   trackingNumber: z.string().max(100).optional().or(z.literal("")).transform((v) => v || null),
   trackingCarrier: z
     .enum([
@@ -368,13 +374,15 @@ const productBaseShape = {
   oldPrice: z.number().min(0).max(999_999).optional().nullable(),
   vatRate: z.number().min(0).max(100),
   stockQuantity: z.number().int().min(0).max(1_000_000),
-  // Zorunlu sınıflandırma alanları (2026-06-08 talebi).
-  publisherId: requiredString(64, "Yayınevi"),
-  categoryId: requiredString(64, "Kategori"),
-  anaTur: requiredString(100, "Ana Tür"),
-  detayTur: requiredString(100, "Detay Tür"),
-  language: requiredString(50, "Dil"),
-  productType: requiredString(50, "Ürün Tipi"),
+  // Yayınevi/Kategori formda (create) zorunlu tutulur; şema seviyesinde opsiyonel
+  // bırakılır ki eski (kategorisiz) ürünler düzenlenip kaydedilebilsin.
+  publisherId: nullableString(64),
+  categoryId: nullableString(64),
+  // Ana tür → Ürün Açıklaması (2026-06-13). Detay tür kaldırıldı. Bu alanlar artık
+  // opsiyonel — eski ürünlerde boş olabilir, düzenleme bunları zorunlu kılmamalı.
+  description: nullableString(4000),
+  language: nullableString(50),
+  productType: nullableString(50),
   discountGroup: nullableString(100),
   authorCode: nullableString(64),
   isPublished: z.boolean(),
@@ -499,6 +507,37 @@ export const contactFormSchema = z.object({
   phone: optionalTrPhoneSchema,
   subject: z.string().min(2).max(200),
   message: z.string().min(10).max(2000),
+});
+
+// Bayi iade talebi — geçmiş bir siparişten ürün+adet seçilerek oluşturulur.
+export const returnCreateSchema = z.object({
+  orderId: z.string().min(1),
+  reason: z
+    .string()
+    .max(1000)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null)),
+  items: z
+    .array(
+      z.object({
+        orderItemId: z.string().min(1),
+        quantity: z.number().int().min(1).max(1_000_000),
+      })
+    )
+    .min(1, "En az bir ürün seçilmelidir.")
+    .max(500),
+});
+
+// Admin iade işleme — onay veya red (red için sebep notu önerilir).
+export const returnProcessSchema = z.object({
+  action: z.enum(["APPROVE", "REJECT"]),
+  adminNote: z
+    .string()
+    .max(1000)
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v ? v : null)),
 });
 
 export function flattenZodError(error: z.ZodError): string {

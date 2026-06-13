@@ -25,6 +25,7 @@ const STATUS_TO_EVENT: Record<OrderStatus, OrderEventType> = {
   APPROVED: "APPROVED",
   PROCESSING: "PROCESSING",
   SHIPPED: "SHIPPED",
+  UNDELIVERED: "UNDELIVERED",
   DELIVERED: "DELIVERED",
   CANCELLED: "CANCELLED",
 };
@@ -33,7 +34,7 @@ const bodySchema = z
   .object({
     orderIds: z.array(z.string().min(1)).min(1).max(MAX_IDS),
     status: z
-      .enum(["PENDING", "APPROVED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"])
+      .enum(["PENDING", "APPROVED", "PROCESSING", "SHIPPED", "UNDELIVERED", "DELIVERED", "CANCELLED"])
       .optional(),
     trackingCarrier: z
       .enum([

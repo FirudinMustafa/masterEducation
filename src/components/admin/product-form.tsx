@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ProductImageStaging } from "./product-image-staging";
 import { PRODUCT_LANGUAGES } from "@/lib/constants";
+import { useErrorScroll } from "@/lib/hooks/use-error-scroll";
 
 interface Option {
   id: string;
@@ -19,8 +20,7 @@ export interface ProductFormValues {
   stockQuantity: string;
   publisherId: string;
   categoryId: string;
-  anaTur: string;
-  detayTur: string;
+  description: string;
   language: string;
   productType: string;
   discountGroup: string;
@@ -57,6 +57,7 @@ export function ProductForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [stagedImages, setStagedImages] = useState<File[]>([]);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const errorRef = useErrorScroll(error);
 
   function update<K extends keyof ProductFormValues>(
     key: K,
@@ -86,19 +87,19 @@ export function ProductForm({
       return;
     }
 
-    // Zorunlu sınıflandırma alanları (2026-06-08 talebi).
-    const requiredFields: Array<[string, string]> = [
-      [form.publisherId, "Yayınevi"],
-      [form.categoryId, "Kategori"],
-      [form.anaTur.trim(), "Ana Tür"],
-      [form.detayTur.trim(), "Detay Tür"],
-      [form.language.trim(), "Dil"],
-      [form.productType.trim(), "Ürün Tipi"],
-    ];
-    const missing = requiredFields.find(([v]) => !v);
-    if (missing) {
-      setError(`${missing[1]} alanı zorunludur.`);
-      return;
+    // Yeni ürün eklerken Yayınevi + Kategori zorunlu (doğru sınıflandırma için).
+    // Düzenlemede zorunlu tutulmaz — eski ürünlerde bu alanlar boş olabilir ve
+    // kullanıcı yalnızca fiyat/stok güncellemek isteyebilir.
+    if (mode === "create") {
+      const requiredFields: Array<[string, string]> = [
+        [form.publisherId, "Yayınevi"],
+        [form.categoryId, "Kategori"],
+      ];
+      const missing = requiredFields.find(([v]) => !v);
+      if (missing) {
+        setError(`${missing[1]} alanı zorunludur.`);
+        return;
+      }
     }
 
     const body = {
@@ -110,8 +111,7 @@ export function ProductForm({
       stockQuantity: stock,
       publisherId: form.publisherId || null,
       categoryId: form.categoryId || null,
-      anaTur: form.anaTur.trim() || null,
-      detayTur: form.detayTur.trim() || null,
+      description: form.description.trim() || null,
       language: form.language.trim() || null,
       productType: form.productType.trim() || null,
       discountGroup: form.discountGroup.trim() || null,
@@ -150,6 +150,7 @@ export function ProductForm({
       if (stagedImages.length > 0) {
         let okCount = 0;
         let failCount = 0;
+        let lastErr: string | null = null;
         for (let i = 0; i < stagedImages.length; i++) {
           setUploadStatus(`Görsel yükleniyor ${i + 1}/${stagedImages.length}...`);
           const fd = new FormData();
@@ -158,12 +159,23 @@ export function ProductForm({
             method: "POST",
             body: fd,
           });
-          if (r.ok) okCount++;
-          else failCount++;
+          if (r.ok) {
+            okCount++;
+          } else {
+            failCount++;
+            const errData = (await r.json().catch(() => ({}))) as { error?: string };
+            lastErr = errData.error ?? `HTTP ${r.status}`;
+          }
         }
         setUploadStatus(null);
         if (failCount > 0) {
-          setError(`${okCount} görsel yüklendi, ${failCount} başarısız.`);
+          // Gerçek sunucu hatasını göster (sadece adet değil) — "görsel
+          // kaydolmuyor" şikayetinin kök nedeni görünür olsun.
+          setError(
+            `${okCount} görsel yüklendi, ${failCount} başarısız.${
+              lastErr ? ` Hata: ${lastErr}` : ""
+            }`
+          );
         } else {
           setSuccess(`Ürün oluşturuldu, ${okCount} görsel yüklendi.`);
         }
@@ -206,7 +218,7 @@ export function ProductForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div ref={errorRef} className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -240,7 +252,7 @@ export function ProductForm({
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
             />
           </Field>
-          <Field label="Yazar / Kod">
+          <Field label="Yazar / Kod (Opsiyonel)">
             <input
               value={form.authorCode}
               onChange={(e) => update("authorCode", e.target.value)}
@@ -253,7 +265,7 @@ export function ProductForm({
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
         <h2 className="font-semibold text-brand-black">Fiyat ve Stok</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Field label="Fiyat (TL) *" required>
+          <Field label="İndirimli Fiyat (TL) *" required>
             <input
               type="number"
               step="0.01"
@@ -264,7 +276,7 @@ export function ProductForm({
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
-          <Field label="Eski Fiyat (TL)">
+          <Field label="Üst Fiyat (TL)">
             <input
               type="number"
               step="0.01"
@@ -297,7 +309,7 @@ export function ProductForm({
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
-          <Field label="İskonto Grubu">
+          <Field label="İskonto Grubu (Opsiyonel)">
             <input
               value={form.discountGroup}
               onChange={(e) => update("discountGroup", e.target.value)}
@@ -340,27 +352,10 @@ export function ProductForm({
               ))}
             </select>
           </Field>
-          <Field label="Ana Tur *" required>
-            <input
-              value={form.anaTur}
-              onChange={(e) => update("anaTur", e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-            />
-          </Field>
-          <Field label="Detay Tur *" required>
-            <input
-              value={form.detayTur}
-              onChange={(e) => update("detayTur", e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-            />
-          </Field>
-          <Field label="Dil *" required>
+          <Field label="Dil">
             <select
               value={form.language}
               onChange={(e) => update("language", e.target.value)}
-              required
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white"
             >
               <option value="">-- Seç --</option>
@@ -371,15 +366,24 @@ export function ProductForm({
               ))}
             </select>
           </Field>
-          <Field label="Ürün Tipi *" required>
+          <Field label="Ürün Tipi">
             <input
               value={form.productType}
               onChange={(e) => update("productType", e.target.value)}
-              required
+              placeholder="Örneğin Ders kitabı gibi"
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
             />
           </Field>
         </div>
+        <Field label="Ürün Açıklaması">
+          <textarea
+            value={form.description}
+            onChange={(e) => update("description", e.target.value)}
+            rows={5}
+            placeholder="Ürün detay sayfasında gösterilecek açıklama..."
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+          />
+        </Field>
       </div>
 
       {mode === "create" && (

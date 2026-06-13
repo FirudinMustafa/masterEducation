@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 /**
  * Yeni ürün create akışı için "staging" görsel listesi.
@@ -17,6 +17,17 @@ export interface ProductImageStagingProps {
   disabled?: boolean;
 }
 
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif)$/i;
+
+function isAcceptedImage(f: File): boolean {
+  // Bazı tarayıcılar/dosyalar boş veya beklenmedik MIME gönderebilir; bu durumda
+  // uzantıya göre kabul et ki seçilen görsel sessizce düşmesin.
+  if (["image/jpeg", "image/png", "image/webp", "image/gif"].includes(f.type)) {
+    return true;
+  }
+  return IMAGE_EXT.test(f.name);
+}
+
 export function ProductImageStaging({ files, onChange, disabled }: ProductImageStagingProps) {
   // Preview URL'leri files'tan türet — useEffect+setState yerine useMemo
   // (React 19 önerisi: state hesaplanabiliyorsa effect kullanma).
@@ -24,6 +35,8 @@ export function ProductImageStaging({ files, onChange, disabled }: ProductImageS
     () => files.map((f) => URL.createObjectURL(f)),
     [files]
   );
+
+  const [notice, setNotice] = useState<string | null>(null);
 
   // Memoize edilen blob URL'leri component unmount olduğunda revoke et.
   useEffect(() => {
@@ -34,8 +47,13 @@ export function ProductImageStaging({ files, onChange, disabled }: ProductImageS
 
   function add(picked: FileList | null) {
     if (!picked) return;
-    const arr = Array.from(picked).filter((f) =>
-      ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(f.type)
+    const all = Array.from(picked);
+    const arr = all.filter(isAcceptedImage);
+    const rejected = all.length - arr.length;
+    setNotice(
+      rejected > 0
+        ? `${rejected} dosya desteklenmeyen formatta (JPG/PNG/WEBP/GIF olmalı) ve atlandı.`
+        : null
     );
     if (arr.length === 0) return;
     onChange([...files, ...arr]);
@@ -69,6 +87,9 @@ export function ProductImageStaging({ files, onChange, disabled }: ProductImageS
           />
         </label>
       </div>
+      {notice && (
+        <p className="text-sm text-amber-600">{notice}</p>
+      )}
       {files.length === 0 ? (
         <p className="text-sm text-gray-500">Henüz görsel secilmedi.</p>
       ) : (

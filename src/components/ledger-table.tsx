@@ -6,6 +6,7 @@ const KIND_LABELS: Record<LedgerKind, string> = {
   ORDER_CANCEL_CREDIT: "Sipariş İptali",
   PAYMENT_CREDIT: "Tahsilat",
   MANUAL_ADJUSTMENT: "Manuel Ayarlama",
+  RETURN_CREDIT: "İade Alacağı",
 };
 
 const KIND_COLORS: Record<LedgerKind, string> = {
@@ -13,6 +14,7 @@ const KIND_COLORS: Record<LedgerKind, string> = {
   ORDER_CANCEL_CREDIT: "bg-blue-100 text-blue-700",
   PAYMENT_CREDIT: "bg-emerald-100 text-emerald-700",
   MANUAL_ADJUSTMENT: "bg-gray-100 text-gray-700",
+  RETURN_CREDIT: "bg-blue-100 text-blue-700",
 };
 
 export interface LedgerRow {

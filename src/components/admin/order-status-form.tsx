@@ -7,6 +7,7 @@ import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import { ALLOWED_NEXT } from "@/lib/order-status";
 import { CARGO_CARRIERS } from "@/lib/cargo-carriers";
 import { useBusy } from "@/lib/hooks/use-busy";
+import { useErrorScroll } from "@/lib/hooks/use-error-scroll";
 import { toast } from "@/stores/toast-store";
 import { ConfirmDialog } from "./confirm-dialog";
 
@@ -60,6 +61,7 @@ export function OrderStatusForm({
   const router = useRouter();
   const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useErrorScroll(error);
   const [newStatus, setNewStatus] = useState<OrderStatus>(status);
   const [tracking, setTracking] = useState(trackingNumber ?? "");
   const [carrier, setCarrier] = useState<CargoCarrier | "">(
@@ -110,7 +112,7 @@ export function OrderStatusForm({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+        <div ref={errorRef} className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -138,8 +140,8 @@ export function OrderStatusForm({
         )}
         {status === "CANCELLED" && (
           <span className="mt-1 block text-[11px] text-amber-600">
-            İptal edilmiş — durumu Onay Bekliyor yapıp geri alabilirsiniz (stok
-            ve kredi tersine çevrilir).
+            İptal/İade edilmiş — durumu Gelen Sipariş yapıp geri alabilirsiniz
+            (stok ve kredi tersine çevrilir).
           </span>
         )}
       </label>
@@ -227,8 +229,8 @@ export function OrderStatusForm({
         message={
           isReactivating ? (
             <>
-              Bu sipariş <strong>İptal Edildi</strong> durumundan{" "}
-              <strong>Onay Bekliyor</strong> durumuna geri alınacak. Stok tekrar
+              Bu sipariş <strong>İptal/İade</strong> durumundan{" "}
+              <strong>Gelen Sipariş</strong> durumuna geri alınacak. Stok tekrar
               düşülecek ve açık hesapta kredi yeniden borçlandırılacak.
             </>
           ) : (

@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
+import { toast } from "@/stores/toast-store";
 import { ProductsBulkUpdateModal, type Patch } from "./products-bulk-update-modal";
 
 export interface ProductRow {
@@ -82,9 +83,12 @@ export function ProductsTable({ products, categories, publishers }: Props) {
     };
     if (!res.ok) {
       setError(data.error ?? "Toplu güncelleme başarısız.");
+      toast.error("Toplu güncelleme başarısız", data.error ?? undefined);
       return;
     }
-    setInfo(`${data.updated ?? 0} ürün güncellendi.`);
+    const updated = data.updated ?? 0;
+    setInfo(`${updated} ürün güncellendi.`);
+    toast.success("Toplu güncelleme tamamlandı", `${updated} ürün güncellendi.`);
     setShowModal(false);
     clearSelection();
     startTransition(() => router.refresh());
@@ -121,11 +125,12 @@ export function ProductsTable({ products, categories, publishers }: Props) {
     };
     if (!res.ok) {
       setError(data.error ?? "Silme başarısız.");
+      toast.error("Silme başarısız", data.error ?? undefined);
       return;
     }
-    setInfo(
-      `${data.hardDeleted ?? 0} ürün silindi, ${data.softDeleted ?? 0} ürün yayin disi yapildi.`
-    );
+    const msg = `${data.hardDeleted ?? 0} ürün silindi, ${data.softDeleted ?? 0} ürün yayin disi yapildi.`;
+    setInfo(msg);
+    toast.success("Silme tamamlandı", msg);
     clearSelection();
     startTransition(() => router.refresh());
   }

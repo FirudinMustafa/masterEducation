@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AdminSearchBar } from "@/components/admin/search-bar";
 import { DealersTable, type DealerRow } from "@/components/admin/dealers-table";
+import { formatPrice } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Bayiler - Admin" };
 
@@ -37,6 +38,31 @@ export default async function AdminDealersPage({ searchParams }: PageProps) {
     orderBy: { createdAt: "desc" },
   });
 
+  // Bayi siparişleri özeti (dashboard kartları). Tüm bayi siparişleri baz alınır
+  // (liste filtresinden bağımsız). İade tutarı: onaylanmış bayi iadelerinin toplamı.
+  const dealerOrderWhere = { user: { dealer: { isNot: null } } };
+  const [orderCount, revenueAgg, refundAgg, itemAgg] = await Promise.all([
+    prisma.order.count({ where: dealerOrderWhere }),
+    prisma.order.aggregate({
+      _sum: { total: true },
+      where: { ...dealerOrderWhere, status: { not: "CANCELLED" } },
+    }),
+    prisma.return.aggregate({
+      _sum: { totalAmount: true },
+      where: { status: "APPROVED" },
+    }),
+    prisma.orderItem.aggregate({
+      _sum: { quantity: true },
+      where: { order: dealerOrderWhere },
+    }),
+  ]);
+  const stats = [
+    { label: "Toplam Sipariş", value: orderCount.toLocaleString("tr-TR"), tone: "bg-blue-50 text-blue-700" },
+    { label: "Toplam Ürün", value: (itemAgg._sum.quantity ?? 0).toLocaleString("tr-TR"), tone: "bg-indigo-50 text-indigo-700" },
+    { label: "Toplam Ciro", value: formatPrice(Number(revenueAgg._sum.total ?? 0)), tone: "bg-emerald-50 text-emerald-700" },
+    { label: "İade Tutarı", value: formatPrice(Number(refundAgg._sum.totalAmount ?? 0)), tone: "bg-rose-50 text-rose-700" },
+  ];
+
   const statusFilters = [
     { value: "", label: "Tümu" },
     { value: "PENDING", label: "Bekleyen" },
@@ -58,6 +84,23 @@ export default async function AdminDealersPage({ searchParams }: PageProps) {
         >
           + Yeni Bayi Ekle
         </Link>
+      </div>
+
+      {/* Bayi siparişleri özet kartları */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        {stats.map((s) => (
+          <div
+            key={s.label}
+            className="rounded-xl border border-gray-200 bg-white p-4"
+          >
+            <span
+              className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium ${s.tone}`}
+            >
+              {s.label}
+            </span>
+            <p className="mt-2 text-2xl font-bold text-brand-black">{s.value}</p>
+          </div>
+        ))}
       </div>
 
       <AdminSearchBar

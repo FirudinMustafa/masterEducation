@@ -6,13 +6,24 @@ import {
 } from "@/lib/session-pricing";
 import { getProductRatings } from "@/lib/product-ratings";
 import { Hero } from "@/components/home/hero";
+import { BannerSlider } from "@/components/home/banner-slider";
+import { CategoryShowcase } from "@/components/home/category-showcase";
 import { PublisherMarquee } from "@/components/home/publisher-marquee";
-import { CategoryBento } from "@/components/home/category-bento";
 import { ProductCarousel } from "@/components/home/product-carousel";
-import { SpotlightFeature } from "@/components/home/spotlight-feature";
-import { StatsStrip } from "@/components/home/stats-strip";
 import { DealerCTA } from "@/components/home/dealer-cta";
 import { productImageUrl } from "@/lib/images";
+
+// Ana sayfa kategori vitrininde tercih edilen sıra (8 ana kategori).
+const HOMEPAGE_CATEGORY_ORDER = [
+  "ders-kitabi",
+  "yardimci-ders-kaynagi",
+  "hikaye-kitabi",
+  "skills-kitabi",
+  "dijital",
+  "kultur-kitabi",
+  "ogretmen-kitabi",
+  "sozluk",
+];
 
 async function mapWithPricing(
   products: Array<{
@@ -73,7 +84,7 @@ async function getData(ctx: SessionPricingContext) {
     publisher: { select: { name: true } },
     images: { orderBy: [{ displayOrder: "asc" as const }, { pictureId: "asc" as const }], take: 1 },
   };
-  const [newArrivals, topSellers, categories, publishers, productCount, publisherCount] =
+  const [newArrivals, topSellers, categories, publishers, productCount, publisherCount, banners] =
     await Promise.all([
       prisma.product.findMany({
         where: {
@@ -108,18 +119,36 @@ async function getData(ctx: SessionPricingContext) {
       }),
       prisma.product.count({ where: { isPublished: true } }),
       prisma.publisher.count(),
+      prisma.banner.findMany({
+        where: { isActive: true },
+        orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+        select: { id: true, imageUrl: true, linkUrl: true, title: true },
+      }),
     ]);
   const [mappedNew, mappedTop] = await Promise.all([
     mapWithPricing(newArrivals, ctx),
     mapWithPricing(topSellers, ctx),
   ]);
+
+  // Kategorileri 8 ana kategori tercih sırasına göre diz (vitrinde tutarlı sıra).
+  const mappedCategories = categories.map((c) => ({ ...c, count: c._count.products }));
+  mappedCategories.sort((a, b) => {
+    const ia = HOMEPAGE_CATEGORY_ORDER.indexOf(a.slug);
+    const ib = HOMEPAGE_CATEGORY_ORDER.indexOf(b.slug);
+    if (ia === -1 && ib === -1) return a.name.localeCompare(b.name, "tr");
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+
   return {
     newArrivals: mappedNew,
     topSellers: mappedTop,
-    categories: categories.map((c) => ({ ...c, count: c._count.products })),
+    categories: mappedCategories,
     publishers: publishers.map((p) => ({ ...p, count: p._count.products })),
     productCount,
     publisherCount,
+    banners,
   };
 }
 
@@ -141,35 +170,38 @@ export default async function HomePage() {
 
   return (
     <div className="bg-neutral-50">
-      <Hero
-        productCount={data.productCount}
-        publisherCount={data.publisherCount}
-        showcase={showcase}
-      />
+      {/* İlk bölüm: admin'den yönetilen banner slider; banner yoksa sade hero. */}
+      {data.banners.length > 0 ? (
+        <BannerSlider slides={data.banners} />
+      ) : (
+        <Hero
+          productCount={data.productCount}
+          publisherCount={data.publisherCount}
+          showcase={showcase}
+        />
+      )}
 
-      <PublisherMarquee publishers={data.publishers} />
+      {/* 8 ana kategori vitrini */}
+      <CategoryShowcase categories={data.categories.slice(0, 8)} />
 
-      <CategoryBento categories={data.categories} />
-
-      <SpotlightFeature
-        products={data.newArrivals.filter((p) => p.imageSrc).slice(0, 3)}
-        eyebrow="Yeni Sezon"
-        title="Bu sezon one cikanlar"
-        italicWord="one cikanlar"
+      {/* Altında devam eden ürün slide'ı */}
+      <ProductCarousel
+        products={data.newArrivals}
+        eyebrow="Yeni Gelenler"
+        title="Yeni eklenen ürünler"
+        subtitle="Kataloğa yeni eklenen kitaplar"
+        link="/urunler?siralama=yeni"
       />
 
       <ProductCarousel
         products={data.topSellers}
-        eyebrow="Editor Sectimi"
-        title="Çok satan klasikler"
-        subtitle="Bu hafta en çok tercih edilen kitaplar"
-        link="/urunler?siralama=çok-satan"
+        eyebrow="Öne Çıkanlar"
+        title="Çok tercih edilenler"
+        subtitle="Bu hafta en çok ilgi gören kitaplar"
+        link="/urunler"
       />
 
-      <StatsStrip
-        productCount={data.productCount}
-        publisherCount={data.publisherCount}
-      />
+      <PublisherMarquee publishers={data.publishers} />
 
       <DealerCTA />
     </div>

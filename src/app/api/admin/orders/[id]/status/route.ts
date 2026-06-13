@@ -14,6 +14,7 @@ import {
   applyOrderCancelSideEffects,
   applyOrderReactivateSideEffects,
 } from "@/lib/order-side-effects";
+import { ALLOWED_NEXT } from "@/lib/order-status";
 import { shippingAdapter } from "@/lib/adapters/shipping";
 import { ensureInvoiceForOrder, sendPendingInvoice } from "@/lib/invoice-service";
 import { env } from "@/lib/env";
@@ -23,28 +24,13 @@ const STATUS_TO_EVENT: Record<OrderStatus, OrderEventType> = {
   APPROVED: "APPROVED",
   PROCESSING: "PROCESSING",
   SHIPPED: "SHIPPED",
+  UNDELIVERED: "UNDELIVERED",
   DELIVERED: "DELIVERED",
   CANCELLED: "CANCELLED",
 };
 
-/**
- * Order status state machine — Faz 19 Decision 1A: ardışık geçiş whitelist.
- * PENDING→APPROVED→PROCESSING→SHIPPED→DELIVERED, her aşamadan CANCELLED.
- * Atlamalı geçiş (PENDING→DELIVERED, APPROVED→SHIPPED vb.) reddedilir.
- * DELIVERED final state'tir. CANCELLED yalnız PENDING'e geri alınabilir
- * (yanlışlıkla iptal edilen sipariş için "reaktivasyon" — iptal yan etkileri
- * tersine çevrilir). Aynı state'e PATCH (sadece tracking/note güncelleme)
- * izinlidir — `statusChanged` guard'ı ile kontrol. Bu kural bulk-status route
- * ile birebir aynı.
- */
-const ALLOWED_NEXT: Record<OrderStatus, readonly OrderStatus[]> = {
-  PENDING: ["APPROVED", "CANCELLED"],
-  APPROVED: ["PROCESSING", "CANCELLED"],
-  PROCESSING: ["SHIPPED", "CANCELLED"],
-  SHIPPED: ["DELIVERED", "CANCELLED"],
-  DELIVERED: [],
-  CANCELLED: ["PENDING"],
-};
+// Durum geçiş whitelist'i TEK KAYNAK @/lib/order-status'ten gelir (tekil form,
+// toplu modal ve bulk route ile birebir aynı). okultedarigim akışı orada tanımlı.
 
 export async function POST(
   req: NextRequest,

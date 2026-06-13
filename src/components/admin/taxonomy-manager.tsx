@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useBusy } from "@/lib/hooks/use-busy";
+import { useErrorScroll } from "@/lib/hooks/use-error-scroll";
+import { toast } from "@/stores/toast-store";
 
 export interface TaxonomyItem {
   id: string;
@@ -24,6 +27,8 @@ const LABELS = {
     basePath: "/api/admin/categories",
     storefrontParam: "kategori",
     fkLabel: "kategori",
+    // Admin ürün listesinde bu taksonomiye göre filtre paramı (2.3 — içerik görme).
+    adminFilterParam: "kategori",
   },
   publisher: {
     singular: "Yayınevi",
@@ -31,6 +36,7 @@ const LABELS = {
     basePath: "/api/admin/publishers",
     storefrontParam: "yayınevi",
     fkLabel: "yayınevi",
+    adminFilterParam: "yayinevi",
   },
 };
 
@@ -40,12 +46,16 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
   // Tek useBusy: oluştur + duzenle kaydet + sil paylasir; race koruma.
   const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useErrorScroll(error);
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"ana" | "detay">("ana");
   const [editing, setEditing] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editType, setEditType] = useState<"ana" | "detay">("ana");
   const [filter, setFilter] = useState("");
+  // Birleştirme: kaynak satır id'si + seçilen hedef id'si.
+  const [mergingId, setMergingId] = useState<string | null>(null);
+  const [mergeTargetId, setMergeTargetId] = useState("");
 
   // Liste kisaysa filtre gizli — 15+ kayıt oldugunda kullanıcınin ise yarar.
   const showFilter = items.length > 15;
@@ -143,10 +153,46 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
     });
   }
 
+  async function mergeItem(sourceId: string, sourceName: string) {
+    const target = items.find((i) => i.id === mergeTargetId);
+    if (!target) return;
+    const proceed = confirm(
+      `"${sourceName}" içindeki tüm ürünler "${target.name}" altına taşınacak ve "${sourceName}" silinecek.\n\n(İşlem geri alınamaz)`
+    );
+    if (!proceed) return;
+    await run(async () => {
+      setError(null);
+      const res = await fetch(`${labels.basePath}/merge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceIds: [sourceId], targetId: mergeTargetId }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        movedProducts?: number;
+        targetName?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        const msg = data.error ?? "Birleştirme başarısız.";
+        setError(msg);
+        toast.error("Birleştirme başarısız", msg);
+        return;
+      }
+      toast.success(
+        "Birleştirildi",
+        `${data.movedProducts ?? 0} ürün "${data.targetName}" altına taşındı.`
+      );
+      setMergingId(null);
+      setMergeTargetId("");
+      router.refresh();
+    });
+  }
+
   return (
     <div className="space-y-4">
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div ref={errorRef} className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       )}
@@ -288,8 +334,58 @@ export function TaxonomyManager({ kind, items }: TaxonomyManagerProps) {
                           İptal
                         </button>
                       </>
+                    ) : mergingId === item.id ? (
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-xs text-gray-500">Hedef:</span>
+                        <select
+                          value={mergeTargetId}
+                          onChange={(e) => setMergeTargetId(e.target.value)}
+                          className="px-2 py-1 border border-gray-200 rounded text-xs bg-white max-w-[160px]"
+                        >
+                          <option value="">Seçiniz</option>
+                          {items
+                            .filter((o) => o.id !== item.id)
+                            .map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {o.name}
+                              </option>
+                            ))}
+                        </select>
+                        <button
+                          onClick={() => mergeItem(item.id, item.name)}
+                          disabled={busy || !mergeTargetId}
+                          className="text-xs text-emerald-600 hover:underline cursor-pointer disabled:opacity-50"
+                        >
+                          Taşı
+                        </button>
+                        <button
+                          onClick={() => {
+                            setMergingId(null);
+                            setMergeTargetId("");
+                          }}
+                          className="text-xs text-gray-500 hover:underline cursor-pointer"
+                        >
+                          İptal
+                        </button>
+                      </div>
                     ) : (
                       <>
+                        <Link
+                          href={`/admin/urunler?${labels.adminFilterParam}=${item.id}`}
+                          className="text-xs text-gray-600 hover:underline mr-3"
+                        >
+                          Ürünleri Gör
+                        </Link>
+                        <button
+                          onClick={() => {
+                            setMergingId(item.id);
+                            setMergeTargetId("");
+                          }}
+                          disabled={busy}
+                          className="text-xs text-amber-600 hover:underline mr-3 cursor-pointer disabled:opacity-50"
+                        >
+                          Birleştir
+                        </button>
                         <button
                           onClick={() => {
                             setEditing(item.id);

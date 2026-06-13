@@ -13,6 +13,8 @@ interface PageProps {
     ara?: string;
     stokMin?: string;
     stokMax?: string;
+    kategori?: string;
+    yayinevi?: string;
   }>;
 }
 
@@ -39,6 +41,10 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
   if (stokMin !== null && Number.isFinite(stokMin)) stockFilter.gte = stokMin;
   if (stokMax !== null && Number.isFinite(stokMax)) stockFilter.lte = stokMax;
   if (Object.keys(stockFilter).length > 0) where.stockQuantity = stockFilter;
+
+  // Kategori / yayınevi filtresi (dropdown'dan gelen id).
+  if (params.kategori) where.categoryId = params.kategori;
+  if (params.yayinevi) where.publisherId = params.yayinevi;
 
   const [products, total, categories, publishers] = await Promise.all([
     prisma.product.findMany({
@@ -76,6 +82,8 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
     if (search) qs.set("ara", search);
     if (params.stokMin) qs.set("stokMin", params.stokMin);
     if (params.stokMax) qs.set("stokMax", params.stokMax);
+    if (params.kategori) qs.set("kategori", params.kategori);
+    if (params.yayinevi) qs.set("yayinevi", params.yayinevi);
     return qs.toString();
   };
 
@@ -128,7 +136,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <ProductsFilterBar />
+      <ProductsFilterBar categories={categories} publishers={publishers} />
 
       <ProductsTable
         products={rows}

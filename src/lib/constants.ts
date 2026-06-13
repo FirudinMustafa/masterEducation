@@ -62,13 +62,18 @@ export const VAT_RATES = {
   DIGITAL: 20,
 } as const;
 
+// Sipariş durumları okultedarigim modeline göre etiketlenir (2026-06-13).
+// Enum kodları korunur; PENDING ve APPROVED kullanıcıya tek "Gelen Sipariş"
+// kovası olarak gösterilir (kart ödemesi APPROVED set ettiği için ikisi de
+// aynı görünür). Görünüm kovaları için bkz. lib/order-status DISPLAY_STATUSES.
 export const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING: "Onay Bekliyor",
-  APPROVED: "Onaylandi",
-  PROCESSING: "Hazirlaniyor",
-  SHIPPED: "Kargoya Verildi",
-  DELIVERED: "Teslim Edildi",
-  CANCELLED: "İptal Edildi",
+  PENDING: "Gelen Sipariş",
+  APPROVED: "Gelen Sipariş",
+  PROCESSING: "Hazırlanıyor",
+  SHIPPED: "Dağıtımda",
+  UNDELIVERED: "Teslim Edilemeyen",
+  DELIVERED: "Tamamlandı",
+  CANCELLED: "İptal/İade",
 };
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {

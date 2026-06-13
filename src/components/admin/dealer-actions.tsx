@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DealerStatus, DealerPaymentTerms } from "@prisma/client";
 import { useBusy } from "@/lib/hooks/use-busy";
+import { useErrorScroll } from "@/lib/hooks/use-error-scroll";
 
 interface DealerActionsProps {
   dealerId: string;
@@ -37,6 +38,7 @@ export function DealerActions({
   // boylece in-flight bir aksiyon icindeyken digerleri tetiklenemez (race koruma).
   const { busy, run } = useBusy();
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useErrorScroll(error);
   const [limitInput, setLimitInput] = useState(String(creditLimit));
   const [termsInput, setTermsInput] = useState<DealerPaymentTerms>(paymentTerms);
   const [notesInput, setNotesInput] = useState(notes ?? "");
@@ -156,7 +158,7 @@ export function DealerActions({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+        <div ref={errorRef} className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
           {error}
         </div>
       )}

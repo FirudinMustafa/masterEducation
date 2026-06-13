@@ -30,9 +30,9 @@ export default async function DealerDashboardPage() {
   const pendingOrders = orders.filter((o) => o.status === "PENDING").length;
   const deliveredOrders = orders.filter((o) => o.status === "DELIVERED").length;
   const cancelledOrders = orders.filter((o) => o.status === "CANCELLED").length;
-  // "Yolda" — onaylanmış ama henüz teslim olmamış aktif siparişler
+  // "Yolda" — hazırlanan/dağıtımdaki aktif siparişler (teslim olmamış, iptal değil)
   const inFlightOrders = orders.filter((o) =>
-    ["APPROVED", "PROCESSING", "SHIPPED"].includes(o.status)
+    ["APPROVED", "PROCESSING", "SHIPPED", "UNDELIVERED"].includes(o.status)
   ).length;
 
   return (

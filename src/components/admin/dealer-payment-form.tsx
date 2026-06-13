@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBusy } from "@/lib/hooks/use-busy";
+import { useErrorScroll } from "@/lib/hooks/use-error-scroll";
 
 interface DealerPaymentFormProps {
   dealerId: string;
@@ -15,6 +16,7 @@ export function DealerPaymentForm({ dealerId }: DealerPaymentFormProps) {
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useErrorScroll(error);
   const [success, setSuccess] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -59,7 +61,7 @@ export function DealerPaymentForm({ dealerId }: DealerPaymentFormProps) {
     >
       <h2 className="font-semibold text-brand-black">Tahsilat Girişi</h2>
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div ref={errorRef} className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           {error}
         </div>
       )}

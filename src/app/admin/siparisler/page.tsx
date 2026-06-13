@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { AdminSearchBar } from "@/components/admin/search-bar";
 import { OrdersTable, type OrderRow } from "@/components/admin/orders-table";
+import { DISPLAY_STATUSES, resolveStatusFilter } from "@/lib/order-status";
 
 export const metadata: Metadata = { title: "Siparişler - Admin" };
 
@@ -20,8 +21,10 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
   const perPage = 20;
 
   const where: Record<string, unknown> = {};
-  if (status) {
-    where.status = status;
+  // durum: okultedarigim kova anahtarı (örn "gelen") veya ham kod → iç kod listesi.
+  const statusCodes = resolveStatusFilter(status);
+  if (statusCodes) {
+    where.status = { in: statusCodes };
   }
   if (tip === "bayi") {
     // Bayisi olan siparişler — user.dealer relation'i mevcut olanlar
@@ -84,14 +87,10 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
 
   const totalPages = Math.ceil(total / perPage);
 
+  // okultedarigim durum kovaları + "Tümü" — value = kova anahtarı.
   const statusFilters = [
-    { value: "", label: "Tümu" },
-    { value: "PENDING", label: "Bekleyen" },
-    { value: "APPROVED", label: "Onaylanan" },
-    { value: "PROCESSING", label: "Hazirlanan" },
-    { value: "SHIPPED", label: "Kargoda" },
-    { value: "DELIVERED", label: "Teslim" },
-    { value: "CANCELLED", label: "İptal" },
+    { value: "", label: "Tümü" },
+    ...DISPLAY_STATUSES.map((d) => ({ value: d.key, label: d.label })),
   ];
 
   return (

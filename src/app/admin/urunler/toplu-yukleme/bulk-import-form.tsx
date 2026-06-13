@@ -159,23 +159,34 @@ export function BulkImportForm() {
             </label>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="file"
-            accept=".xlsx"
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
-              resetAll();
-            }}
-            className="text-sm"
-          />
-          <button
-            onClick={runPreview}
-            disabled={!file || working || pending}
-            className="px-4 py-2 bg-brand-black text-white rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
-          >
-            {working ? "Isleniyor..." : "Preview"}
-          </button>
+        <div>
+          <span className="block text-xs font-medium text-gray-500 mb-1">
+            Excel dosyası (.xlsx)
+          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 cursor-pointer">
+              Dosya Seç
+              <input
+                type="file"
+                accept=".xlsx"
+                className="hidden"
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  resetAll();
+                }}
+              />
+            </label>
+            <span className="text-sm text-gray-600 truncate max-w-[260px]">
+              {file ? file.name : "Dosya seçilmedi"}
+            </span>
+            <button
+              onClick={runPreview}
+              disabled={!file || working || pending}
+              className="px-4 py-2 bg-brand-black text-white rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
+            >
+              {working ? "Isleniyor..." : "Önizleme"}
+            </button>
+          </div>
         </div>
       </div>
 

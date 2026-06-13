@@ -401,22 +401,29 @@ export default async function ProductDetailPage({ params }: PageProps) {
             label: "Ürün Açıklamasi",
             content: (
               <div className="prose prose-neutral max-w-none text-sm leading-relaxed text-neutral-700">
-                <p>
-                  <strong>{product.name}</strong>
-                  {product.publisher && (
-                    <> — {product.publisher.name} yayınevi</>
-                  )}
-                  {product.category && <> / {product.category.name}</>}.
-                </p>
-                <p>
-                  Master Education sectigi eğitim materyallerinde orjinalligi garanti eder.
-                  Bu ürün stogumuzda bulunmakta olup, siparişiniz 1-3 is günu icinde
-                  kargoya teslim edilir.
-                </p>
-                {product.nameEn && (
-                  <p>
-                    <strong>English title:</strong> {product.nameEn}
-                  </p>
+                {product.description ? (
+                  // Admin'de girilen ürün açıklaması — satır sonları korunur.
+                  <p className="whitespace-pre-line">{product.description}</p>
+                ) : (
+                  <>
+                    <p>
+                      <strong>{product.name}</strong>
+                      {product.publisher && (
+                        <> — {product.publisher.name} yayınevi</>
+                      )}
+                      {product.category && <> / {product.category.name}</>}.
+                    </p>
+                    <p>
+                      Master Education sectigi eğitim materyallerinde orjinalligi garanti eder.
+                      Bu ürün stogumuzda bulunmakta olup, siparişiniz 1-3 is günu icinde
+                      kargoya teslim edilir.
+                    </p>
+                    {product.nameEn && (
+                      <p>
+                        <strong>English title:</strong> {product.nameEn}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             ),

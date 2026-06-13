@@ -53,9 +53,10 @@ export interface OrderCardData {
 
 const STATUS_TONE: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-700 ring-1 ring-amber-200",
-  APPROVED: "bg-blue-100 text-blue-700 ring-1 ring-blue-200",
+  APPROVED: "bg-amber-100 text-amber-700 ring-1 ring-amber-200",
   PROCESSING: "bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200",
   SHIPPED: "bg-purple-100 text-purple-700 ring-1 ring-purple-200",
+  UNDELIVERED: "bg-orange-100 text-orange-700 ring-1 ring-orange-200",
   DELIVERED: "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200",
   CANCELLED: "bg-rose-100 text-rose-700 ring-1 ring-rose-200",
 };
