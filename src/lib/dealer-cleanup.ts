@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { applyOrderCancelSideEffects } from "@/lib/order-side-effects";
 
 export interface DealerCleanupResult {
   cancelledOrders: number;
@@ -59,18 +60,29 @@ export async function cleanupDealerByUserId(
       select: {
         id: true,
         orderNumber: true,
+        paymentMethod: true,
         paymentStatus: true,
-        items: { select: { productId: true, quantity: true } },
+        total: true,
+        userId: true,
       },
     });
 
     for (const order of activeOrders) {
-      for (const item of order.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQuantity: { increment: item.quantity } },
-        });
-      }
+      // Ortak iptal yan-etkileri (tekil/toplu iptal route'larıyla AYNI helper):
+      // stok iadesi + açık hesap cari (ORDER_CANCEL_CREDIT) + KUPON usedCount
+      // geri verme + FATURA iptali. Önceki hata: dealer-cleanup yalnız stok iade
+      // ediyordu; kupon (global) ve fatura tutarsız kalıyordu.
+      await applyOrderCancelSideEffects(
+        tx,
+        {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          paymentMethod: order.paymentMethod,
+          userId: order.userId,
+          total: order.total,
+        },
+        actorId
+      );
       await tx.order.update({
         where: { id: order.id },
         data: {

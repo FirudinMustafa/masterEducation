@@ -16,6 +16,7 @@ import {
   applyOrderReactivateSideEffects,
 } from "@/lib/order-side-effects";
 import { canTransition } from "@/lib/order-status";
+import { ensureInvoiceForOrder, sendPendingInvoice } from "@/lib/invoice-service";
 import { env } from "@/lib/env";
 
 const MAX_IDS = 500;
@@ -251,6 +252,24 @@ export async function POST(req: NextRequest) {
                   estimatedDeliveryAt: updated.estimatedDeliveryAt,
                 });
           queueEmail({ ...tpl, to: order.user.email });
+        });
+      }
+
+      // Teslim edildiyse KolayBi e-fatura kaydı + gönderim — tekil status route
+      // ile AYNI (önceki tutarsızlık: toplu DELIVERED'da fatura hiç kesilmiyordu).
+      if (isDeliveringNow && status === "DELIVERED") {
+        const oid = orderId;
+        after(async () => {
+          try {
+            const r = await ensureInvoiceForOrder(oid);
+            if (r.invoiceId) {
+              await sendPendingInvoice(r.invoiceId).catch((err) =>
+                console.error("[invoice] bulk send failed", oid, err)
+              );
+            }
+          } catch (err) {
+            console.error("[invoice] bulk ensure failed", oid, err);
+          }
         });
       }
 

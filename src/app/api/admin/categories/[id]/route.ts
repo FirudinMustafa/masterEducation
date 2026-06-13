@@ -91,7 +91,10 @@ export async function DELETE(
     );
   }
 
-  // Force delete: iliskili ürünlerin categoryId'sini null yap, sonra kategoriyi sil.
+  // Force delete: iliskili ürünlerin categoryId'sini null yap, kategoriye scope'lu
+  // dealer-iskonto kurallarını SİL (yayınevi silmeyle tutarlı), sonra kategoriyi sil.
+  // Aksi halde Category? ilişkisi onDelete=SetNull olduğundan scope=CATEGORY,
+  // categoryId=null olan YETİM kural kalır (İskontolar ekranında bozuk satır).
   await prisma.$transaction([
     ...(productCount > 0
       ? [
@@ -101,6 +104,7 @@ export async function DELETE(
           }),
         ]
       : []),
+    prisma.dealerDiscount.deleteMany({ where: { categoryId: id } }),
     prisma.category.delete({ where: { id } }),
   ]);
 
