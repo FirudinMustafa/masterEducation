@@ -51,7 +51,10 @@ export async function cleanupDealerByUserId(
     const activeOrders = await tx.order.findMany({
       where: {
         userId,
-        status: { in: ["PENDING", "APPROVED", "PROCESSING", "SHIPPED"] },
+        // Aktif (final olmayan) siparişler: Gelen Sipariş (PENDING/APPROVED),
+        // Hazırlanıyor (PROCESSING), Dağıtımda (SHIPPED), Teslim Edilemeyen
+        // (UNDELIVERED). DELIVERED/CANCELLED final → dahil değil.
+        status: { in: ["PENDING", "APPROVED", "PROCESSING", "SHIPPED", "UNDELIVERED"] },
       },
       select: {
         id: true,
